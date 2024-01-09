@@ -9,16 +9,45 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@nextui-org/react": "^2.2.9",
+    "@prisma/client": "^5.7.1",
+    "@react-aria/ssr": "^3.9.0",
+    "@supabase/supabase-js": "^2.39.1",
+    "@vercel/speed-insights": "^1.0.2",
+    "axios": "^1.6.2",
+    "classnames": "^2.3.2",
+    "framer-motion": "^10.16.16",
+    "lodash.isequal": "^4.5.0",
+    "lz-string": "^1.5.0",
+    "next": "14.0.4",
+    "next-auth": "^4.24.5",
+    "next-themes": "^0.2.1",
+    "plaid": "^18.1.0",
     "react": "^18",
+    "react-datepicker": "^4.25.0",
     "react-dom": "^18",
-    "next": "14.0.4"
+    "react-plaid-link": "^3.5.1",
+    "tailwind-merge": "^2.1.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@types/lodash.isequal": "^4.5.8",
     "@types/node": "^20",
     "@types/react": "^18",
+    "@types/react-datepicker": "^4.19.4",
     "@types/react-dom": "^18",
+    "@types/uuid": "^9.0.7",
+    "autoprefixer": "^10.4.16",
     "eslint": "^8",
-    "eslint-config-next": "14.0.4"
+    "eslint-config-next": "14.0.4",
+    "postcss": "^8",
+    "prisma": "^5.7.1",
+    "supabase": "^1.127.3",
+    "tailwindcss": "^3.3.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   }
 }

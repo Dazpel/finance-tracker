@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String      @id @default(uuid())
+  email            String   @unique
+  plaidAccessToken String?
+  plaidItemId      String?
+  reports          Report[]
+}
+
+model Report {
+  id                 Int           @id @default(autoincrement())
+  userId             String // Foreign key to User
+  user               User          @relation(fields: [userId], references: [id])
+  transactions       Transaction[]
+  reportName         String
+  foodAndDrink       Float         @default(0)
+  billsAndUtilities  Float         @default(0)
+  gas                Float         @default(0)
+  entertainment      Float         @default(0)
+  groceries          Float         @default(0)
+  healthAndWellness  Float         @default(0)
+  personal           Float         @default(0)
+  shopping           Float         @default(0)
+  feesAndAdjustments Float         @default(0)
+  others             Float         @default(0)
+  revenue            Float         @default(0)
+  expenses           Float         @default(0)
+  total              Float         @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model Transaction {
+  id             Int      @id @default(autoincrement())
+  reportId       Int // Foreign key to Report
+  report         Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  account_id     String
+  transaction_id String
+  name           String
+  amount         Float
+  date           String
+  category       String[]
+  createdAt      DateTime @default(now())
+}

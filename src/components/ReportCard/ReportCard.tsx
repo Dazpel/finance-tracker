@@ -1,0 +1,145 @@
+import React, { useMemo } from "react";
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@nextui-org/react";
+
+type TableRow = {
+  key: number;
+  category: string;
+  amount: number;
+};
+
+export type ReportData = {
+  [key: string]: number;
+};
+
+type ReportCardProps = {
+  actionButtonText?: "Create Report" | "Update Report";
+  reportData: ReportData;
+  showFooter?: boolean;
+  showReportButton?: boolean;
+  handleSubmitReport?: () => Promise<void>;
+  handleOnViewDetails?: () => void;
+};
+
+const columns = [
+  {
+    key: "category",
+    label: "CATEGORY",
+  },
+  {
+    key: "amount",
+    label: "AMOUNT",
+    with: "30px",
+  },
+];
+
+const formatValue = (key: string, value: number) => {
+  if (key === "expenses" || key === "total") {
+    return value;
+  }
+  return Math.abs(value);
+};
+
+const rows = (data: ReportData): TableRow[] => {
+  return Object.entries(data).map(([key, value], index) => {
+    const formattedValue = formatValue(key, value);
+
+    return {
+      key: index,
+      category: key,
+      amount: formattedValue,
+    };
+  });
+};
+
+export default function ReportCard({
+  actionButtonText = "Create Report",
+  reportData,
+  handleSubmitReport,
+  handleOnViewDetails,
+  showReportButton = false,
+  showFooter = false,
+}: ReportCardProps) {
+  const renderCell = React.useCallback(
+    (item: TableRow, columnKey: React.Key) => {
+      const boldedArray = ["expenses", "total", "revenue"];
+      const cellValue = item[columnKey as keyof TableRow] as string;
+      switch (columnKey) {
+        case "category":
+          const isBolded = boldedArray.includes(cellValue);
+          return isBolded ? (
+            <span className="font-bold capitalize">{cellValue}</span>
+          ) : (
+            <span className="capitalize">{cellValue}</span>
+          );
+
+        default:
+          return cellValue;
+      }
+    },
+    []
+  );
+  const classNames = useMemo(
+    () => ({
+      td: [
+        "group-data-[last=true]:bg-default-100 group-data-[last=true]:font-bold",
+      ],
+    }),
+    []
+  );
+  const bottomContent = React.useMemo(() => {
+    if (!showFooter) return null;
+    return (
+      <div className="w-full">
+        <Button
+          color="primary"
+          className="w-full"
+          onClick={handleOnViewDetails}
+        >
+          View Details
+        </Button>
+      </div>
+    );
+  }, [showFooter]);
+  return (
+    <div className="flex flex-col w-80 gap-4">
+      <Table
+        isCompact
+        aria-label="Report card table"
+        classNames={classNames}
+        bottomContent={bottomContent}
+        bottomContentPlacement="inside"
+      >
+        <TableHeader columns={columns}>
+          {(column) => (
+            <TableColumn key={column.key}>{column.label}</TableColumn>
+          )}
+        </TableHeader>
+        <TableBody
+          items={rows(reportData)}
+          emptyContent="No transactions found yet."
+        >
+          {(item) => (
+            <TableRow key={item.key}>
+              {(columnKey) => (
+                <TableCell>{renderCell(item, columnKey)}</TableCell>
+              )}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      {showReportButton && (
+        <Button color="primary" onClick={handleSubmitReport}>
+          {actionButtonText}
+        </Button>
+      )}
+    </div>
+  );
+}

@@ -56,7 +56,7 @@ export default function Page({
     setReportsOrder(arrayCopy.reverse());
   };
 
-  const reportAnalysis = () =>
+  const ReportAnalysis = () =>
     useMemo(() => {
       const comparisonResults: string[] = [];
       const report1 = formattedReport(reportData[reportsOrder[0]]);
@@ -116,7 +116,7 @@ export default function Page({
         <h3 className="text-xl font-semibold mb-4">
           Report Comparison Analysis:
         </h3>
-        <div className="flex flex-col gap-2">{reportAnalysis()}</div>
+        <div className="flex flex-col gap-2">{ReportAnalysis()}</div>
       </div>
     </div>
   );

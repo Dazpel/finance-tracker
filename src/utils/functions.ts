@@ -10,6 +10,7 @@ type FormattedTransaction = {
   name: string;
   account_id: string;
   transaction_id: string;
+  userId: string;
 };
 
 export const formatDate = (date: Date) => {
@@ -23,9 +24,10 @@ export const formatDate = (date: Date) => {
   return [year, month, day].join("-");
 };
 
-export const formatTransactions = (transactions: TransactionBase[]): FormattedTransaction[] => {
+export const formatTransactions = (transactions: TransactionBase[], userId: string): FormattedTransaction[] => {
   const formattedTransactions = transactions.map((transaction) => {
     return {
+      userId,
       amount: transaction?.amount,
       category: transaction?.category || ["Others"],
       date: transaction?.date,

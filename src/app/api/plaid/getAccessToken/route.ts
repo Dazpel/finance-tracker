@@ -8,6 +8,7 @@ export async function POST(request: Request) {
   const session = await getServerSession(options);
   const res = await request.json();
   const publicToken: string = res.publicToken;
+  const institutionName: string = res.institutionName;
 
   try {
     const exchangeResponse = await plaidClient.itemPublicTokenExchange({
@@ -28,8 +29,13 @@ export async function POST(request: Request) {
         email: session.user.email,
       },
       data: {
-        plaidAccessToken: accessToken,
-        plaidItemId: itemId,
+        accounts: {
+          create: {
+            institutionName,
+            accessToken,
+            itemId,
+          },
+        },
       },
     });
 

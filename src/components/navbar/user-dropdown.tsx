@@ -8,10 +8,11 @@ import {
   NavbarItem,
 } from "@nextui-org/react";
 import React from "react";
-import { DarkModeSwitch } from "./darkmodeswitch";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 export const UserDropdown = () => {
+  const session = useSession();
+  
   return (
     <Dropdown>
       <NavbarItem>
@@ -33,19 +34,17 @@ export const UserDropdown = () => {
           className="flex flex-col justify-start w-full items-start"
         >
           <p>Signed in as</p>
-          <p>zoey@example.com</p>
+          <p>{session?.data?.user?.email}</p>
         </DropdownItem>
         <DropdownItem key="settings">My Settings</DropdownItem>
-        <DropdownItem key="team_settings">Team Settings</DropdownItem>
-        <DropdownItem key="analytics">Analytics</DropdownItem>
-        <DropdownItem key="system">System</DropdownItem>
         <DropdownItem key="configurations">Configurations</DropdownItem>
-        <DropdownItem key="help_and_feedback">Help & Feedback</DropdownItem>
-        <DropdownItem onClick={() => signOut()} key="logout" color="danger" className="text-danger ">
+        <DropdownItem
+          onClick={() => signOut()}
+          key="logout"
+          color="danger"
+          className="text-danger "
+        >
           Log Out
-        </DropdownItem>
-        <DropdownItem key="switch">
-          <DarkModeSwitch />
         </DropdownItem>
       </DropdownMenu>
     </Dropdown>

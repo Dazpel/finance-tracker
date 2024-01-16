@@ -3,48 +3,43 @@ import { plaidClient } from "@lib/plaid";
 import { findOrCreateUser } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
-
-type TransactionsGetRequest = {
-  access_token: string;
-  start_date: string;
-  end_date: string;
-  options?: {
-    count?: number;
-    offset?: number;
-  };
-};
+import { Transaction } from "plaid";
 
 export async function GET(req: Request) {
   const session = await getServerSession(options);
+  if (!session || !session.user || !session.user.email) {
+    return Response.json({ success: false, error: "Session not found" });
+  }
+
   const { searchParams } = new URL(req.url);
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
-  const accessToken = await findOrCreateUser(prisma, session.user.email);
 
-  const request: TransactionsGetRequest = {
-    access_token: accessToken || "",
-    start_date: startDate as string,
-    end_date: endDate as string,
-  };
+  if (!startDate || !endDate) {
+    return Response.json({ success: false, error: "Missing date parameters" });
+  }
+
+  const accounts = await findOrCreateUser(prisma, session.user.email);
+  let transactions: Transaction[] = [];
 
   try {
-    const response = await plaidClient.transactionsGet(request);
-    let transactions = response.data.transactions;
-    const total_transactions = response.data.total_transactions;
-    // Manipulate the offset parameter to paginate
-    // transactions and retrieve all available data
-    while (transactions.length < total_transactions) {
-      const paginatedRequest: TransactionsGetRequest = {
-        ...request,
-        options: {
-          offset: transactions.length,
-        },
-      };
-      const paginatedResponse = await plaidClient.transactionsGet(
-        paginatedRequest
-      );
-      transactions = transactions.concat(paginatedResponse.data.transactions);
+    for (const account of accounts) {
+      let offset = 0;
+      let total_transactions = 0;
+      do {
+        const response = await plaidClient.transactionsGet({
+          access_token: account.accessToken || "",
+          start_date: startDate,
+          end_date: endDate,
+          options: { offset },
+        });
+
+        transactions.push(...response.data.transactions);
+        total_transactions = response.data.total_transactions;
+        offset = transactions.length;
+      } while (transactions.length < total_transactions);
     }
+
     return Response.json({ success: true, transactions });
   } catch (error) {
     return Response.json({

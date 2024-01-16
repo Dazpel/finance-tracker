@@ -9,9 +9,9 @@ async function getAccessToken(): Promise<TransactionsPageProps> {
   const session = await getServerSession(options);
   let isAccessTokenValid = false;
   try {
-    const accessToken = await findOrCreateUser(prisma, session.user.email);
-
-    if (accessToken) isAccessTokenValid = true;
+    const accounts = await findOrCreateUser(prisma, session.user.email);
+    
+    if (accounts.length > 0) isAccessTokenValid = true;
   } catch (error) {
     console.log(error);
   }

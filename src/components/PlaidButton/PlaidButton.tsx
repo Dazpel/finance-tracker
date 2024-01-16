@@ -10,7 +10,11 @@ import {
   PlaidLinkOptions,
 } from "react-plaid-link";
 
-function PlaidButton() {
+type PlaidButtonProps = {
+  updateMode?: Boolean;
+};
+
+function PlaidButton({ updateMode = false }: PlaidButtonProps) {
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<boolean>(false);
   const router = useRouter();
@@ -19,7 +23,7 @@ function PlaidButton() {
   useEffect(() => {
     const createLinkToken = async () => {
       const response = await fetch("/api/plaid/createLink", {
-        method: "POST",
+        method: "POST"
       });
       const { link_token } = await response.json();
       setToken(link_token);
@@ -29,7 +33,9 @@ function PlaidButton() {
 
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (publicToken, metadata) => {
-      const body = { publicToken };
+      console.log(metadata);
+      
+      const body = { publicToken, institutionName: metadata?.institution?.name };
       const res = await fetch("/api/plaid/getAccessToken", {
         method: "POST",
         body: JSON.stringify(body),

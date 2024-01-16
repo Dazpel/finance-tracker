@@ -9,17 +9,27 @@ export type PrismaResponse = {
   error?: any;
 };
 
+export type plaidAccount = {
+  id: number;
+  userId: string;
+  institutionName: string;
+  accessToken: string;
+  itemId: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export const findOrCreateUser = async (
   prisma: PrismaClient,
   userEmail: string
-): Promise<string | null> => {
+): Promise<plaidAccount[]> => {
   // First, try to find the user by email
   let user = await prisma.user.findUnique({
     where: {
       email: userEmail,
     },
     select: {
-      plaidAccessToken: true,
+      accounts: true,
     },
   });
 
@@ -29,10 +39,13 @@ export const findOrCreateUser = async (
       data: {
         email: userEmail,
       },
+      select: {
+        accounts: true,
+      },
     });
   }
 
-  return user.plaidAccessToken;
+  return user.accounts;
 };
 
 export const getReports = async (prisma: PrismaClient, userEmail: string) => {
@@ -113,8 +126,24 @@ export const createReport = async (
   };
 
   try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: userEmail,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      return (response = {
+        success: false,
+        error: "User not found",
+      });
+    }
+
     const formattedReport = formatReportKeys(report);
-    const formattedTransactions = formatTransactions(transactions);
+    const formattedTransactions = formatTransactions(transactions, user.id);
 
     await prisma.user.update({
       where: {
@@ -195,8 +224,24 @@ export const updateReport = async (
   };
 
   try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: userEmail,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      return (response = {
+        success: false,
+        error: "User not found",
+      });
+    }
+
     const formattedReport = formatReportKeys(report);
-    const formattedTransactions = formatTransactions(transactions);
+    const formattedTransactions = formatTransactions(transactions, user.id);
 
     // Delete all transactions associated with the report
     await prisma.transaction.deleteMany({
@@ -231,7 +276,7 @@ export const updateReport = async (
     };
   } catch (error) {
     console.log({ error });
-    
+
     response = {
       success: false,
       error,

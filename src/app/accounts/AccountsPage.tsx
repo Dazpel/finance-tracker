@@ -2,7 +2,6 @@
 
 import React from "react";
 import {
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -12,15 +11,23 @@ import {
   getKeyValue,
 } from "@nextui-org/react";
 import { AccountBase } from "plaid";
-import { PlaidLink } from "react-plaid-link";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 
-export type AccountsPageProps = {
+export type AccountType = {
+  institutionName: string;
   accounts: AccountBase[];
+};
+
+export type AccountsPageProps = {
+  accounts: AccountType[];
   success: boolean;
 };
 
 const columns = [
+  {
+    key: "institutionName",
+    label: "INSTITUTION",
+  },
   {
     key: "name",
     label: "NAME",
@@ -35,27 +42,31 @@ const columns = [
   },
 ];
 
-const rows = (accounts: AccountBase[]) => {
-  return accounts.map((account) => ({
-    key: account.account_id,
-    name: account.name,
-    type: account.subtype,
-    last4: account.mask,
-  }));
-};
-
-const handleAccountLinkage = async () => {
-  console.log("Link accounts");
-  const response = await fetch("/api/plaid/link");
-  console.log(response);
+const rows = (entries: AccountType[]) => {
+  let rows = [];
+  for (const entry of entries) {
+    for (const account of entry.accounts) {
+      rows.push({
+        key: account.account_id,
+        institutionName: entry.institutionName,
+        name: account.name,
+        type: account.type,
+        last4: account.mask,
+      });
+    }
+  }
+  return rows;
 };
 
 export default function AccountsPage({ accounts, success }: AccountsPageProps) {
+  const buttonText =
+    accounts.length > 0 ? "Link more accounts" : "No accounts linked yet.";
+
   return (
     <div className="h-full">
       <h3 className="text-xl font-semibold mb-4">Current conected accounts</h3>
       {!success && <p className="mb-4 text-danger">Error fetching data</p>}
-      {accounts.length > 0 ? (
+      {accounts.length > 0 && (
         <Table aria-label="Accounts linked table">
           <TableHeader columns={columns}>
             {(column) => (
@@ -75,12 +86,11 @@ export default function AccountsPage({ accounts, success }: AccountsPageProps) {
             )}
           </TableBody>
         </Table>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <p>No accounts linked yet.</p>
-          <PlaidButton />
-        </div>
       )}
+      <div className="flex flex-col gap-2 mt-4">
+        <p>{buttonText}</p>
+        <PlaidButton updateMode={accounts.length > 0} />
+      </div>
     </div>
   );
 }

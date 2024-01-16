@@ -16,9 +16,9 @@ export function Providers({ children, themeProps, session }: ProvidersProps) {
   return (
     <NextUIProvider className="font-mono">
       <NextThemesProvider {...themeProps}>
-        <Layout>
-          <SessionProvider session={session}>{children}</SessionProvider>
-        </Layout>
+        <SessionProvider session={session}>
+          <Layout>{children}</Layout>
+        </SessionProvider>
       </NextThemesProvider>
     </NextUIProvider>
   );

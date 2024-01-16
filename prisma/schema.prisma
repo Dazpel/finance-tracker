@@ -12,11 +12,22 @@ datasource db {
 }
 
 model User {
-  id               String      @id @default(uuid())
-  email            String   @unique
-  plaidAccessToken String?
-  plaidItemId      String?
-  reports          Report[]
+  id           String         @id @default(uuid())
+  email        String         @unique
+  accounts     PlaidAccount[]
+  reports      Report[]
+  transactions Transaction[]
+}
+
+model PlaidAccount {
+  id              Int      @id @default(autoincrement())
+  userId          String // Foreign key to User
+  user            User     @relation(fields: [userId], references: [id])
+  institutionName String
+  accessToken     String
+  itemId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Report {
@@ -46,6 +57,8 @@ model Transaction {
   id             Int      @id @default(autoincrement())
   reportId       Int // Foreign key to Report
   report         Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  userId         String // Foreign key to User
+  user           User     @relation(fields: [userId], references: [id])
   account_id     String
   transaction_id String
   name           String

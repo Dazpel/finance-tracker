@@ -13,7 +13,6 @@
     "@nextui-org/react": "^2.2.9",
     "@prisma/client": "^5.7.1",
     "@react-aria/ssr": "^3.9.0",
-    "@supabase/supabase-js": "^2.39.1",
     "@vercel/speed-insights": "^1.0.2",
     "axios": "^1.6.2",
     "classnames": "^2.3.2",

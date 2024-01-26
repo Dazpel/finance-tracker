@@ -20,7 +20,6 @@ import { ChevronDownIcon } from "assets/icons/ChevronDownIcon";
 import { PlusIcon } from "assets/icons/PlusIcon";
 import RedoIcon from "assets/icons/RedoIcon";
 import UndoIcon from "assets/icons/UndoIcon";
-import useUndoRedoState from "hooks/useUndoRedoState";
 import { TransactionBase } from "plaid";
 import React, { useMemo, useState } from "react";
 import {

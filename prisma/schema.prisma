@@ -17,7 +17,18 @@ model User {
   accounts     PlaidAccount[]
   reports      Report[]
   transactions Transaction[]
+  // mappings     Mapping?
 }
+
+// model Mapping {
+//   id          Int      @id @default(autoincrement())
+//   userId      String   @unique // Foreign key to User
+//   user        User     @relation(fields: [userId], references: [id])
+//   category    String
+//   subcategory String
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+// }
 
 model PlaidAccount {
   id              Int      @id @default(autoincrement())

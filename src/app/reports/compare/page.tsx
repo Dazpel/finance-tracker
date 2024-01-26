@@ -56,17 +56,16 @@ export default function Page({
     setReportsOrder(arrayCopy.reverse());
   };
 
-  const ReportAnalysis = () =>
-    useMemo(() => {
-      const comparisonResults: string[] = [];
+  const ReportAnalysis = () => {
+    const comparisonResults: string[] = [];
       const report1 = formattedReport(reportData[reportsOrder[0]]);
       const report2 = formattedReport(reportData[reportsOrder[1]]);
 
       Object.entries(report1).map(([key, value]) => {
         const difference =
           key === "expenses"
-            ? Math.abs(value) - Math.abs(report2[key])
-            : value - report2[key];
+            ? Math.abs(report2[key]) - Math.abs(value)
+            : report2[key] - value;
         if (difference !== 0) {
           const direction = difference > 0 ? "increased" : "decreased";
           const formattedKey =
@@ -83,14 +82,14 @@ export default function Page({
       return comparisonResults.map((result, index) =>
         styledBreakdown(result, index)
       );
-    }, [reportsOrder]);
+  }
 
   return (
     <div className="flex flex-col">
       <h3 className="text-xl font-semibold mb-4">Comparing reports</h3>
       <div className="flex gap-4 items-center">
         <div className="flex flex-col gap-2 items-center">
-          <label>{reportData[reportsOrder[0]].reportName}</label>
+          <label>Report 1: {reportData[reportsOrder[0]].reportName}</label>
           <ReportCard
             reportData={formattedReport(reportData[reportsOrder[0]])}
           />
@@ -106,7 +105,7 @@ export default function Page({
           </Button>
         </Tooltip>
         <div className="flex flex-col gap-2 items-center">
-          <label>{reportData[reportsOrder[1]].reportName}</label>
+          <label>Report 2: {reportData[reportsOrder[1]].reportName}</label>
           <ReportCard
             reportData={formattedReport(reportData[reportsOrder[1]])}
           />

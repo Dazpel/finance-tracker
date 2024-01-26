@@ -29,6 +29,22 @@ export const defaultCategoryFilterOptions = [
   { name: "None", uid: "None" },
 ];
 
+export const plaidCategories = [
+  "Transfer",
+  "Travel",
+  "Tax",
+  "Shops",
+  "Service",
+  "Recreation",
+  "Payment",
+  "Interest",
+  "Healthcare",
+  "Community",
+  "Bank Fees",
+  "Cash advance",
+  "Food and drink",
+]
+
 export const defaultCategories = [
   "food & drink",
   "bills & utilities",

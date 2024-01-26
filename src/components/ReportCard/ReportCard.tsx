@@ -26,6 +26,7 @@ type ReportCardProps = {
   showReportButton?: boolean;
   handleSubmitReport?: () => Promise<void>;
   handleOnViewDetails?: () => void;
+  fixedPosition?: boolean;
 };
 
 const columns = [
@@ -44,7 +45,7 @@ const formatValue = (key: string, value: number) => {
   if (key === "expenses" || key === "total") {
     return value;
   }
-  return Math.abs(value);
+  return Number(Math.abs(value).toFixed(2));
 };
 
 const rows = (data: ReportData): TableRow[] => {
@@ -66,6 +67,7 @@ export default function ReportCard({
   handleOnViewDetails,
   showReportButton = false,
   showFooter = false,
+  fixedPosition = false,
 }: ReportCardProps) {
   const renderCell = React.useCallback(
     (item: TableRow, columnKey: React.Key) => {
@@ -107,39 +109,41 @@ export default function ReportCard({
         </Button>
       </div>
     );
-  }, [showFooter]);
+  }, [showFooter, handleOnViewDetails]);
   return (
-    <div className="flex flex-col w-80 gap-4">
-      <Table
-        isCompact
-        aria-label="Report card table"
-        classNames={classNames}
-        bottomContent={bottomContent}
-        bottomContentPlacement="inside"
-      >
-        <TableHeader columns={columns}>
-          {(column) => (
-            <TableColumn key={column.key}>{column.label}</TableColumn>
-          )}
-        </TableHeader>
-        <TableBody
-          items={rows(reportData)}
-          emptyContent="No transactions found yet."
+    <div className="flex flex-col w-80 relative">
+      <div className={`flex flex-col gap-4 ${fixedPosition ? "fixed" : "relative"}`}>
+        <Table
+          isCompact
+          aria-label="Report card table"
+          classNames={classNames}
+          bottomContent={bottomContent}
+          bottomContentPlacement="inside"
         >
-          {(item) => (
-            <TableRow key={item.key}>
-              {(columnKey) => (
-                <TableCell>{renderCell(item, columnKey)}</TableCell>
-              )}
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      {showReportButton && (
-        <Button color="primary" onClick={handleSubmitReport}>
-          {actionButtonText}
-        </Button>
-      )}
+          <TableHeader columns={columns}>
+            {(column) => (
+              <TableColumn key={column.key}>{column.label}</TableColumn>
+            )}
+          </TableHeader>
+          <TableBody
+            items={rows(reportData)}
+            emptyContent="No transactions found yet."
+          >
+            {(item) => (
+              <TableRow key={item.key}>
+                {(columnKey) => (
+                  <TableCell>{renderCell(item, columnKey)}</TableCell>
+                )}
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        {showReportButton && (
+          <Button color="primary" onClick={handleSubmitReport}>
+            {actionButtonText}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

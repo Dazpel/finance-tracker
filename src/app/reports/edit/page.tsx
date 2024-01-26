@@ -114,7 +114,7 @@ export default function Page({
         }
       }
     });
-    const profit = categoryValues.revenue - Math.ceil(totalExpenses);
+    const profit = Math.abs(categoryValues.revenue) - Math.abs(totalExpenses);
     return {
       ...categoryValues,
       expenses: -Math.ceil(totalExpenses),
@@ -201,7 +201,7 @@ export default function Page({
           Report Name: <span className="font-normal">{reportName}</span>
         </p>
         <p className="font-bold">
-          Created At:{" "}
+          Created:{" "}
           <span className="font-normal">{formatCreatedDate(createdAt)}</span>
         </p>
         {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
@@ -233,6 +233,7 @@ export default function Page({
                 showReportButton={transactions.length > 0}
                 reportData={generatedReportData}
                 handleSubmitReport={handleUpdateReport}
+                fixedPosition
               />
             </div>
           </div>

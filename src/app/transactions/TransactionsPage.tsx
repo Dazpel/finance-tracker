@@ -32,9 +32,6 @@ export default function TransactionsPage({
   const [reportName, setReportName] = useState("");
   const [isReportNameValid, setIsReportNameValid] = useState(true);
 
-  //todo: refactor to move useUndoRedoState to TransactionsTable
-  //explore usage of Jotai
-
   const { history, setHistory, index, lastIndex, goBack, goForward } =
     useUndoRedoState({ transactions: [], selectedKeys: new Set([]) });
 
@@ -129,7 +126,7 @@ export default function TransactionsPage({
         const transactionIndex = transactions.findIndex(
           (transaction) => transaction.transaction_id === transactionId
         );
-        categoryValues[category] += transactions[transactionIndex]?.amount || 0;
+        categoryValues[category] += Math.abs(transactions[transactionIndex]?.amount) || 0;
         if (category !== "revenue") {
           totalExpenses += Math.abs(
             transactions[transactionIndex]?.amount || 0
@@ -137,10 +134,10 @@ export default function TransactionsPage({
         }
       }
     });
-    const profit = categoryValues.revenue - Math.ceil(totalExpenses);
+    const profit = Math.abs(categoryValues.revenue) - Math.abs(totalExpenses);
     return {
       ...categoryValues,
-      expenses: -Math.ceil(totalExpenses),
+      expenses: -Number(totalExpenses.toFixed(2)),
       total: Math.ceil(profit),
     };
   }, [selectedKeys, transactions]);
@@ -164,7 +161,10 @@ export default function TransactionsPage({
     try {
       const body = {
         transactions,
-        reportData: generatedReportData,
+        reportData: {
+          ...generatedReportData,
+          revenue: Math.abs(generatedReportData.revenue),
+        },
         reportName,
       };
 
@@ -225,6 +225,7 @@ export default function TransactionsPage({
               showReportButton={transactions.length > 0}
               reportData={generatedReportData}
               handleSubmitReport={handleSubmitReport}
+              fixedPosition
             />
           </div>
         </div>

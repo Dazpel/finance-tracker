@@ -115,7 +115,7 @@ export default function ReportsTable({
     }
   };
 
-  const handleCompare = () => {
+  const handleCompare = useCallback(() => {
     const reports = {
       report1: reportData[reportsToCompare[0] as number],
       report2: reportData[reportsToCompare[1] as number],
@@ -123,14 +123,14 @@ export default function ReportsTable({
     const encodedURI = compressToEncodedURIComponent(JSON.stringify(reports));
 
     handleOnCompare(encodedURI);
-  };
+  }, [reportData, reportsToCompare, handleOnCompare]);
 
-  const displayDeleteModal = (index: number) => {
+  const displayDeleteModal = useCallback((index: number) => {
     setReportIndexToDelete(reportData[index].id);
     setIsOpen(true);
-  };
+  }, [reportData]);
 
-  const handleActions = (index: number, action: RowActions) => {
+  const handleActions = useCallback((index: number, action: RowActions) => {
     switch (action) {
       case "edit":
         handleOnEdit && handleOnEdit(compressToEncodedURIComponent(JSON.stringify(reportData[index])));
@@ -144,7 +144,7 @@ export default function ReportsTable({
       default:
         break;
     }
-  }
+  }, [handleOnEdit, handleOnView, reportData, displayDeleteModal]);
 
   const handleDelete = async () => {
     if (reportIndexToDelete) {
@@ -182,7 +182,7 @@ export default function ReportsTable({
         )}
       </div>
     );
-  }, [canCompareReports, maxRowExceeded, reportsToCompare]);
+  }, [canCompareReports, maxRowExceeded, reportsToCompare, handleCompare]);
 
   const renderCell = useCallback(
     (report: TableRow, columnKey: React.Key) => {
@@ -212,7 +212,7 @@ export default function ReportsTable({
           return cellValue;
       }
     },
-    [reportData]
+    [handleActions]
   );
 
   return (

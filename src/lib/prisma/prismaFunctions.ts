@@ -285,3 +285,42 @@ export const updateReport = async (
 
   return response;
 };
+
+export const isUserAuthorized = async (
+  prisma: PrismaClient,
+  userEmail: string
+): Promise<PrismaResponse> => {
+  let response: PrismaResponse = {
+    success: false,
+  };
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: userEmail,
+      },
+      select: {
+        authorized: true,
+      },
+    });
+
+    if (!user) {
+      return (response = {
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    response = {
+      success: true,
+      data: user.authorized,
+    };
+  } catch (error) {
+    response = {
+      success: false,
+      error,
+    };
+  }
+
+  return response;
+};

@@ -17,6 +17,7 @@ model User {
   accounts     PlaidAccount[]
   reports      Report[]
   transactions Transaction[]
+  authorized   Boolean        @default(false)
   // mappings     Mapping?
 }
 

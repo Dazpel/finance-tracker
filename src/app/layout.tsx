@@ -4,6 +4,8 @@ import { Roboto_Flex } from "next/font/google";
 import { Providers } from "./providers";
 import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
+import { isUserAuthorized } from "@lib/prisma/prismaFunctions";
+import prisma from "@lib/prisma/prismaClient";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,16 +33,24 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(options);
+  const res = await isUserAuthorized(prisma, session.user.email);
+
   return (
     <html suppressHydrationWarning dir="ltr" lang="en">
       <head />
       <body className={`${roboto.variable}`}>
-        <Providers
-          session={session}
-          themeProps={{ attribute: "class", defaultTheme: "dark" }}
-        >
-          {children}
-        </Providers>
+        {res.data ? (
+          <Providers
+            session={session}
+            themeProps={{ attribute: "class", defaultTheme: "dark" }}
+          >
+            {children}
+          </Providers>
+        ) : (
+          <div>
+            <h1>Not Authorized</h1>
+          </div>
+        )}
         <SpeedInsights />
       </body>
     </html>

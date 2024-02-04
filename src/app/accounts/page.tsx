@@ -17,18 +17,19 @@ async function getAccounts(): Promise<AccountsPageProps> {
   try {
     const accounts = await findOrCreateUser(prisma, session.user.email);
 
-    if (accounts.length > 0) {
-      for (const account of accounts) {
-        const res = await plaidClient.accountsGet({
-          access_token: account.accessToken,
-        });
-        const accountData = {
-          institutionName: account.institutionName,
-          accounts: res.data.accounts,
-        };
-        response.accounts.push(accountData);
-      }
-    }
+    if (accounts.length === 0) return { ...response, success: true };
+
+    const accountPromises = accounts.map(async account => {
+      const res = await plaidClient.accountsGet({
+        access_token: account.accessToken,
+      });
+      return {
+        institutionName: account.institutionName,
+        accounts: res.data.accounts,
+      };
+    });
+
+    response.accounts = await Promise.all(accountPromises);
 
     response.success = true;
   } catch (error) {

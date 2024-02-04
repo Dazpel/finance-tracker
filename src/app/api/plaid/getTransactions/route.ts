@@ -31,7 +31,7 @@ export async function GET(req: Request) {
           access_token: account.accessToken || "",
           start_date: startDate,
           end_date: endDate,
-          options: { offset },
+          options: { offset, include_original_description: true},
         });
 
         transactions.push(...response.data.transactions);

@@ -93,7 +93,7 @@ const rows = (transactions: TransactionBase[]): TableRow[] => {
     category: transaction.category
       ? transaction.category[0].replace("and", "&")
       : "",
-    amount: Math.abs(transaction.amount),
+    amount: Number((transaction.amount).toFixed(2)),
   }));
 };
 

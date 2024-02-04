@@ -126,7 +126,7 @@ export default function TransactionsPage({
         const transactionIndex = transactions.findIndex(
           (transaction) => transaction.transaction_id === transactionId
         );
-        categoryValues[category] += Math.abs(transactions[transactionIndex]?.amount) || 0;
+        categoryValues[category] += transactions[transactionIndex]?.amount || 0;
         if (category !== "revenue") {
           totalExpenses += Math.abs(
             transactions[transactionIndex]?.amount || 0

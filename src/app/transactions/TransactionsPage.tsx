@@ -128,9 +128,7 @@ export default function TransactionsPage({
         );
         categoryValues[category] += transactions[transactionIndex]?.amount || 0;
         if (category !== "revenue") {
-          totalExpenses += Math.abs(
-            transactions[transactionIndex]?.amount || 0
-          );
+          totalExpenses += transactions[transactionIndex]?.amount || 0;
         }
       }
     });

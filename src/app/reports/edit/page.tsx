@@ -108,16 +108,14 @@ export default function Page({
         );
         categoryValues[category] += transactions[transactionIndex]?.amount || 0;
         if (category !== "revenue") {
-          totalExpenses += Math.abs(
-            transactions[transactionIndex]?.amount || 0
-          );
+          totalExpenses += transactions[transactionIndex]?.amount || 0
         }
       }
     });
     const profit = Math.abs(categoryValues.revenue) - Math.abs(totalExpenses);
     return {
       ...categoryValues,
-      expenses: -Math.ceil(totalExpenses),
+      expenses: -Number(totalExpenses.toFixed(2)),
       total: Math.ceil(profit),
     };
   }, [selectedKeys, transactions]);

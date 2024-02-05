@@ -198,7 +198,7 @@ export default function TransactionsTable({
     action: TableAction = TableAction.Create
   ) => {
     const value = e ? e.target.value : null;
-
+    
     const prevTransactions = [...transactions];
     const prevKeys = { ...selectedKeys };
     const transactionIndex = prevTransactions.findIndex(
@@ -216,10 +216,10 @@ export default function TransactionsTable({
       return generateSelectedCategoryKeys(updatedTransactions);
     }
 
-    if (action === TableAction.UpdatePrice) {
+    if (action === TableAction.UpdatePrice && value !== null) {
       updatedTransactions[transactionIndex] = {
         ...updatedTransactions[transactionIndex],
-        amount: Number(value),
+        amount: Number(-value),
       };
       return updateHistory(updatedTransactions, prevKeys);
     }
@@ -391,7 +391,7 @@ export default function TransactionsTable({
             <Input
               isReadOnly={!canEdit}
               type="number"
-              value={cellValue}
+              value={`${-cellValue}`}
               onChange={(e) =>
                 handleTableActions(
                   e,

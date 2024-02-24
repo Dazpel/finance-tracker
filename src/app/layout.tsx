@@ -9,8 +9,8 @@ import prisma from "@lib/prisma/prismaClient";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Finance Tracker",
-  description: "Finance Tracker",
+  title: "MoneyEye",
+  description: "MoneyEye",
 };
 
 export const viewport: Viewport = {

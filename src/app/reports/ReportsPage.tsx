@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import ReportsTable from "@components/ReportsTable/ReportsTable";
 import { ReportDataDTO } from "utils/types";
+import FullScreenOverlay from "@components/Loader/Loader";
 
 export type ReportsPageProps = {
   reportData: ReportDataDTO[];
@@ -11,12 +12,13 @@ export type ReportsPageProps = {
 
 export default function ReportsPage({ reportData }: ReportsPageProps) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleOnEdit = (encodedURI: string): void => {
     router.push(`/reports/edit?data=${encodedURI}`);
-  }
+  };
 
   const handleOnView = (encodedURI: string): void => {
     router.push(`/reports/details?data=${encodedURI}`);
@@ -27,16 +29,47 @@ export default function ReportsPage({ reportData }: ReportsPageProps) {
   };
 
   const handleOnDelete = async (reportId: number): Promise<void> => {
-    const response = await fetch("/api/prisma/reports/delete", {
-      method: "POST",
-      body: JSON.stringify({ reportId }),
-    });
-    const data = await response.json();
-    if (data.success) {
-      return router.refresh();
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/prisma/reports/delete", {
+        method: "POST",
+        body: JSON.stringify({ reportId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIsLoading(false);
+        return router.refresh();
+      }
+      setIsLoading(false);
+    } catch {
+      setError(true);
+      setErrorMessage("Error deleting report");
     }
-    setError(true);
-    setErrorMessage("Error deleting report");
+  };
+
+  const handleMerge = async (
+    reportId_1: number,
+    reportId_2: number
+  ): Promise<void> => {
+    try {
+      setIsLoading(true);
+
+      const response = await fetch("/api/prisma/reports/merge", {
+        method: "POST",
+        body: JSON.stringify({ reportId_1, reportId_2 }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setIsLoading(false);
+        return router.refresh();
+      }
+      setIsLoading(false);
+    } catch {
+      setIsLoading(false);
+      setError(true);
+      setErrorMessage("Error merging reports");
+    }
   };
 
   return (
@@ -50,10 +83,12 @@ export default function ReportsPage({ reportData }: ReportsPageProps) {
           handleOnView={handleOnView}
           handleOnCompare={handleOnCompare}
           handleOnDelete={handleOnDelete}
+          handleMerge={handleMerge}
         />
       ) : (
         <p>No reports found</p>
       )}
+      {isLoading && <FullScreenOverlay />}
     </div>
   );
 }

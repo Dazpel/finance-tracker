@@ -17,6 +17,7 @@ import useUndoRedoState from "hooks/useUndoRedoState";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
 import { Input } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
+import FullScreenOverlay from "@components/Loader/Loader";
 
 export type TransactionsPageProps = {
   isAccessTokenValid: boolean;
@@ -41,7 +42,7 @@ export default function TransactionsPage({
 
   const handleReportNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsReportNameValid(true);
-    const reportNameRegex = /^[a-zA-Z0-9\s]+$/;
+    const reportNameRegex = /^[a-zA-Z0-9\s-]+$/;
     const reportName = e.target.value;
     if (reportName.length > 0 && reportNameRegex.test(reportName)) {
       setIsReportNameValid(true);
@@ -157,6 +158,7 @@ export default function TransactionsPage({
     }
 
     try {
+      setIsLoading(true);
       const body = {
         transactions,
         reportData: {
@@ -168,11 +170,14 @@ export default function TransactionsPage({
 
       const res = await axios.post("/api/prisma/reports/create", body);
       if (!res.data.success) {
+        setIsLoading(false);
         setErrorMessage("Error submitting report");
         return setIsError(true);
       }
+      setIsLoading(false);
       router.push("/reports");
     } catch (error) {
+      setIsLoading(false);
       setIsError(true);
       setErrorMessage("Error submitting report");
     }
@@ -228,6 +233,7 @@ export default function TransactionsPage({
           </div>
         </div>
       )}
+      {isLoading && <FullScreenOverlay />}
     </div>
   );
 }

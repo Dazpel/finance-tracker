@@ -8,7 +8,7 @@ interface Company {
 
 export const CompaniesDropdown = () => {
   const [company, setCompany] = useState<Company>({
-    name: "Finance Tracker",
+    name: "MoneyEye",
     logo: <AcmeIcon />,
   });
   return (

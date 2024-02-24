@@ -42,6 +42,7 @@ type ReportsTableProps = {
   handleOnView?: (encodedURI: string) => void;
   handleOnEdit?: (encodedURI: string) => void;
   handleOnDelete: (index: number) => Promise<void>;
+  handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>
 };
 
 const columns = [
@@ -90,12 +91,14 @@ export default function ReportsTable({
   handleOnDelete,
   handleOnEdit,
   handleOnView,
+  handleMerge
 }: ReportsTableProps) {
   const [canCompareReports, setCanCompareReports] = useState(false);
   const [maxRowExceeded, setMaxRowExceeded] = useState(false);
   const [reportsToCompare, setReportsToCompare] = useState<Key[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [reportIndexToDelete, setReportIndexToDelete] = useState<string | null>(
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+  const [reportIndexToDelete, setReportIndexToDelete] = useState<number | null>(
     null
   );
 
@@ -125,9 +128,19 @@ export default function ReportsTable({
     handleOnCompare(encodedURI);
   }, [reportData, reportsToCompare, handleOnCompare]);
 
+  const handleMergeConfirm = async (): Promise<void> => {
+    if (reportsToCompare.length === 2) {
+      await handleMerge(
+        reportData[reportsToCompare[0] as number].id,
+        reportData[reportsToCompare[1] as number].id
+      );
+      setIsMergeModalOpen(false);
+    }
+  };
+
   const displayDeleteModal = useCallback((index: number) => {
     setReportIndexToDelete(reportData[index].id);
-    setIsOpen(true);
+    setIsDeleteModalOpen(true);
   }, [reportData]);
 
   const handleActions = useCallback((index: number, action: RowActions) => {
@@ -148,12 +161,13 @@ export default function ReportsTable({
 
   const handleDelete = async () => {
     if (reportIndexToDelete) {
-      await handleOnDelete(parseInt(reportIndexToDelete));
-      setIsOpen(false);
+      await handleOnDelete(reportIndexToDelete);
+      setIsDeleteModalOpen(false);
     }
   };
 
   const topContent = useMemo(() => {
+    const canCompare = reportsToCompare.length === 2 && canCompareReports;
     return (
       <div className="flex flex-col gap-4 w-full">
         <div className="flex gap-4">
@@ -162,9 +176,9 @@ export default function ReportsTable({
             className="w-fit"
             onClick={() => setCanCompareReports(!canCompareReports)}
           >
-            {!canCompareReports ? "Compare reports" : "Disable compare"}
+            {!canCompareReports ? "Merge or Compare" : "Disable"}
           </Button>
-          {reportsToCompare.length === 2 && canCompareReports && (
+          {canCompare && (
             <Button
               color="primary"
               variant="flat"
@@ -172,6 +186,16 @@ export default function ReportsTable({
               onClick={handleCompare}
             >
               Compare
+            </Button>
+          )}
+          {canCompare && (
+            <Button
+              color="primary"
+              variant="flat"
+              className="w-fit"
+              onClick={() => setIsMergeModalOpen(true)}
+            >
+              Merge
             </Button>
           )}
         </div>
@@ -208,6 +232,11 @@ export default function ReportsTable({
               </Dropdown>
             </div>
           );
+        case "revenue":
+          return Math.abs(Number(cellValue)).toFixed(2);
+        case "expenses":
+        case "total":
+          return Number(cellValue).toFixed(2);
         default:
           return cellValue;
       }
@@ -248,8 +277,8 @@ export default function ReportsTable({
       </Table>
       <Modal
         backdrop="blur"
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
         isDismissable={false}
       >
         <ModalContent>
@@ -270,6 +299,36 @@ export default function ReportsTable({
                 </Button>
                 <Button color="danger" variant="light" onPress={handleDelete}>
                   Delete
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+      <Modal
+        backdrop="blur"
+        isOpen={isMergeModalOpen}
+        onClose={() => setIsMergeModalOpen(false)}
+        isDismissable={false}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1 text-center">
+                Merge Reports
+              </ModalHeader>
+              <ModalBody>
+                <p>
+                  Are you sure you want to merge these report? This action
+                  cannot be undone.
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button color="primary" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button color="primary" variant="light" onPress={handleMergeConfirm}>
+                  Merge
                 </Button>
               </ModalFooter>
             </>

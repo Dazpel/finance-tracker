@@ -29,7 +29,9 @@ async function getReportsData(): Promise<ReportsPageProps> {
   return { reportData };
 }
 
-export const dynamic = "force-dynamic";
+// Needs work, doesn't reload data on page change
+// Explore react query for this
+export const dynamic = 'force-dynamic';
 
 export default async function Page() {
   const res = await getReportsData();

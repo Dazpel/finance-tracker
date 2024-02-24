@@ -55,6 +55,7 @@ export const formatReportKeys = (report: ReportData) => {
     billsAndUtilities: b,
     healthAndWellness: c,
     feesAndAdjustments: d,
+    revenue: Math.abs(report.revenue),
   };
 
   return formattedReport;

@@ -13,7 +13,7 @@ export type CategoryValues = {
 };
 
 export type ReportDataDTO = {
-  id: string;
+  id: number;
   reportName: string;
   createdAt: string;
   foodAndDrink: number;

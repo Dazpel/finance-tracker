@@ -31,9 +31,10 @@ export async function GET(req: Request) {
           access_token: account.accessToken || "",
           start_date: startDate,
           end_date: endDate,
-          options: { offset, include_original_description: true},
+          options: { offset },
         });
-
+        console.log(response.data.transactions.length, response.data.total_transactions);
+        
         transactions.push(...response.data.transactions);
         total_transactions = response.data.total_transactions;
         offset = transactions.length;

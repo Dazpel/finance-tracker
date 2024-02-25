@@ -33,7 +33,6 @@ export async function GET(req: Request) {
           end_date: endDate,
           options: { offset },
         });
-        console.log(response.data.transactions.length, response.data.total_transactions);
         
         transactions.push(...response.data.transactions);
         total_transactions = response.data.total_transactions;

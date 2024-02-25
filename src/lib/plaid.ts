@@ -3,7 +3,6 @@ import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID;
 const PLAID_SECRET = process.env.PLAID_SECRET;
 const PLAID_ENV = process.env.PLAID_ENV || 'sandbox';
-console.log(process.env.PLAID_ENV);
 
 const plaidClient = new PlaidApi(
   new Configuration({

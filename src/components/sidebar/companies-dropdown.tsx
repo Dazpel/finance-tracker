@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { AcmeIcon } from "../icons/acme-icon";
+import React from "react";
+import eyeImg from "./eyeImg.png";
+import Image from "next/image";
 
 interface Company {
   name: string;
@@ -7,15 +8,11 @@ interface Company {
 }
 
 export const CompaniesDropdown = () => {
-  const [company, setCompany] = useState<Company>({
-    name: "MoneyEye",
-    logo: <AcmeIcon />,
-  });
   return (
     <div className="flex justify-center items-center gap-2">
-      {company.logo}
+      <Image height={50} width={50} src={eyeImg} alt="Company Logo" />
       <h3 className="text-xl font-medium m-0 text-default-900 whitespace-nowrap">
-        {company.name}
+        MoneyEye
       </h3>
     </div>
   );

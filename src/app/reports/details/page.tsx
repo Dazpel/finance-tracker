@@ -97,6 +97,7 @@ export default function Page({
               selectedKeys={selectedKeys}
               transactions={transactions}
               updateHistory={noop}
+              descriptionToUse="name"
             />
           )}
           <ReportCard reportData={rest} />

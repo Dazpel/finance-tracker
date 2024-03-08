@@ -32,6 +32,8 @@ import { v4 as uuidv4 } from "uuid";
 
 type TableMode = "view" | "edit";
 
+type DescriptionName = "original_description" | "name";
+
 type TransactionsTableProps = {
   tableMode?: TableMode;
   transactions: TransactionBase[];
@@ -45,6 +47,7 @@ type TransactionsTableProps = {
   goForward: (steps?: number) => void;
   goBack: (steps?: number) => void;
   generateSelectedCategoryKeys: (transactions: TransactionBase[]) => void;
+  descriptionToUse?: DescriptionName;
 };
 
 enum TableAction {
@@ -85,11 +88,11 @@ const defaultColumns = [
   },
 ];
 
-const rows = (transactions: TransactionBase[]): TableRow[] => {
+const rows = (transactions: TransactionBase[], descriptionToUse: DescriptionName): TableRow[] => {
   return transactions.map((transaction) => ({
     key: transaction.transaction_id,
     date: transaction.date,
-    description: transaction.original_description || "",
+    description: transaction[descriptionToUse] || "",
     category: transaction.category
       ? transaction.category[0].replace("and", "&")
       : "",
@@ -107,6 +110,7 @@ export default function TransactionsTable({
   goBack,
   goForward,
   generateSelectedCategoryKeys,
+  descriptionToUse = "original_description",
 }: TransactionsTableProps) {
   const canEdit = tableMode === "edit";
   const [categoryFilter, setCategoryFilter] = useState<Selection>("all");
@@ -462,7 +466,7 @@ export default function TransactionsTable({
         {(column) => <TableColumn key={column.key}>{column.label}</TableColumn>}
       </TableHeader>
       <TableBody
-        items={rows(filteredItems)}
+        items={rows(filteredItems, descriptionToUse)}
         emptyContent="No transactions found yet."
       >
         {(item) => (

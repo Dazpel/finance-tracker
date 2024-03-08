@@ -225,6 +225,7 @@ export default function Page({
                 selectedKeys={selectedKeys}
                 transactions={transactions}
                 updateHistory={updateHistory}
+                descriptionToUse="name"
               />
               <ReportCard
                 actionButtonText="Update Report"

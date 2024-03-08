@@ -89,7 +89,7 @@ const rows = (transactions: TransactionBase[]): TableRow[] => {
   return transactions.map((transaction) => ({
     key: transaction.transaction_id,
     date: transaction.date,
-    description: transaction.name || "",
+    description: transaction.original_description || "",
     category: transaction.category
       ? transaction.category[0].replace("and", "&")
       : "",

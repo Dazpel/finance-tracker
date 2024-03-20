@@ -73,3 +73,10 @@ export const formatCreatedDate = (date: DateTime): string => {
     day: "numeric",
   });
 };
+
+export const isDateBeforeToday = (date: Date) => {
+  const today = new Date();
+  const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  const dateUTC = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  return dateUTC < todayUTC;
+};

@@ -37,11 +37,10 @@ export async function GET(req: Request) {
         transactions.push(...response.data.transactions);
         total_transactions = response.data.total_transactions;
         offset = transactions.length;
-        console.log("Account:", account.accessToken, "Offset:", offset, "Total:", total_transactions);
+
       } while (transactions.length < total_transactions);
     }
-    console.log("Transactions:", transactions.length);
-    
+
     return Response.json({ success: true, transactions });
   } catch (error) {
     return Response.json({

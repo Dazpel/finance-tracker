@@ -13,21 +13,27 @@ import {
 import { AccountBase } from "plaid";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 import ItemRemoveTable from "@components/ItemRemoveTable/ItemRemoveTable";
+import ItemUpdateTable from "@components/ItemUpdateTable.tsx/ItemUpdateTable";
 
 export type AccountType = {
   institutionName: string;
   accounts: AccountBase[];
 };
 
-export type ConnectionType = {
+export interface ConnectionType {
   institutionName: string;
   accessToken: string;
 };
+
+export type AccountWithErrors = {
+  error: string;
+} & ConnectionType;
 
 export type AccountsPageProps = {
   accounts: AccountType[];
   success: boolean;
   connections: ConnectionType[];
+  accountsWithErrors: AccountWithErrors[];
 };
 
 const columns = [
@@ -69,6 +75,7 @@ export default function AccountsPage({
   accounts,
   connections,
   success,
+  accountsWithErrors
 }: AccountsPageProps) {
   const buttonText =
     accounts.length > 0 ? "Link more accounts" : "No accounts linked yet.";
@@ -98,6 +105,7 @@ export default function AccountsPage({
               )}
             </TableBody>
           </Table>
+          {accountsWithErrors?.length > 0 && <ItemUpdateTable connections={accountsWithErrors} />}
           <ItemRemoveTable connections={connections} />
         </div>
       )}

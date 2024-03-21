@@ -38,7 +38,7 @@ export default async function RootLayout({
   return (
     <html suppressHydrationWarning dir="ltr" lang="en">
       <head />
-      <body className={`${roboto.variable}`}>
+      <body className={`${roboto.variable}`} suppressHydrationWarning>
         {res.data ? (
           <Providers
             session={session}

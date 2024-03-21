@@ -22,6 +22,7 @@ async function getAccounts(): Promise<AccountsPageProps> {
     accounts: [],
     success: false,
     connections: [],
+    accountsWithErrors: [],
   };
 
   try {
@@ -32,6 +33,15 @@ async function getAccounts(): Promise<AccountsPageProps> {
     const accountPromises = accounts.map(async account => {
       const res = await plaidClient.accountsGet({
         access_token: account.accessToken,
+        
+      }).catch((error) => {
+        response.accountsWithErrors?.push({
+          institutionName: account.institutionName,
+          accessToken: account.accessToken,
+          error: error.response.data.error_code,
+        });
+
+        return { data: { accounts: [] } };
       });
       return {
         institutionName: account.institutionName,

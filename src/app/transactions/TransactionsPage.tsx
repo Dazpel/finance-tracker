@@ -110,7 +110,7 @@ export default function TransactionsPage({
       generateSelectedCategoryKeys(reversedTransactions);
       setIsLoading(false);
     } catch {
-      setErrorMessage("Error fetching transactions");
+      setErrorMessage("Error fetching transactions, check your bank connections and try again.");
       setIsError(true);
       setIsLoading(false);
     }

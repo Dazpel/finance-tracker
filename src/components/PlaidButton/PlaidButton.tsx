@@ -12,9 +12,11 @@ import {
 
 type PlaidButtonProps = {
   updateMode?: Boolean;
+  accessToken?: string;
+  buttonText?: string;
 };
 
-function PlaidButton({ updateMode = false }: PlaidButtonProps) {
+function PlaidButton({ updateMode = false, accessToken, buttonText }: PlaidButtonProps) {
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<boolean>(false);
   const router = useRouter();
@@ -23,7 +25,8 @@ function PlaidButton({ updateMode = false }: PlaidButtonProps) {
   useEffect(() => {
     const createLinkToken = async () => {
       const response = await fetch("/api/plaid/createLink", {
-        method: "POST"
+        method: "POST",
+        body: JSON.stringify({ updateMode, accessToken }),
       });
       const { link_token } = await response.json();
       setToken(link_token);
@@ -33,19 +36,21 @@ function PlaidButton({ updateMode = false }: PlaidButtonProps) {
 
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (publicToken, metadata) => {
-      console.log(metadata);
-      
-      const body = { publicToken, institutionName: metadata?.institution?.name };
-      const res = await fetch("/api/plaid/getAccessToken", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (data?.success) {
-        router.refresh();
-      } else {
-        setError(true);
+      if (!updateMode){
+        const body = { publicToken, institutionName: metadata?.institution?.name };
+        const res = await fetch("/api/plaid/getAccessToken", {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (data?.success) {
+          router.refresh();
+        } else {
+          setError(true);
+        }
       }
+
+      updateMode && router.refresh();
     },
     []
   );
@@ -83,7 +88,7 @@ function PlaidButton({ updateMode = false }: PlaidButtonProps) {
         onClick={() => open()}
         disabled={!ready}
       >
-        Connect a bank account
+        {buttonText || "Connect a bank account"}
       </Button>
       {error && <p className="mb-4 text-danger">Error connecting accounts</p>}
     </div>

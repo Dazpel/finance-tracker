@@ -111,7 +111,7 @@ export default function AccountsPage({
       )}
       <div className="flex flex-col gap-2 mt-4">
         <p>{buttonText}</p>
-        <PlaidButton updateMode={accounts.length > 0} />
+        <PlaidButton />
       </div>
     </div>
   );

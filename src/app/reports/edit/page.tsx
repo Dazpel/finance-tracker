@@ -12,10 +12,27 @@ import {
   defaultCategorieToValueObject,
   defaultCategories,
 } from "utils/constants";
-import { decodeQueryString, formatCreatedDate } from "utils/functions";
+import { convertToCSV, decodeQueryString, formatCreatedDate } from "utils/functions";
 import { CategoryValues } from "utils/types";
 
 const noop = () => {};
+
+const handleDownload = (transactions: TransactionBase[]) => {
+  const csvData = transactions.map(({ amount, category, date, name }) => ({
+    amount,
+    category,
+    date,
+    name,
+  }));
+
+  const csv = convertToCSV(csvData);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'transactions.csv');
+  link.click();
+};
 
 export default function Page({
   searchParams,
@@ -40,7 +57,7 @@ export default function Page({
   const { transactions, selectedKeys } = history;
   const canUndo = index > 1;
   const canRedo = index < lastIndex;
-
+  
   const handleReportNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsReportNameValid(true);
     const reportNameRegex = /^[a-zA-Z0-9\s]+$/;
@@ -203,6 +220,7 @@ export default function Page({
           <span className="font-normal">{formatCreatedDate(createdAt)}</span>
         </p>
         {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
+        {/* <button onClick={() => handleDownload(transactions)}>Download CSV</button> */}
         {transactions.length > 0 && (
           <div className="flex flex-col gap-4">
             <Input

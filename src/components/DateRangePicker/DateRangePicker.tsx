@@ -23,6 +23,7 @@ export default function DateRangePicker({
   const [startDateRaw, setStartDateRaw] = useState<Date | null>(null);
   const [endDateRaw, setEndDateRaw] = useState<Date | null>(null);
   const [error, setError] = useState(false);
+  const maxDate = new Date();
 
   const handleSearch = () => {
     setError(false);
@@ -45,6 +46,7 @@ export default function DateRangePicker({
             <ReactDatePicker
               showIcon
               closeOnScroll
+              className="date-picker"
               autoComplete="off"
               icon="fa fa-calendar"
               name="startDate"
@@ -53,12 +55,14 @@ export default function DateRangePicker({
               selected={startDateRaw}
               onChange={(date) => date && setStartDateRaw(date)}
               startDate={startDateRaw}
+              maxDate={maxDate}
             />
           </div>
           <div className="flex flex-col gap-2">
             <label htmlFor="endDate">To:</label>
             <ReactDatePicker
               showIcon
+              className="date-picker"
               autoComplete="off"
               icon="fa fa-calendar"
               closeOnScroll
@@ -70,6 +74,7 @@ export default function DateRangePicker({
               startDate={startDateRaw}
               endDate={endDateRaw}
               minDate={startDateRaw}
+              maxDate={maxDate}
             />
           </div>
         </div>

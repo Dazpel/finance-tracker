@@ -12,3 +12,7 @@ body {
 * {
   box-sizing: border-box;
 }
+
+.date-picker {
+  border: 1px solid #aeaeae;
+}

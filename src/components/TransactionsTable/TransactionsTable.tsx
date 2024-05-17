@@ -94,7 +94,7 @@ const rows = (transactions: TransactionBase[], descriptionToUse: DescriptionName
     date: transaction.date,
     description: transaction[descriptionToUse] || "",
     category: transaction.category
-      ? transaction.category[0].replace("and", "&")
+      ? transaction.category[0]
       : "",
     amount: Number((transaction.amount).toFixed(2)),
   }));

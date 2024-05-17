@@ -13,19 +13,23 @@ async function getAccessToken(): Promise<TransactionsPageProps> {
   try {
     const accounts = await findOrCreateUser(prisma, session.user.email);
     isAccessTokenValid = accounts?.length > 0;
-  
-    for (const account of accounts) {
-      const response = await plaidClient.itemGet({
-        access_token: account.accessToken || "",
-      });
-      
-      const lastSuccessfulUpdate = new Date(response.data.status?.transactions?.last_successful_update as string);
-      
-      if (isDateBeforeToday(lastSuccessfulUpdate)) {
-        await plaidClient.transactionsRefresh({
-          access_token: account.accessToken || "",
-        });
-      }
+
+    if (accounts && accounts.length > 0) {
+      await Promise.all(
+        accounts.map(async (account) => {
+          const response = await plaidClient.itemGet({
+            access_token: account.accessToken || "",
+          });
+
+          const lastSuccessfulUpdate = new Date(response.data.status?.transactions?.last_successful_update as string);
+
+          if (isDateBeforeToday(lastSuccessfulUpdate)) {
+            await plaidClient.transactionsRefresh({
+              access_token: account.accessToken || "",
+            });
+          }
+        })
+      );
     }
   } catch (error) {
     console.log(error);

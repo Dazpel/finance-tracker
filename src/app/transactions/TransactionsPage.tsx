@@ -109,7 +109,8 @@ export default function TransactionsPage({
       let reversedTransactions = res.data.transactions.reverse();
       generateSelectedCategoryKeys(reversedTransactions);
       setIsLoading(false);
-    } catch {
+    } catch(e) {
+      console.error({e});
       setErrorMessage("Error fetching transactions, check your bank connections and try again.");
       setIsError(true);
       setIsLoading(false);

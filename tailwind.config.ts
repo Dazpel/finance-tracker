@@ -26,6 +26,7 @@ module.exports = {
     themes:{
       light:{
         colors:{
+          background: "#FAFAFA",
           danger: {
             DEFAULT: "#D32F2F",
           }

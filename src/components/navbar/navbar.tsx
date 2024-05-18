@@ -5,6 +5,7 @@ import { Navbar, NavbarContent } from "@nextui-org/react";
 import { BurguerButton } from "./burguer-button";
 import { NotificationsDropdown } from "./notifications-dropdown";
 import { UserDropdown } from "./user-dropdown";
+import EyeLogo from "./EyeLogo";
 
 interface Props {
   children: React.ReactNode;
@@ -20,8 +21,9 @@ export const NavbarWrapper = ({ children }: Props) => {
           wrapper: "w-full max-w-full",
         }}
       >
-        <NavbarContent className="md:hidden">
+        <NavbarContent className="gap-4">
           <BurguerButton />
+          <EyeLogo />
         </NavbarContent>
         <NavbarContent className="w-full max-md:hidden"></NavbarContent>
         <NavbarContent

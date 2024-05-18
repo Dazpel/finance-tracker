@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
 import { isUserAuthorized } from "@lib/prisma/prismaFunctions";
 import prisma from "@lib/prisma/prismaClient";
+import Unauthorized from "@components/Unauthorized/Unauthorized";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -47,9 +48,7 @@ export default async function RootLayout({
             {children}
           </Providers>
         ) : (
-          <div>
-            <h1>Not Authorized</h1>
-          </div>
+          <Unauthorized />
         )}
         <SpeedInsights />
       </body>

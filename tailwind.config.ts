@@ -18,6 +18,7 @@ module.exports = {
       },
       colors: {
         black: "#14171c",
+        darkTheme: "#15171c",
       }
     },
   },

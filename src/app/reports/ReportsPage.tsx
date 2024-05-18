@@ -17,14 +17,17 @@ export default function ReportsPage({ reportData }: ReportsPageProps) {
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleOnEdit = (encodedURI: string): void => {
+    setIsLoading(true);
     router.push(`/reports/edit?data=${encodedURI}`);
   };
 
   const handleOnView = (encodedURI: string): void => {
+    setIsLoading(true);
     router.push(`/reports/details?data=${encodedURI}`);
   };
 
   const handleOnCompare = (encodedURI: string): void => {
+    setIsLoading(true);
     router.push(`/reports/compare?data=${encodedURI}`);
   };
 

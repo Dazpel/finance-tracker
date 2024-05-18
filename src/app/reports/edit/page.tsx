@@ -1,5 +1,6 @@
 "use client";
 
+import FullScreenOverlay from "@components/Loader/Loader";
 import ReportCard from "@components/ReportCard/ReportCard";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
 import { Button, Input } from "@nextui-org/react";
@@ -256,6 +257,7 @@ export default function Page({
           </div>
         )}
       </div>
+      {isLoading && <FullScreenOverlay />}
     </div>
   );
 }

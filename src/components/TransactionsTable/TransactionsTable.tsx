@@ -1,5 +1,5 @@
-import { InfoIcon } from "@components/icons/accounts/info-icon";
 import { DeleteIcon } from "@components/icons/table/delete-icon";
+import { InfoIcon } from "@components/icons/table/info-icon";
 import {
   Button,
   Dropdown,

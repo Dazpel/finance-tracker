@@ -2,12 +2,7 @@ import React from "react";
 import eyeImg from "./eyeImg.png";
 import Image from "next/image";
 
-interface Company {
-  name: string;
-  logo: React.ReactNode;
-}
-
-export const CompaniesDropdown = () => {
+function EyeLogo() {
   return (
     <div className="flex justify-center items-center gap-2">
       <Image height={50} width={50} src={eyeImg} alt="Company Logo" />
@@ -16,4 +11,6 @@ export const CompaniesDropdown = () => {
       </h3>
     </div>
   );
-};
+}
+
+export default EyeLogo;

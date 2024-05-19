@@ -18,6 +18,7 @@ module.exports = {
       },
       colors: {
         black: "#14171c",
+        darkTheme: "#15171c",
       }
     },
   },
@@ -26,6 +27,7 @@ module.exports = {
     themes:{
       light:{
         colors:{
+          background: "#FAFAFA",
           danger: {
             DEFAULT: "#D32F2F",
           }

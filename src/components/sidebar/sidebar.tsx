@@ -3,7 +3,6 @@
 import React from "react";
 import { Sidebar } from "./sidebar.styles";
 import { Tooltip } from "@nextui-org/react";
-import { CompaniesDropdown } from "./companies-dropdown";
 import { HomeIcon } from "../icons/sidebar/home-icon";
 import { PaymentsIcon } from "../icons/sidebar/payments-icon";
 import { AccountsIcon } from "../icons/sidebar/accounts-icon";
@@ -35,13 +34,10 @@ export const SidebarWrapper = () => {
         <div className={Sidebar.Overlay()} onClick={setCollapsed} />
       ) : null}
       <div
-        className={Sidebar({
+        className={`${Sidebar({
           collapsed: collapsed,
-        })}
+        })} ${!collapsed && 'static'}`}
       >
-        <div className={Sidebar.Header()}>
-          <CompaniesDropdown />
-        </div>
         <div className="flex flex-col justify-between h-full">
           <div className={Sidebar.Body()}>
             <SidebarItem

@@ -112,7 +112,7 @@ export default function ReportCard({
   }, [showFooter, handleOnViewDetails]);
   return (
     <div className="flex flex-col w-80 relative">
-      <div className={`flex flex-col gap-4 ${fixedPosition ? "fixed" : "relative"}`}>
+      <div className={`flex flex-col gap-4 ${fixedPosition ? "fixed" : "relative"} bottom-[10px]`}>
         <Table
           isCompact
           aria-label="Report card table"

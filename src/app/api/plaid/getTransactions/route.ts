@@ -5,6 +5,27 @@ import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
 import { Transaction } from "plaid";
 
+const mapPlaidCategoryToDefaultCategory = (category: string) => {
+  switch (category) {
+    case "Shops":
+      return "Shopping";
+    case "Bank Fees":
+      return "Fees & Adjustments";
+    case "Service":
+    case "Payment":
+      return "Bills & Utilities";
+    case "Travel":
+      return "Entertainment";
+    case "Transfer":
+    case "Interest":
+      return "Revenue";
+    case "Recreation":
+      return "Health & Wellness";
+    default:
+    return category;
+  }
+}
+
 export async function GET(req: Request) {
   const session = await getServerSession(options);
   if (!session || !session.user || !session.user.email) {
@@ -23,25 +44,35 @@ export async function GET(req: Request) {
   let transactions: Transaction[] = [];
 
   try {
-    for (const account of accounts) {
+    await Promise.all(accounts.map(async (account) => {
       let offset = 0;
-      let total_transactions = 0;
+      let totalTransactions = 0;
+
       do {
         const response = await plaidClient.transactionsGet({
-          access_token: account.accessToken || "",
+          access_token: account.accessToken || '',
           start_date: startDate,
           end_date: endDate,
-          options: { offset, include_original_description: true},
+          options: { offset, include_original_description: true, count: 500 },
         });
 
         transactions.push(...response.data.transactions);
-        total_transactions = response.data.total_transactions;
+        totalTransactions = response.data.total_transactions;
         offset = transactions.length;
-      } while (transactions.length < total_transactions);
-    }
+      } while (transactions.length < totalTransactions);
+    }));
 
-    return Response.json({ success: true, transactions });
+    const formattedTransactions = transactions.map((transaction) => {
+      const category = transaction.category ? transaction.category[0].replace("and", "&") : "Others";
+      return {
+        ...transaction,
+        category: [mapPlaidCategoryToDefaultCategory(category)],
+      };
+    });
+    
+    return Response.json({ success: true, transactions: formattedTransactions });
   } catch (error) {
+    console.error(error);
     return Response.json({
       success: false,
       error: error,

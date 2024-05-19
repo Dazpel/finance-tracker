@@ -73,3 +73,31 @@ export const formatCreatedDate = (date: DateTime): string => {
     day: "numeric",
   });
 };
+
+export const isDateBeforeToday = (date: Date) => {
+  const today = new Date();
+  const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  const dateUTC = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  return dateUTC < todayUTC;
+};
+
+export const convertToCSV = (data: any) => {
+  const headers = ['amount', 'category', 'date', 'name'];
+  const csvRows = [];
+
+  // Add headers
+  csvRows.push(headers.join(','));
+
+  // Add data rows
+  for (const row of data) {
+    const values = headers.map(header => {
+      const value = row[header];
+      const formattedValue = Array.isArray(value) ? value.join(', ') : value;
+      const escaped = ('' + formattedValue).replace(/"/g, '\\"');
+      return `"${escaped}"`;
+    });
+    csvRows.push(values.join(','));
+  }
+
+  return csvRows.join('\n');
+}

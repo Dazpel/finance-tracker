@@ -1,18 +1,15 @@
 import React from "react";
 import { useSidebarContext } from "../layout/layout-context";
 import { StyledBurgerButton } from "./navbar.styles";
+import { NavbarMenuToggle } from "@nextui-org/react";
 
 export const BurguerButton = () => {
   const { collapsed, setCollapsed } = useSidebarContext();
 
   return (
-    <div
-      className={StyledBurgerButton()}
-      // open={collapsed}
+    <NavbarMenuToggle
       onClick={setCollapsed}
-    >
-      <div />
-      <div />
-    </div>
+      aria-label={collapsed ? "Close menu" : "Open menu"}
+    />
   );
 };

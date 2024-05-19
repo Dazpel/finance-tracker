@@ -4,14 +4,33 @@ import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
 import { findOrCreateUser } from "@lib/prisma/prismaFunctions";
 import TransactionsPage, { TransactionsPageProps } from "./TransactionsPage";
+import { plaidClient } from "@lib/plaid";
+import { isDateBeforeToday } from "utils/functions";
 
 async function getAccessToken(): Promise<TransactionsPageProps> {
   const session = await getServerSession(options);
   let isAccessTokenValid = false;
   try {
     const accounts = await findOrCreateUser(prisma, session.user.email);
-    
-    if (accounts.length > 0) isAccessTokenValid = true;
+    isAccessTokenValid = accounts?.length > 0;
+
+    if (accounts && accounts.length > 0) {
+      await Promise.all(
+        accounts.map(async (account) => {
+          const response = await plaidClient.itemGet({
+            access_token: account.accessToken || "",
+          });
+
+          const lastSuccessfulUpdate = new Date(response.data.status?.transactions?.last_successful_update as string);
+
+          if (isDateBeforeToday(lastSuccessfulUpdate)) {
+            await plaidClient.transactionsRefresh({
+              access_token: account.accessToken || "",
+            });
+          }
+        })
+      );
+    }
   } catch (error) {
     console.log(error);
   }

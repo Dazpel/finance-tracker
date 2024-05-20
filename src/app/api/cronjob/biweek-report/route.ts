@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@lib/prisma/prismaClient";
 
-export async function GET(request: Request, response: Response) {
+export async function POST(request: Request) {
   try {
     if (
       request.headers.get("Authorization") !==

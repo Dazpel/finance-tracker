@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import TransactionsChart from "./TransactionsChart";
 
 export const Content = () => (
   <div className="h-full">
@@ -10,6 +11,7 @@ export const Content = () => (
           <h3 className="text-xl font-semibold">Report history:</h3>
           <div>Work in progress...</div>
         </div>
+        {/* <TransactionsChart /> */}
       </div>
     </div>
   </div>

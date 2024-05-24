@@ -1,7 +1,10 @@
 import { ReportData } from "@components/ReportCard/ReportCard";
+import { plaidClient } from "@lib/plaid";
+import { PlaidAccount } from "@prisma/client";
 import { decompressFromEncodedURIComponent } from "lz-string";
 import { DateTime } from "next-auth/providers/kakao";
-import { TransactionBase } from "plaid";
+import { Transaction, TransactionBase } from "plaid";
+import { sendUpdateAccountEmail } from "./emailTemplates";
 
 type FormattedTransaction = {
   amount: number;
@@ -12,6 +15,20 @@ type FormattedTransaction = {
   transaction_id: string;
   userId: string;
 };
+
+type FetchTransactionsResponse = {
+  success: boolean;
+  transactions: Transaction[];
+};
+
+export const getBiweekRange = () => {
+  let month = "" + (new Date().getMonth() + 1)
+  let currentMonth = month.length < 2 ? `0${month}` : month;
+  const startDate = `${new Date().getFullYear()}-${currentMonth}-01`;
+  const endDate = `${new Date().getFullYear()}-${currentMonth}-15`;
+
+  return { startDate, endDate };
+}
 
 export const formatDate = (date: Date) => {
   let month = "" + (date.getMonth() + 1), // Months are zero indexed
@@ -61,6 +78,53 @@ export const formatReportKeys = (report: ReportData) => {
   return formattedReport;
 };
 
+export const mapPlaidCategoryToDefaultCategory = (category: string) => {
+  switch (category) {
+    case "Shops":
+      return "Shopping";
+    case "Bank Fees":
+      return "Fees & Adjustments";
+    case "Service":
+    case "Payment":
+      return "Bills & Utilities";
+    case "Travel":
+      return "Entertainment";
+    case "Transfer":
+    case "Interest":
+      return "Revenue";
+    case "Recreation":
+      return "Health & Wellness";
+    default:
+    return category;
+  }
+}
+
+export const formatToDefaultCategories = (report: ReportData) => {
+  const categories = [];
+  const {
+    foodAndDrink,
+    billsAndUtilities,
+    healthAndWellness,
+    feesAndAdjustments,
+    revenue,
+    ...otherKeys
+  } = report;
+
+  const formattedReport = {
+    ["food & drink"]: foodAndDrink,
+    ["bills & utilities"]: billsAndUtilities,
+    ["health & wellness"]: healthAndWellness,
+    ["fees & adjustments"]: feesAndAdjustments,
+    ...otherKeys,
+  };
+
+  for (const [key, value] of Object.entries(formattedReport)) {
+    categories.push({ name: key, spending: value });
+  }
+
+  return categories;
+};
+
 export const decodeQueryString = (queryString: string) => {
   const formattedString = queryString.replace(" ", "+");
   return JSON.parse(decompressFromEncodedURIComponent(formattedString));
@@ -101,3 +165,88 @@ export const convertToCSV = (data: any) => {
 
   return csvRows.join('\n');
 }
+
+export const refreshUserTransactions = async (accounts: PlaidAccount[], userEmail: string): Promise<Boolean> => {
+  console.log("--------Refreshing transactions--------");
+  let success = true;
+  if (accounts && accounts.length > 0) {
+    await Promise.all(
+      accounts.map(async (account) => {
+        const response = await plaidClient.itemGet({
+          access_token: account.accessToken || "",
+        });
+        
+        const lastSuccessfulUpdate = new Date(
+          response.data.status?.transactions?.last_successful_update as string
+          );
+
+        if (isDateBeforeToday(lastSuccessfulUpdate)) {
+          try {
+            await plaidClient.transactionsRefresh({
+              access_token: account.accessToken || "",
+            });
+          } catch (error: any) {
+            const errorCode = error?.response?.data?.error_code;
+
+            if (errorCode === "ITEM_LOGIN_REQUIRED") {
+              console.error("Item login required");
+              success = false;
+              await sendUpdateAccountEmail(userEmail);
+              return;
+            }
+          }
+        }
+      })
+    );
+  }
+  return success;
+};
+
+export const fetchUserTransactions = async (
+  startDate: string,
+  endDate: string,
+  accounts: PlaidAccount[]
+): Promise<FetchTransactionsResponse> => {
+  console.log("--------Fetching transactions--------");
+  let transactions: Transaction[] = [];
+  let success = true;
+
+  try {
+    await Promise.all(
+      accounts.map(async (account) => {
+        let offset = 0;
+        let totalTransactions = 0;
+
+        do {
+          const response = await plaidClient.transactionsGet({
+            access_token: account.accessToken || "",
+            start_date: startDate,
+            end_date: endDate,
+            options: { offset, include_original_description: true, count: 500 },
+          });
+
+          transactions.push(...response.data.transactions);
+          totalTransactions = response.data.total_transactions;
+          offset = transactions.length;
+        } while (transactions.length < totalTransactions);
+      })
+    );
+
+    const formmattedTransactions = transactions.map((transaction) => {
+      const category = transaction.category
+        ? transaction.category[0].replace("and", "&")
+        : "Others";
+      return {
+        ...transaction,
+        category: [mapPlaidCategoryToDefaultCategory(category)],
+      };
+    });
+    
+    transactions = formmattedTransactions;
+  } catch (error) {
+    console.error(error);
+    success = false;
+  }
+  console.log("--------Transactions fetched--------");
+  return { success, transactions };
+};

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/react"
 import { Roboto_Flex } from "next/font/google";
 import { Providers } from "./providers";
 import { getServerSession } from "next-auth";
@@ -51,6 +52,7 @@ export default async function RootLayout({
           <Unauthorized />
         )}
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import TransactionsChart from "./TransactionsChart";
+// import TransactionsChart from "./TransactionsChart";
 
 export const Content = () => (
   <div className="h-full">

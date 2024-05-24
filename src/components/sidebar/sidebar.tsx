@@ -21,7 +21,7 @@ export const SidebarWrapper = () => {
   const pathname = usePathname();
   const { setTheme, theme } = useNextTheme();
   const isSSR = useIsSSR();
-  const { collapsed, setCollapsed } = useSidebarContext();
+  const { collapsed } = useSidebarContext();
   const isDarkTheme = theme === "dark" ? true : false;
 
   const handleThemeChange = () => {
@@ -30,9 +30,6 @@ export const SidebarWrapper = () => {
 
   return (
     <aside className="h-screen z-[202] sticky top-0">
-      {collapsed ? (
-        <div className={Sidebar.Overlay()} onClick={setCollapsed} />
-      ) : null}
       <div
         className={`${Sidebar({
           collapsed: collapsed,

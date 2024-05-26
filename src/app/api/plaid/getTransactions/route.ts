@@ -1,9 +1,9 @@
 import { options } from "@api/auth/[...nextauth]/options";
 import { plaidClient } from "@lib/plaid";
-import { findOrCreateUser } from "@lib/prisma/prismaFunctions";
+import { plaidAccount } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
-import prisma from "@lib/prisma/prismaClient";
 import { Transaction } from "plaid";
+import { refreshUserTransactions } from "utils/functions";
 
 const mapPlaidCategoryToDefaultCategory = (category: string) => {
   switch (category) {
@@ -28,6 +28,9 @@ const mapPlaidCategoryToDefaultCategory = (category: string) => {
 
 export async function GET(req: Request) {
   const session = await getServerSession(options);
+  const accounts: plaidAccount[] = session?.user?.accounts || [];
+  let transactions: Transaction[] = [];
+
   if (!session || !session.user || !session.user.email) {
     return Response.json({ success: false, error: "Session not found" });
   }
@@ -40,10 +43,8 @@ export async function GET(req: Request) {
     return Response.json({ success: false, error: "Missing date parameters" });
   }
 
-  const accounts = await findOrCreateUser(prisma, session.user.email);
-  let transactions: Transaction[] = [];
-
   try {
+    await refreshUserTransactions(accounts, session.user.email);
     await Promise.all(accounts.map(async (account) => {
       let offset = 0;
       let totalTransactions = 0;

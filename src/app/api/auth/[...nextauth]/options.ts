@@ -1,3 +1,5 @@
+import { findOrCreateUser, isUserAuthorized } from "@lib/prisma/prismaFunctions";
+import prisma from "@lib/prisma/prismaClient";
 import GoogleProvider from "next-auth/providers/google";
 
 export const options = {
@@ -21,7 +23,13 @@ export const options = {
       return token;
     },
     async session({ session, token }: any) {
-      if (session?.user) session.user.role = token.role;
+      if (session?.user){
+        const res = await isUserAuthorized(prisma, session.user.email);
+        const accounts = res?.data && await findOrCreateUser(prisma, session.user.email);
+        session.user.authorized = res?.data || false;
+        session.user.accounts = accounts || [];
+        session.user.role = token.role;
+      }
       return session;
     },
   },

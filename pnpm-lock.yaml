@@ -57,7 +57,7 @@ dependencies:
     specifier: ^23.0.0
     version: 23.0.0
   react:
-    specifier: ^18.3.1
+    specifier: ^18
     version: 18.3.1
   react-datepicker:
     specifier: ^4.25.0

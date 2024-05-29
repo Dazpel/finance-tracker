@@ -10,7 +10,7 @@ const cleanReportData = (reportData: any[]): ReportDataDTO[] => {
   return reportData.map((report) => {
     const { userId, updatedAt, ...cleanReport } = report;
     return cleanReport;
-  });
+  }).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 };
 
 async function getReportsData(): Promise<ReportsPageProps> {
@@ -22,6 +22,7 @@ async function getReportsData(): Promise<ReportsPageProps> {
       reportData =
         response.data.length > 0 ? cleanReportData(response.data) : [];
     }
+    
   } catch (error) {
     console.log(error);
   }

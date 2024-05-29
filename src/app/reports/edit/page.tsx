@@ -139,6 +139,7 @@ export default function Page({
   }, [selectedKeys, transactions]);
 
   const handleUpdateReport = async () => {
+    setIsLoading(true);
     setIsError(false);
     setErrorMessage("");
 
@@ -167,7 +168,7 @@ export default function Page({
         setErrorMessage("Error submitting report");
         return setIsError(true);
       }
-    //   router.push("/reports");
+      router.push("/reports");
     } catch (error) {
       setIsError(true);
       setErrorMessage("Error submitting report");

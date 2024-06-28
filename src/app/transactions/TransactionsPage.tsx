@@ -15,10 +15,10 @@ import { CategoryValues } from "utils/types";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
-import { Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@nextui-org/react";
+import { Input } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import FullScreenOverlay from "@components/Loader/Loader";
-import { ChevronDownIcon } from "assets/icons/ChevronDownIcon";
+import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";
 
 export type TransactionsPageProps = {
   isAccessTokenValid: boolean;
@@ -120,7 +120,6 @@ export default function TransactionsPage({
       setIsLoading(false);
     }
   };
-
   const generatedReportData = useMemo(() => {
     let categoryValues = { ...defaultCategorieToValueObject };
     let totalExpenses = 0;
@@ -188,6 +187,7 @@ export default function TransactionsPage({
     }
   };
 
+// This needs to be refactored into a hook
   const handleEdit = (transactionId: string) => {
     setEditableTransaction(transactions.find((t) => t.transaction_id === transactionId) as TransactionBase);
     setSelectedCategory(new Set<string>());
@@ -225,7 +225,7 @@ export default function TransactionsPage({
     updateHistory(prevTransactions, newKeys);
     setIsModalOpen(false);
   }
-
+////////////////////////////////////////
   return (
     <div className="h-full">
       <h3 className="text-xl font-semibold mb-4">Transactions</h3>
@@ -278,78 +278,15 @@ export default function TransactionsPage({
         </div>
       )}
       {isLoading && <FullScreenOverlay />}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        placement="top-center"
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">
-                Edit Transaction
-              </ModalHeader>
-              <form onSubmit={handleEditSubmit}>
-                <ModalBody>
-                  <Input
-                    autoFocus
-                    label="Description"
-                    placeholder="Enter a description"
-                    variant="bordered"
-                    defaultValue={editableTransaction["original_description"] || ""}
-                  />
-                  <Input
-                    label="Amount"
-                    placeholder="Enter an amount"
-                    type="number"
-                    variant="bordered"
-                    defaultValue={`${-editableTransaction.amount}`}
-                  />
-                  <div className="flex gap-2 items-center">
-                    <span>Category:</span>
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button
-                        color="primary"
-                        variant="bordered"
-                        className="capitalize"
-                        aria-label={getCategorySelected}
-                        endContent={<ChevronDownIcon className="text-small" />}
-                      >
-                        {getCategorySelected}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label="Single selection example"
-                      variant="flat"
-                      color="primary"
-                      disallowEmptySelection
-                      selectionMode="single"
-                      selectedKeys={Array.from(selectedCategory)}
-                      onSelectionChange={(keys) =>
-                        setSelectedCategory(keys as Set<string>)
-                      }
-                    >
-                      {defaultCategories.map((category) => (
-                        <DropdownItem key={category} className="capitalize">
-                          {category}
-                        </DropdownItem>
-                      ))}
-                    </DropdownMenu>
-                  </Dropdown>
-                  </div>
-                </ModalBody>
-                <ModalFooter>
-                  <Button color="danger" variant="flat" onPress={onClose}>
-                    Close
-                  </Button>
-                  <button>Save</button>
-                </ModalFooter>
-              </form>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      <EditTransactionModal 
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+        editableTransaction={editableTransaction}
+        getCategorySelected={getCategorySelected}
+        selectedCategory={selectedCategory}
+        handleEditSubmit={handleEditSubmit}
+        setSelectedCategory={setSelectedCategory}
+      />
     </div>
   );
 }

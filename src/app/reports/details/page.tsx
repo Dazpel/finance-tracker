@@ -98,6 +98,7 @@ export default function Page({
               transactions={transactions}
               updateHistory={noop}
               descriptionToUse="name"
+              onEdit={noop}
             />
           )}
           <ReportCard reportData={rest} />

@@ -1,4 +1,3 @@
-import { DeleteIcon } from "@components/icons/table/delete-icon";
 import { InfoIcon } from "@components/icons/table/info-icon";
 import {
   Button,
@@ -20,6 +19,7 @@ import { ChevronDownIcon } from "assets/icons/ChevronDownIcon";
 import { PlusIcon } from "assets/icons/PlusIcon";
 import RedoIcon from "assets/icons/RedoIcon";
 import UndoIcon from "assets/icons/UndoIcon";
+import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 import { TransactionBase } from "plaid";
 import React, { useMemo, useState } from "react";
 import {
@@ -48,6 +48,7 @@ type TransactionsTableProps = {
   goBack: (steps?: number) => void;
   generateSelectedCategoryKeys: (transactions: TransactionBase[]) => void;
   descriptionToUse?: DescriptionName;
+  onEdit: (transactionId: string) => void;
 };
 
 enum TableAction {
@@ -111,6 +112,7 @@ export default function TransactionsTable({
   goForward,
   generateSelectedCategoryKeys,
   descriptionToUse = "original_description",
+  onEdit,
 }: TransactionsTableProps) {
   const canEdit = tableMode === "edit";
   const [categoryFilter, setCategoryFilter] = useState<Selection>("all");
@@ -187,12 +189,12 @@ export default function TransactionsTable({
     const newTransaction = {
       transaction_id: uuidv4(),
       date: formatDate(new Date()),
-      name: "New Transaction",
+      [descriptionToUse]: "New Transaction",
       category: ["Others"],
       amount: 0,
     };
 
-    prevTransactions.push(newTransaction as any);
+    prevTransactions.unshift(newTransaction as any);
     return generateSelectedCategoryKeys(prevTransactions);
   };
 
@@ -227,11 +229,11 @@ export default function TransactionsTable({
       };
       return updateHistory(updatedTransactions, prevKeys);
     }
-
+    
     if (action === TableAction.UpdateDescription) {
       updatedTransactions[transactionIndex] = {
         ...updatedTransactions[transactionIndex],
-        name: value ?? "",
+        [descriptionToUse]: value ?? "",
       };
       return updateHistory(updatedTransactions, prevKeys);
     }
@@ -431,26 +433,30 @@ export default function TransactionsTable({
         case "actions":
           return (
             <div className="text-center">
-              <Tooltip content="Delete transaction" color="danger">
-                <button
-                  onClick={() =>
-                    handleTableActions(
+              <Dropdown aria-label="actions dropdown">
+                <DropdownTrigger>
+                  <Button isIconOnly size="sm" variant="light">
+                    <VerticalDotsIcon className="text-default-300" />
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label="dropdown options">
+                  <DropdownItem onClick={() => onEdit(transaction["key"])}>Edit</DropdownItem>
+                  <DropdownItem onClick={() => handleTableActions(
                       null,
                       transaction["key"],
                       TableAction.Delete
-                    )
-                  }
-                >
-                  <DeleteIcon size={20} fill="#D32F2F" />
-                </button>
-              </Tooltip>
+                    )}>
+                    Delete
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
             </div>
           );
         default:
           return cellValue;
       }
     },
-    [selectedKeys]
+    [selectedKeys, transactions, selectedValues]
   );
 
   return (

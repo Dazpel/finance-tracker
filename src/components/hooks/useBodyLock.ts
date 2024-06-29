@@ -18,9 +18,6 @@ export const useLockedBody = (initialLocked = false): ReturnType => {
       const originalOverflow = document.body.style.overflow;
       const originalPaddingRight = document.body.style.paddingRight;
 
-      // Lock body scroll
-      document.body.style.overflow = 'hidden';
-
       // Get the scrollBar width
       const root = document.getElementById('___gatsby'); // or root
       const scrollBarWidth = root ? root.offsetWidth - root.scrollWidth : 0;

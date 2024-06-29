@@ -4,7 +4,8 @@ import { PlaidAccount } from "@prisma/client";
 import { decompressFromEncodedURIComponent } from "lz-string";
 import { DateTime } from "next-auth/providers/kakao";
 import { Transaction, TransactionBase } from "plaid";
-import { sendUpdateAccountEmail } from "./emailTemplates";
+import { getServerSession } from "next-auth";
+import { options } from "@api/auth/[...nextauth]/options";
 
 type FormattedTransaction = {
   amount: number;
@@ -191,7 +192,7 @@ export const refreshUserTransactions = async (accounts: PlaidAccount[], userEmai
             if (errorCode === "ITEM_LOGIN_REQUIRED") {
               console.error("Item login required");
               success = false;
-              await sendUpdateAccountEmail(userEmail);
+              // await sendUpdateAccountEmail(userEmail);
               return;
             }
           }
@@ -250,3 +251,11 @@ export const fetchUserTransactions = async (
   console.log("--------Transactions fetched--------");
   return { success, transactions };
 };
+
+export async function getAccessToken(): Promise<boolean> {
+  const session = await getServerSession(options);
+  const accounts = session?.user?.accounts || [];
+  const isAccessTokenValid = accounts?.length > 0 || false;
+  
+  return isAccessTokenValid;
+}

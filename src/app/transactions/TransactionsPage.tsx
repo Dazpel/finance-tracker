@@ -18,6 +18,7 @@ import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
 import { Input } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import FullScreenOverlay from "@components/Loader/Loader";
+import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";
 
 export type TransactionsPageProps = {
   isAccessTokenValid: boolean;
@@ -27,6 +28,9 @@ export default function TransactionsPage({
   isAccessTokenValid,
 }: TransactionsPageProps) {
   const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editableTransaction, setEditableTransaction] = useState({} as TransactionBase);
+  const [selectedCategory, setSelectedCategory] = useState(new Set<string>());
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -116,7 +120,6 @@ export default function TransactionsPage({
       setIsLoading(false);
     }
   };
-
   const generatedReportData = useMemo(() => {
     let categoryValues = { ...defaultCategorieToValueObject };
     let totalExpenses = 0;
@@ -184,6 +187,45 @@ export default function TransactionsPage({
     }
   };
 
+// This needs to be refactored into a hook
+  const handleEdit = (transactionId: string) => {
+    setEditableTransaction(transactions.find((t) => t.transaction_id === transactionId) as TransactionBase);
+    setSelectedCategory(new Set<string>());
+    setIsModalOpen(true);
+  }
+
+  const getCategorySelected = useMemo(() => {
+    const defaultCategory = editableTransaction?.category ? editableTransaction.category[0] : "Others";
+    const categorySelected = selectedCategory.values().next().value;
+    const val = categorySelected || defaultCategory;
+    
+    return val;
+  }, [selectedCategory, editableTransaction]);
+
+  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formValues = e.target as HTMLFormElement;
+    const prevTransactions = [...transactions];
+    const newCategory = new Set().add(getCategorySelected);
+    const transactionId = editableTransaction.transaction_id;
+    const newKeys = { ...selectedKeys, [transactionId]: newCategory };
+
+    const transactionIndex = prevTransactions.findIndex(
+      (transaction) => transaction.transaction_id === transactionId
+    );
+
+    const updatedTransaction = {
+      ...editableTransaction,
+      original_description: (formValues[0] as HTMLInputElement)?.value,
+      amount: -Number((formValues[1] as HTMLInputElement)?.value),
+      category: [formValues[2]?.ariaLabel || "Others"],
+    };
+    
+    prevTransactions[transactionIndex] = updatedTransaction;
+    updateHistory(prevTransactions, newKeys);
+    setIsModalOpen(false);
+  }
+////////////////////////////////////////
   return (
     <div className="h-full">
       <h3 className="text-xl font-semibold mb-4">Transactions</h3>
@@ -224,6 +266,7 @@ export default function TransactionsPage({
               selectedKeys={selectedKeys}
               transactions={transactions}
               updateHistory={updateHistory}
+              onEdit={handleEdit}
             />
             <ReportCard
               showReportButton={transactions.length > 0}
@@ -235,6 +278,15 @@ export default function TransactionsPage({
         </div>
       )}
       {isLoading && <FullScreenOverlay />}
+      <EditTransactionModal 
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+        editableTransaction={editableTransaction}
+        getCategorySelected={getCategorySelected}
+        selectedCategory={selectedCategory}
+        handleEditSubmit={handleEditSubmit}
+        setSelectedCategory={setSelectedCategory}
+      />
     </div>
   );
 }

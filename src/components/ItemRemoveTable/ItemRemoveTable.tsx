@@ -48,22 +48,22 @@ export default function ItemRemoveTable({ connections }: ItemRemoveTableProps) {
   const router = useRouter();
   const [error, setError] = useState(false);
 
-  const removeConnection = async (accessToken: string) => {
-    setError(false);
-    const res = await fetch("/api/plaid/removeItem", {
-      method: "POST",
-      body: JSON.stringify({ accessToken }),
-    });
-    const data = await res.json();
-    if (data?.success) {
-      router.refresh();
-    } else {
-      setError(true);
-    }
-  };
-
   const renderCell = useCallback(
     (connection: TableRow, columnKey: React.Key) => {
+      const removeConnection = async (accessToken: string) => {
+        setError(false);
+        const res = await fetch("/api/plaid/removeItem", {
+          method: "POST",
+          body: JSON.stringify({ accessToken }),
+        });
+        const data = await res.json();
+        if (data?.success) {
+          router.refresh();
+        } else {
+          setError(true);
+        }
+      };
+
       const itemId = connection.key;
       switch (columnKey) {
         case "actions":
@@ -80,7 +80,7 @@ export default function ItemRemoveTable({ connections }: ItemRemoveTableProps) {
           return connection.institutionName;
       }
     },
-    [connections]
+    [router]
   );
 
   return (

@@ -1,10 +1,9 @@
 import React from "react";
-import prisma from "@lib/prisma/prismaClient";
 import { getServerSession } from "next-auth";
 import { plaidClient } from "@lib/plaid";
 import AccountsPage, { AccountsPageProps, ConnectionType } from "./AccountsPage";
 import { options } from "@api/auth/[...nextauth]/options";
-import { findOrCreateUser, plaidAccount } from "@lib/prisma/prismaFunctions";
+import { plaidAccount } from "@lib/prisma/prismaFunctions";
 
 const formatConnections = (connections: plaidAccount[]): ConnectionType[] => {
   return connections.map((connection) => {
@@ -17,6 +16,7 @@ const formatConnections = (connections: plaidAccount[]): ConnectionType[] => {
 
 async function getAccounts(): Promise<AccountsPageProps> {
   const session = await getServerSession(options);
+  const accounts: plaidAccount[] = session?.user?.accounts || [];
 
   let response: AccountsPageProps = {
     accounts: [],
@@ -26,9 +26,7 @@ async function getAccounts(): Promise<AccountsPageProps> {
   };
 
   try {
-    const accounts = await findOrCreateUser(prisma, session.user.email);
-
-    if (accounts.length === 0) return { ...response, success: true };
+  if (accounts.length === 0) return { ...response, success: true };
     
     const accountPromises = accounts.map(async account => {
       const res = await plaidClient.accountsGet({

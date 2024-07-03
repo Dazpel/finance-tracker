@@ -320,7 +320,7 @@ export default function TransactionsTable({
       <div className="flex flex-col gap-4">
         <div className="flex justify-between gap-3 items-end">
           <div className="flex gap-3">
-            <Dropdown>
+            <Dropdown shouldBlockScroll={false}>
               <DropdownTrigger className="hidden sm:flex">
                 <Button
                   endContent={<ChevronDownIcon className="text-small" />}

@@ -3,19 +3,24 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import ReportsTable from "@components/ReportsTable/ReportsTable";
-import { ReportDataDTO } from "utils/types";
 import FullScreenOverlay from "@components/Loader/Loader";
+import { useQuery } from '@tanstack/react-query'
+import PageLoader from "@components/PageLoader/PageLoader";
 
-export type ReportsPageProps = {
-  reportData: ReportDataDTO[];
-};
-
-export default function ReportsPage({ reportData }: ReportsPageProps) {
+export default function ReportsPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
+  const { isPending, isError, data } = useQuery({
+    queryKey: ['reportsData'],
+    queryFn: async () => {
+      const response = await fetch('/api/reports/getReports')
+      const data = await response.json()
+      return data?.reportData
+    }
+  })
+  
   const handleOnEdit = (encodedURI: string): void => {
     setIsLoading(true);
     router.push(`/reports/edit?data=${encodedURI}`);
@@ -76,22 +81,19 @@ export default function ReportsPage({ reportData }: ReportsPageProps) {
   };
 
   return (
-    <div className="flex flex-col gap 4">
-      <h3 className="text-xl font-semibold mb-4">Reports</h3>
-      {error && <p className="mb-4 text-danger">{errorMessage}</p>}
-      {reportData.length > 0 ? (
+    <>
+     {isPending && <PageLoader />}
+      {!isPending && (
         <ReportsTable
-          reportData={reportData}
+          reportData={data || []}
           handleOnEdit={handleOnEdit}
           handleOnView={handleOnView}
           handleOnCompare={handleOnCompare}
           handleOnDelete={handleOnDelete}
           handleMerge={handleMerge}
-        />
-      ) : (
-        <p>No reports found</p>
+      />
       )}
       {isLoading && <FullScreenOverlay />}
-    </div>
+    </>
   );
 }

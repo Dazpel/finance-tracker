@@ -17,7 +17,7 @@ export default function ReportsPage() {
     queryFn: async () => {
       const response = await fetch('/api/reports/getReports')
       const data = await response.json()
-      return data?.reportData
+      return data?.reportData || []
     }
   })
   

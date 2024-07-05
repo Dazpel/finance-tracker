@@ -211,10 +211,10 @@ export default function TransactionsPage() {
     e.preventDefault();
     const formValues = e.target as HTMLFormElement;
     const prevTransactions = [...transactions];
-    const newCategory = new Set().add(getCategorySelected);
+    const newCategory = new Set().add(getCategorySelected.toLowerCase());
     const transactionId = editableTransaction.transaction_id;
     const newKeys = { ...selectedKeys, [transactionId]: newCategory };
-
+    
     const transactionIndex = prevTransactions.findIndex(
       (transaction) => transaction.transaction_id === transactionId
     );

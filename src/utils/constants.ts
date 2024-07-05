@@ -72,3 +72,5 @@ export const defaultCategorieToValueObject = {
   others: 0,
   revenue: 0,
 };
+
+export const LOCAL_ACCOUNT_ID = "new_transaction";

@@ -23,6 +23,7 @@ import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 import { TransactionBase } from "plaid";
 import React, { useMemo, useState } from "react";
 import {
+  LOCAL_ACCOUNT_ID,
   defaultCategories,
   defaultCategoryFilterOptions,
 } from "utils/constants";
@@ -181,13 +182,11 @@ export default function TransactionsTable({
     return updateHistory(updatedTransactions, newKeys);
   };
 
-  const handleCreateTransaction = (
-    transactions: TransactionBase[],
-    currentKeys: Set<string>
-  ) => {
+  const handleCreateTransaction = (transactions: TransactionBase[]) => {
     const prevTransactions = [...transactions];
     const newTransaction = {
       transaction_id: uuidv4(),
+      account_id: LOCAL_ACCOUNT_ID,
       date: formatDate(new Date()),
       [descriptionToUse]: "New Transaction",
       category: ["Others"],
@@ -349,7 +348,7 @@ export default function TransactionsTable({
             {canEdit && (
               <Button
                 onClick={() =>
-                  handleCreateTransaction(transactions, selectedKeys)
+                  handleCreateTransaction(transactions)
                 }
                 color="primary"
                 endContent={<PlusIcon />}

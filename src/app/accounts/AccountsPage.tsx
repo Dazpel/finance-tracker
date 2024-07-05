@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -14,6 +14,8 @@ import { AccountBase } from "plaid";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 import ItemRemoveTable from "@components/ItemRemoveTable/ItemRemoveTable";
 import ItemUpdateTable from "@components/ItemUpdateTable.tsx/ItemUpdateTable";
+import { useQuery } from "@tanstack/react-query";
+import PageLoader from "@components/PageLoader/PageLoader";
 
 export type AccountType = {
   institutionName: string;
@@ -31,7 +33,6 @@ export type AccountWithErrors = {
 
 export type AccountsPageProps = {
   accounts: AccountType[];
-  success: boolean;
   connections: ConnectionType[];
   accountsWithErrors: AccountWithErrors[];
 };
@@ -71,20 +72,34 @@ const rows = (entries: AccountType[]) => {
   return rows;
 };
 
-export default function AccountsPage({
-  accounts,
-  connections,
-  success,
-  accountsWithErrors
-}: AccountsPageProps) {
-  const buttonText =
-    accounts.length > 0 ? "Link more accounts" : "No accounts linked yet.";
+export default function AccountsPage() {
+  const [error, setError] = useState(false);
+  const { isFetching, isLoading, isError: queryError, data: accountsData } = useQuery({
+    queryKey: ['accountsData'],
+    queryFn: async () => {
+      const response = await fetch('/api/accounts/getAccounts')
+      const data = await response?.json()
 
+      if (data.success) {
+        return data.response as AccountsPageProps;
+      }
+      
+      setError(true);
+      return { accounts: [], connections: [], accountsWithErrors: [] };
+    },
+    initialData: { accounts: [], connections: [], accountsWithErrors: [] }
+  })
+  
+  if (isFetching || isLoading) {
+    return <PageLoader />
+  }
+  
+  const buttonText = accountsData?.accounts.length > 0 ? "Link more accounts" : "No accounts linked yet.";
+  
   return (
-    <div className="h-full">
-      <h3 className="text-xl font-semibold mb-4">Current conected accounts</h3>
-      {!success && <p className="mb-4 text-danger">Error fetching data</p>}
-      {accounts.length > 0 && (
+    <div className="h-inherit">
+      {(queryError || error) && <p className="mb-4 text-danger">Error fetching data, please try again.</p>}
+      {accountsData?.accounts?.length > 0 && (
         <div className="flex flex-col w-full gap-6">
           <Table aria-label="Accounts linked table">
             <TableHeader columns={columns}>
@@ -93,7 +108,7 @@ export default function AccountsPage({
               )}
             </TableHeader>
             <TableBody
-              items={rows(accounts)}
+              items={rows(accountsData?.accounts)}
               emptyContent="No accounts linked yet."
             >
               {(item) => (
@@ -105,14 +120,18 @@ export default function AccountsPage({
               )}
             </TableBody>
           </Table>
-          {accountsWithErrors?.length > 0 && <ItemUpdateTable connections={accountsWithErrors} />}
-          <ItemRemoveTable connections={connections} />
+          {accountsData.accountsWithErrors?.length > 0 && <ItemUpdateTable connections={accountsData.accountsWithErrors} />}
+          <ItemRemoveTable connections={accountsData.connections} />
         </div>
       )}
-      <div className="flex flex-col gap-2 mt-4">
-        <p>{buttonText}</p>
-        <PlaidButton />
-      </div>
+      {
+        !queryError && !error && (
+        <div className="flex flex-col gap-2 mt-4">
+          <p>{buttonText}</p>
+          <PlaidButton />
+        </div>
+        )
+      }
     </div>
   );
 }

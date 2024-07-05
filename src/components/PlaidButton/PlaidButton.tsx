@@ -21,7 +21,6 @@ function PlaidButton({ updateMode = false, accessToken, buttonText }: PlaidButto
   const [error, setError] = useState<boolean>(false);
   const router = useRouter();
 
-  // get a link_token from your API when component mounts
   useEffect(() => {
     const createLinkToken = async () => {
       const response = await fetch("/api/plaid/createLink", {

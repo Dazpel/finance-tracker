@@ -6,7 +6,7 @@ import PageLoader from "@components/PageLoader/PageLoader";
 // Explore react query for this
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
+export default function Page() {
   return (
     <div className="flex flex-col gap 4">
       <h3 className="text-xl font-semibold mb-4">Reports</h3>

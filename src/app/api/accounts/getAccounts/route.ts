@@ -24,7 +24,9 @@ export async function GET() {
   };
 
   try {
-    if (accounts.length === 0) return { ...response, success: true };
+    if (accounts.length === 0) {
+      return Response.json({ ...response, success: true });
+    }
 
     const accountPromises = accounts.map(async (account) => {
       const res = await plaidClient
@@ -53,7 +55,7 @@ export async function GET() {
     console.log(error);
     return Response.json({
       success: false,
-      error: error,
+      error,
       response,
     });
   }

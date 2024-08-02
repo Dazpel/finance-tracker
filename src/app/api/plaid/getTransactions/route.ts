@@ -3,7 +3,7 @@ import { plaidClient } from "@lib/plaid";
 import { plaidAccount } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import { Transaction } from "plaid";
-import { refreshUserTransactions } from "utils/functions";
+import { formatPlaidTransactions, mapDefaultCategoryToCustomCategory, refreshUserTransactions } from "utils/functions";
 
 const mapPlaidCategoryToDefaultCategory = (category: string) => {
   switch (category) {
@@ -63,13 +63,7 @@ export async function GET(req: Request) {
       } while (transactions.length < totalTransactions);
     }));
 
-    const formattedTransactions = transactions.map((transaction) => {
-      const category = transaction.category ? transaction.category[0].replace("and", "&") : "Others";
-      return {
-        ...transaction,
-        category: [mapPlaidCategoryToDefaultCategory(category)],
-      };
-    });
+    const formattedTransactions = formatPlaidTransactions(transactions, false);
     
     return Response.json({ success: true, transactions: formattedTransactions });
   } catch (error) {

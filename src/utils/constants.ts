@@ -4,13 +4,8 @@ export const appRoutes = {
   TRANSACTIONS_PAGE: "/transactions",
   REPORTS_PAGE: "/reports",
   LOGIN_PAGE: "/login",
-  RESET_PASSWORD_PAGE: "/reset-password",
   LOG_OUT_PAGE: "/logout",
-  DETAILS_PAGE: "/dashboard/details/:whitelistId",
-  CREATE_WHITELIST_PAGE: "/dashboard/create",
-  BENEFITS_PAGE: "/dashboard/benefits/:whitelistId",
-  LOGOS_PAGE: "/dashboard/logos/:whitelistId",
-  PUBLISHER_VIEW_PAGE: "/dashboard/publisher-view/:whitelistId",
+  RECURRING_TRANSACTIONS_PAGE: "/recurring-transactions",
 };
 
 export const defaultCategoryFilterOptions = [

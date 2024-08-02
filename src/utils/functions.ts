@@ -3,7 +3,7 @@ import { plaidClient } from "@lib/plaid";
 import { PlaidAccount } from "@prisma/client";
 import { decompressFromEncodedURIComponent } from "lz-string";
 import { DateTime } from "next-auth/providers/kakao";
-import { Transaction, TransactionBase } from "plaid";
+import { Transaction, TransactionBase, TransactionStream } from "plaid";
 import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
 
@@ -78,6 +78,23 @@ export const formatReportKeys = (report: ReportData) => {
 
   return formattedReport;
 };
+
+export const formatPlaidTransactions = (transactions: any[], recurring: boolean) => {
+  const descriptionToUse = recurring ? "description" : "original_description";
+  
+  const formattedTransactions = transactions.map((transaction) => {
+    const category = transaction.category ? transaction.category[0].replace("and", "&") : "Others";
+    const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
+    const description = transaction[descriptionToUse] || transaction.name;
+    
+    return {
+      ...transaction,
+      category: [mapDefaultCategoryToCustomCategory(description, mappedCategory)],
+    };
+  });
+
+  return formattedTransactions;
+}
 
 export const mapPlaidCategoryToDefaultCategory = (category: string) => {
   switch (category) {
@@ -258,4 +275,24 @@ export async function getAccessToken(): Promise<boolean> {
   const isAccessTokenValid = accounts?.length > 0 || false;
   
   return isAccessTokenValid;
+}
+
+export function mapDefaultCategoryToCustomCategory(description: string, category: string): string {
+  const categoryMap: { [key: string]: string[] } = {
+    "Gas": ['chevron', 'shell', 'exxon', 'mobil', 'gas'],
+    "Groceries": ['grocery', 'supermarket', 'costco', 'walmart', 'safeway', 'trader', 'joe', 'whole', 'foods', 'instacart', 'winn-dixie'],
+    "Food & Drink": ['brew'],
+    "Bills & Utilities": ['fpl', 'att', 'at&t', 'xfinity', 'chantilly', 'comcast', 'chatgpt', 'mortgage', 'github'],
+    "Revenue": ['unit', 'interest', 'fee', 'reimbursement'],
+  };
+
+  const lowerCaseDescription = description.toLowerCase();
+
+  for (const [customCategory, keywords] of Object.entries(categoryMap)) {
+    if (keywords.some((key) => lowerCaseDescription.includes(key))) {
+      return customCategory;
+    }
+  }
+
+  return category;
 }

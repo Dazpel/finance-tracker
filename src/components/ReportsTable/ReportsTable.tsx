@@ -264,7 +264,7 @@ export default function ReportsTable({
         </TableHeader>
         <TableBody
           items={rows(reportData)}
-          emptyContent="No transactions found yet."
+          emptyContent="No reports found."
         >
           {(item) => (
             <TableRow key={item.key}>

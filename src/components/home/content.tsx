@@ -1,6 +1,4 @@
-"use client";
-
-import React from "react";
+import React, { Suspense } from "react";
 // import TransactionsChart from "./TransactionsChart";
 
 export const Content = () => (
@@ -11,7 +9,9 @@ export const Content = () => (
           <h3 className="text-xl font-semibold">Report history:</h3>
           <div>Work in progress...</div>
         </div>
-        {/* <TransactionsChart /> */}
+        {/* <Suspense fallback={"Is loading..."}>
+          <TransactionsChart />
+        </Suspense> */}
       </div>
     </div>
   </div>

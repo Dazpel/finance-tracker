@@ -49,7 +49,7 @@ export const formatTransactions = (transactions: TransactionBase[], userId: stri
       amount: transaction?.amount,
       category: transaction?.category || ["Others"],
       date: transaction?.date,
-      name: transaction?.name || "No name",
+      name: transaction?.name || transaction?.original_description || "No name",
       account_id: transaction.account_id,
       transaction_id: transaction.transaction_id
     };

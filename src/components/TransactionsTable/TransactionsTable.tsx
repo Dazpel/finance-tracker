@@ -1,11 +1,9 @@
-import { InfoIcon } from "@components/icons/table/info-icon";
 import {
   Button,
   Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownTrigger,
-  Input,
   Selection,
   Table,
   TableBody,
@@ -23,11 +21,10 @@ import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 import { TransactionBase } from "plaid";
 import React, { useMemo, useState } from "react";
 import {
-  defaultCategories,
+  LOCAL_ACCOUNT_ID,
   defaultCategoryFilterOptions,
 } from "utils/constants";
-import { formatDate } from "utils/functions";
-import { defaultColorVariants } from "utils/types";
+import { formatDate } from "utils/functions";;
 import { v4 as uuidv4 } from "uuid";
 
 type TableMode = "view" | "edit";
@@ -50,13 +47,6 @@ type TransactionsTableProps = {
   descriptionToUse?: DescriptionName;
   onEdit: (transactionId: string) => void;
 };
-
-enum TableAction {
-  Delete = "Delete",
-  Create = "Create",
-  UpdatePrice = "UpdatePrice",
-  UpdateDescription = "UpdateDescription",
-}
 
 type TableRow = {
   key: string;
@@ -156,38 +146,11 @@ export default function TransactionsTable({
     return setCategoryFilter(keys);
   };
 
-  const handleSelectionChange = (keys: Set<string>, id: string) => {
-    const prevKeys = { ...selectedKeys };
-    const selectedCategories = new Set();
-    keys.forEach((key) => selectedCategories.add(key));
-
-    const newKeys = { ...prevKeys, [id]: selectedCategories };
-
-    const prevTransactions = [...transactions];
-    const transactionIndex = prevTransactions.findIndex(
-      (transaction) => transaction.transaction_id === id
-    );
-
-    if (transactionIndex === -1) {
-      return prevTransactions;
-    }
-
-    const updatedTransactions = [...prevTransactions];
-    updatedTransactions[transactionIndex] = {
-      ...updatedTransactions[transactionIndex],
-      category: Array.from(keys),
-    };
-
-    return updateHistory(updatedTransactions, newKeys);
-  };
-
-  const handleCreateTransaction = (
-    transactions: TransactionBase[],
-    currentKeys: Set<string>
-  ) => {
+  const handleCreateTransaction = (transactions: TransactionBase[]) => {
     const prevTransactions = [...transactions];
     const newTransaction = {
       transaction_id: uuidv4(),
+      account_id: LOCAL_ACCOUNT_ID,
       date: formatDate(new Date()),
       [descriptionToUse]: "New Transaction",
       category: ["Others"],
@@ -198,102 +161,20 @@ export default function TransactionsTable({
     return generateSelectedCategoryKeys(prevTransactions);
   };
 
-  const handleTableActions = (
-    e?: React.ChangeEvent<HTMLInputElement> | null,
-    transactionId?: string,
-    action: TableAction = TableAction.Create
-  ) => {
-    const value = e ? e.target.value : null;
-    
+  const onDelete = (transactionId?: string) => {
     const prevTransactions = [...transactions];
-    const prevKeys = { ...selectedKeys };
     const transactionIndex = prevTransactions.findIndex(
       (transaction) => transaction.transaction_id === transactionId
     );
 
-    if (transactionIndex === -1 && action !== TableAction.Create) {
+    if (transactionIndex === -1) {
       return prevTransactions;
     }
 
     let updatedTransactions = [...prevTransactions];
 
-    if (action === TableAction.Delete) {
-      updatedTransactions.splice(transactionIndex, 1);
-      return generateSelectedCategoryKeys(updatedTransactions);
-    }
-
-    if (action === TableAction.UpdatePrice && value !== null) {
-      updatedTransactions[transactionIndex] = {
-        ...updatedTransactions[transactionIndex],
-        amount: Number(-value),
-      };
-      return updateHistory(updatedTransactions, prevKeys);
-    }
-    
-    if (action === TableAction.UpdateDescription) {
-      updatedTransactions[transactionIndex] = {
-        ...updatedTransactions[transactionIndex],
-        [descriptionToUse]: value ?? "",
-      };
-      return updateHistory(updatedTransactions, prevKeys);
-    }
-  };
-
-  const renderDropDown = (transactionId: string) => {
-    let categories = defaultCategories;
-    let categoryColor = defaultColorVariants.primary;
-    const invalidCategory = !defaultCategories.includes(
-      selectedValues[transactionId]
-    );
-
-    if (invalidCategory) {
-      categoryColor = defaultColorVariants.danger;
-    }
-
-    return (
-      <div className="flex items-center gap-2">
-        <Dropdown>
-          <DropdownTrigger>
-            <Button
-              color={categoryColor}
-              variant="bordered"
-              className="capitalize"
-              endContent={<ChevronDownIcon className="text-small" />}
-            >
-              {invalidCategory && (
-                <Tooltip
-                  content="This category is not recognized, please select a different one"
-                  color="danger"
-                >
-                  <p>
-                    <InfoIcon />
-                  </p>
-                </Tooltip>
-              )}
-              {selectedValues[transactionId]}
-            </Button>
-          </DropdownTrigger>
-          <DropdownMenu
-            aria-label="Single selection example"
-            variant="flat"
-            color="primary"
-            disallowEmptySelection
-            selectionMode="single"
-            //@ts-ignore
-            selectedKeys={selectedKeys[transactionId]}
-            onSelectionChange={(keys) =>
-              handleSelectionChange(keys as Set<string>, transactionId)
-            }
-          >
-            {categories.map((category) => (
-              <DropdownItem key={category} className="capitalize">
-                {category}
-              </DropdownItem>
-            ))}
-          </DropdownMenu>
-        </Dropdown>
-      </div>
-    );
+    updatedTransactions.splice(transactionIndex, 1);
+    return generateSelectedCategoryKeys(updatedTransactions);
   };
 
   const filteredItems = useMemo(() => {
@@ -349,7 +230,7 @@ export default function TransactionsTable({
             {canEdit && (
               <Button
                 onClick={() =>
-                  handleCreateTransaction(transactions, selectedKeys)
+                  handleCreateTransaction(transactions)
                 }
                 color="primary"
                 endContent={<PlusIcon />}
@@ -394,42 +275,14 @@ export default function TransactionsTable({
       switch (columnKey) {
         case "amount":
           return (
-            <Input
-              isReadOnly={!canEdit}
-              type="number"
-              value={`${-cellValue}`}
-              onChange={(e) =>
-                handleTableActions(
-                  e,
-                  transaction["key"],
-                  TableAction.UpdatePrice
-                )
-              }
-            />
-          );
-        case "description":
-          return (
-            <Input
-              isReadOnly={!canEdit}
-              type="text"
-              value={cellValue}
-              onChange={(e) =>
-                handleTableActions(
-                  e,
-                  transaction["key"],
-                  TableAction.UpdateDescription
-                )
-              }
-            />
+            <span>{-cellValue}</span>
           );
         case "category":
-          return canEdit ? (
-            renderDropDown(transaction["key"])
-          ) : (
+          return (
             <span className="capitalize">
               {selectedValues[transaction["key"]]}
             </span>
-          );
+          )
         case "actions":
           return (
             <div className="text-center">
@@ -441,11 +294,7 @@ export default function TransactionsTable({
                 </DropdownTrigger>
                 <DropdownMenu aria-label="dropdown options">
                   <DropdownItem onClick={() => onEdit(transaction["key"])}>Edit</DropdownItem>
-                  <DropdownItem onClick={() => handleTableActions(
-                      null,
-                      transaction["key"],
-                      TableAction.Delete
-                    )}>
+                  <DropdownItem onClick={() => onDelete(transaction["key"])}>
                     Delete
                   </DropdownItem>
                 </DropdownMenu>

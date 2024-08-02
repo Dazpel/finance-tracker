@@ -19,14 +19,10 @@ import { Input } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import FullScreenOverlay from "@components/Loader/Loader";
 import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";
+import { useQuery } from "@tanstack/react-query";
+import PageLoader from "@components/PageLoader/PageLoader";
 
-export type TransactionsPageProps = {
-  isAccessTokenValid: boolean;
-};
-
-export default function TransactionsPage({
-  isAccessTokenValid,
-}: TransactionsPageProps) {
+export default function TransactionsPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableTransaction, setEditableTransaction] = useState({} as TransactionBase);
@@ -37,6 +33,15 @@ export default function TransactionsPage({
   const [reportName, setReportName] = useState("");
   const [isReportNameValid, setIsReportNameValid] = useState(true);
 
+  const { isPending, data: isValid } = useQuery({
+    queryKey: ['accessTokenValid'],
+    queryFn: async () => {
+      const response = await fetch('/api/accessToken/checkValid')
+      const data = await response.json()
+      return data?.isAccessTokenValid || false;
+    }
+  });
+  
   const { history, setHistory, index, lastIndex, goBack, goForward } =
     useUndoRedoState({ transactions: [], selectedKeys: new Set([]) });
 
@@ -206,10 +211,10 @@ export default function TransactionsPage({
     e.preventDefault();
     const formValues = e.target as HTMLFormElement;
     const prevTransactions = [...transactions];
-    const newCategory = new Set().add(getCategorySelected);
+    const newCategory = new Set().add(getCategorySelected.toLowerCase());
     const transactionId = editableTransaction.transaction_id;
     const newKeys = { ...selectedKeys, [transactionId]: newCategory };
-
+    
     const transactionIndex = prevTransactions.findIndex(
       (transaction) => transaction.transaction_id === transactionId
     );
@@ -226,11 +231,15 @@ export default function TransactionsPage({
     setIsModalOpen(false);
   }
 ////////////////////////////////////////
+
+  if (isPending) {
+    return <PageLoader />;
+  }
+
   return (
-    <div className="h-full">
-      <h3 className="text-xl font-semibold mb-4">Transactions</h3>
+    <div className="h-inherit">
       {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
-      {isAccessTokenValid ? (
+      {isValid ? (
         <DateRangePicker
           title="Select date range to fetch transactions"
           isLoading={isLoading}

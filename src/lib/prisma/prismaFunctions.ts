@@ -167,7 +167,8 @@ export const createReport = async (
     response = {
       success: true,
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.log(error?.message);
     response = {
       success: false,
       error,

@@ -93,6 +93,11 @@ export const formatPlaidTransactions = (transactions: any[], recurring: boolean)
     };
   });
 
+  if (recurring) {
+    const skippedFrequency = ["ANNUALLY"]
+    formattedTransactions.filter((transaction: TransactionStream) => transaction.is_active === true && !skippedFrequency.includes(transaction.frequency));
+  }
+
   return formattedTransactions;
 }
 

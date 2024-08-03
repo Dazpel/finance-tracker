@@ -81,8 +81,9 @@ export const formatReportKeys = (report: ReportData) => {
 
 export const formatPlaidTransactions = (transactions: any[], recurring: boolean) => {
   const descriptionToUse = recurring ? "description" : "original_description";
+  let response = [];
   
-  const formattedTransactions = transactions.map((transaction) => {
+    response = transactions.map((transaction) => {
     const category = transaction.category ? transaction.category[0].replace("and", "&") : "Others";
     const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
     const description = transaction[descriptionToUse] || transaction.name;
@@ -95,10 +96,10 @@ export const formatPlaidTransactions = (transactions: any[], recurring: boolean)
 
   if (recurring) {
     const skippedFrequency = ["ANNUALLY"]
-    formattedTransactions.filter((transaction: TransactionStream) => transaction.is_active === true && !skippedFrequency.includes(transaction.frequency));
+    response.filter((transaction: TransactionStream) => transaction.is_active === true && !skippedFrequency.includes(transaction.frequency));
   }
 
-  return formattedTransactions;
+  return response;
 }
 
 export const mapPlaidCategoryToDefaultCategory = (category: string) => {

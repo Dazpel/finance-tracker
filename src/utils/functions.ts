@@ -96,7 +96,7 @@ export const formatPlaidTransactions = (transactions: any[], recurring: boolean)
 
   if (recurring) {
     const skippedFrequency = ["ANNUALLY"]
-    response.filter((transaction: TransactionStream) => transaction.is_active === true && !skippedFrequency.includes(transaction.frequency));
+    return response.filter((transaction: TransactionStream) => transaction.is_active === true && !skippedFrequency.includes(transaction.frequency));
   }
 
   return response;

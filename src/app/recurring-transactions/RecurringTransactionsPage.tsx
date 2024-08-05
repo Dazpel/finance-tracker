@@ -2,11 +2,11 @@
 
 import React, { useState } from "react";
 import FullScreenOverlay from "@components/Loader/Loader";
-import { TransactionStream } from "plaid";
 import { useQuery } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
 import RecurringReportsTable from "@components/RecurringReportsTable/RecurringReportsTable";
 import { useRouter } from "next/navigation";
+import { Button } from "@nextui-org/react";
 
 export type FlowType = "inflows" | "outflows";
 
@@ -24,7 +24,7 @@ function RecurringTransactionsPage() {
       return data?.reportData || [];
     },
   });
-  
+
   const handleOnEdit = (encodedURI: string): void => {
     setIsLoading(true);
     router.push(`/recurring-transactions/edit?data=${encodedURI}`);
@@ -58,12 +58,17 @@ function RecurringTransactionsPage() {
     <>
       {isPending && <PageLoader />}
       {!isPending && (
-        <RecurringReportsTable
-          reportData={data || []}
-          handleOnEdit={handleOnEdit}
-          handleOnView={handleOnView}
-          handleOnDelete={handleOnDelete}
-        />
+        <div className="flex flex-col gap-4">
+          <RecurringReportsTable
+            reportData={data || []}
+            handleOnEdit={handleOnEdit}
+            handleOnView={handleOnView}
+            handleOnDelete={handleOnDelete}
+          />
+          <Button className="w-fit" onClick={() => router.push("/recurring-transactions/create")} color="primary">
+            Create New Report
+          </Button>
+        </div>
       )}
       {isLoading && <FullScreenOverlay />}
     </>

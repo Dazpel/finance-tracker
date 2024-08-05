@@ -23,18 +23,25 @@ type TransactionFlowTotal = {
 export type FlowType = "inflows" | "outflows";
 
 function RecurringTransactionsPage() {
-    const router = useRouter();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [transactions, setTransactions] = useState<TransactionFlows>({inflows: [], outflows: []});
-  const [totalFlowAmount, setTotalFlowAmount] = useState<TransactionFlowTotal>({inflowTotal: 0, outflowTotal: 0});
+  const [transactions, setTransactions] = useState<TransactionFlows>({
+    inflows: [],
+    outflows: [],
+  });
+  const [totalFlowAmount, setTotalFlowAmount] = useState<TransactionFlowTotal>({
+    inflowTotal: 0,
+    outflowTotal: 0,
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableTransaction, setEditableTransaction] = useState({} as TransactionStream);
   const [editableFlow, setEditableFlow] = useState<FlowType>("inflows");
   const isButtonDisabled = transactions.inflows.length > 0 || transactions.outflows.length > 0;
   const [reportName, setReportName] = useState("");
   const [isReportNameValid, setIsReportNameValid] = useState(true);
+  const displayTransactions = transactions.inflows.length > 0 || transactions.outflows.length > 0;
 
   const getTransactionData = async () => {
     setIsError(false);
@@ -85,10 +92,14 @@ function RecurringTransactionsPage() {
   };
 
   const handleEdit = (stream_id: string, type: FlowType) => {
-    setEditableTransaction(transactions[type].find((t) => t.stream_id === stream_id) as TransactionStream);
+    setEditableTransaction(
+      transactions[type].find(
+        (t) => t.stream_id === stream_id
+      ) as TransactionStream
+    );
     setEditableFlow(type);
     setIsModalOpen(true);
-  }
+  };
 
   const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -101,14 +112,14 @@ function RecurringTransactionsPage() {
     );
 
     const chargeDay = (formValues[1] as HTMLInputElement)?.value;
-        
+
     const updatedTransaction = {
       ...editableTransaction,
       description: (formValues[0] as HTMLInputElement)?.value,
-      last_date: chargeDay > "31" ? '2024-01-31' : `2024-01-${chargeDay}`,
+      last_date: chargeDay > "31" ? "2024-01-31" : `2024-01-${chargeDay}`,
       last_amount: {
         amount: Number((formValues[2] as HTMLInputElement)?.value),
-      }
+      },
     };
 
     prevTransactions[transactionIndex] = updatedTransaction;
@@ -121,27 +132,27 @@ function RecurringTransactionsPage() {
     let outflow = 0;
 
     const inflowTransactions = transactions.inflows.map((transaction) => {
-        inflow += Math.abs(transaction.last_amount.amount || 0);
-        return {
-            account_id: transaction.account_id,
-            stream_id: transaction.stream_id,
-            description: transaction.description,
-            amount: transaction.last_amount.amount,
-            last_date: transaction.last_date,
-            frequency: transaction.frequency
-        };
+      inflow += Math.abs(transaction.last_amount.amount || 0);
+      return {
+        account_id: transaction.account_id,
+        stream_id: transaction.stream_id,
+        description: transaction.description,
+        amount: transaction.last_amount.amount,
+        last_date: transaction.last_date,
+        frequency: transaction.frequency,
+      };
     });
 
     const outflowTransactions = transactions.outflows.map((transaction) => {
-        outflow += Math.abs(transaction.last_amount.amount || 0);
-        return {
-            account_id: transaction.account_id,
-            stream_id: transaction.stream_id,
-            description: transaction.description,
-            amount: transaction.last_amount.amount,
-            last_date: transaction.last_date,
-            frequency: transaction.frequency
-        };
+      outflow += Math.abs(transaction.last_amount.amount || 0);
+      return {
+        account_id: transaction.account_id,
+        stream_id: transaction.stream_id,
+        description: transaction.description,
+        amount: transaction.last_amount.amount,
+        last_date: transaction.last_date,
+        frequency: transaction.frequency,
+      };
     });
 
     return {
@@ -209,7 +220,9 @@ function RecurringTransactionsPage() {
       >
         Fetch Transactions
       </Button>
-        <Input
+      {displayTransactions && (
+        <div className="flex flex-col gap-4">
+          <Input
             type="text"
             label="Report name"
             placeholder="Enter a report name"
@@ -219,33 +232,39 @@ function RecurringTransactionsPage() {
             errorMessage={!isReportNameValid && "Please enter a report name"}
             onChange={handleReportNameChange}
           />
-      {transactions.outflows.length > 0 && (
-        <div className="flex flex-col gap-4 mt-2">
-          <span>Total outflows: {totalFlowAmount.outflowTotal} </span>
-          <RecurringTransactionsTable
-            transactions={transactions.outflows}
-            onUpdate={updateTransactions}
-            onEdit={handleEdit}
-            flowType="outflows"
-          />
+          {transactions.outflows.length > 0 && (
+            <div className="flex flex-col gap-4 mt-2">
+              <p className="font-bold">
+                Total outflows: <span className="font-normal">{totalFlowAmount.outflowTotal}</span>
+              </p>
+              <RecurringTransactionsTable
+                transactions={transactions.outflows}
+                onUpdate={updateTransactions}
+                onEdit={handleEdit}
+                flowType="outflows"
+              />
+            </div>
+          )}
+          {transactions.inflows.length > 0 && (
+            <div className="flex flex-col gap-4 mt-8">
+              <p className="font-bold">
+                Total inflows: <span className="font-normal">{totalFlowAmount.inflowTotal}</span>
+              </p>
+              <RecurringTransactionsTable
+                transactions={transactions.inflows}
+                onUpdate={updateTransactions}
+                onEdit={handleEdit}
+                flowType="inflows"
+              />
+            </div>
+          )}
+          <div className="flex mt-4 justify-end">
+            <Button color="primary" onClick={handleSubmitReport}>
+              {isLoading ? "Submitting..." : "Submit Report"}
+            </Button>
+          </div>
         </div>
       )}
-      {transactions.inflows.length > 0 && (
-        <div className="flex flex-col gap-4 mt-8">
-          <span>Total inflows: {totalFlowAmount.inflowTotal} </span>
-          <RecurringTransactionsTable
-            transactions={transactions.inflows}
-            onUpdate={updateTransactions}
-            onEdit={handleEdit}
-            flowType="inflows"
-          />
-        </div>
-      )}
-      <div className="flex mt-4 justify-end">
-        <Button color="primary" onClick={handleSubmitReport}>
-            {isLoading ? "Submitting..." : "Submit Report"}
-        </Button>
-      </div>
       {isLoading && <FullScreenOverlay />}
       <EditRecurringTransactionModal
         isModalOpen={isModalOpen}

@@ -32,13 +32,16 @@ export type TableRowType = {
 };
 
 export const rows = (transactions: TransactionStream[], viewMode: boolean = false): TableRowType[] => {
-  const amountField = viewMode ? "amount" : "last_amount.amount";
-  return transactions.map((transaction) => ({
-    key: transaction.stream_id,
-    day: transaction.last_date,
-    description: transaction.description,
-    // @ts-ignore
-    amount: Number((transaction[amountField] || 0).toFixed(2)),
-    frequency: transaction.frequency,
-  }));
+  return transactions.map((transaction) => {
+      // @ts-ignore
+    const amount = viewMode ? transaction.amount : transaction.last_amount.amount;
+
+    return {
+      key: transaction.stream_id,
+      day: transaction.last_date,
+      description: transaction.description,
+      amount: Number((amount || 0).toFixed(2)),
+      frequency: transaction.frequency,
+    }
+  });
 };

@@ -6,10 +6,6 @@ export const defaultColumns = [
     label: "DESCRIPTION",
   },
   {
-    key: "category",
-    label: "CATEGORY",
-  },
-  {
     key: "amount",
     label: "AMOUNT",
   },
@@ -18,27 +14,31 @@ export const defaultColumns = [
     label: "FREQUENCY",
   },
   {
-    key: "lastPayment",
-    label: "LAST PAYMENT",
+    key: "day",
+    label: "DAY",
+  },
+  {
+    key: "actions",
+    label: "ACTIONS",
   },
 ];
 
 export type TableRowType = {
   key: string;
   description: string;
-  category: string;
   amount: number;
   frequency: string;
-  lastPayment: string;
+  day: string;
 };
 
-export const rows = (transactions: TransactionStream[]): TableRowType[] => {
+export const rows = (transactions: TransactionStream[], viewMode: boolean = false): TableRowType[] => {
+  const amountField = viewMode ? "amount" : "last_amount.amount";
   return transactions.map((transaction) => ({
     key: transaction.stream_id,
-    lastPayment: transaction.last_date,
+    day: transaction.last_date,
     description: transaction.description,
-    category: transaction.category ? transaction.category[0] : "",
-    amount: Number((transaction.last_amount?.amount || 0).toFixed(2)),
+    // @ts-ignore
+    amount: Number((transaction[amountField] || 0).toFixed(2)),
     frequency: transaction.frequency,
   }));
 };

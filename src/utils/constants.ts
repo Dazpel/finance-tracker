@@ -24,6 +24,12 @@ export const defaultCategoryFilterOptions = [
   { name: "None", uid: "None" },
 ];
 
+export const defaultFrequencies = [
+  "MONTHLY",
+  "WEEKLY",
+  "BI-MONTHLY",
+]
+
 export const plaidCategories = [
   "Transfer",
   "Travel",

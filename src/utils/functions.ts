@@ -42,6 +42,22 @@ export const formatDate = (date: Date) => {
   return [year, month, day].join("-");
 };
 
+export const formatRecurringTransactions = (transactions: TransactionStream[], userId: string) => {
+  const formattedTransactions = transactions.map((transaction) => {
+    return {
+      userId,
+      amount: transaction?.last_amount?.amount,
+      frequency: transaction?.frequency,
+      last_date: transaction?.last_date,
+      description: transaction?.description || "No name",
+      account_id: transaction.account_id,
+      stream_id: transaction.stream_id,
+    };
+  });
+
+  return formattedTransactions;
+}
+
 export const formatTransactions = (transactions: TransactionBase[], userId: string): FormattedTransaction[] => {
   const formattedTransactions = transactions.map((transaction) => {
     return {
@@ -79,6 +95,19 @@ export const formatReportKeys = (report: ReportData) => {
   return formattedReport;
 };
 
+const matchFrequencyAmountToMonthly = (frequency: string, amount: number) => {
+  switch (frequency) {
+    case "WEEKLY":
+      return amount * 52 / 12;
+    case "BI-WEEKLY":
+      return amount * 2;
+    case "ANNUALLY":
+      return amount / 12;
+    default:
+      return amount;
+  }
+}
+
 export const formatPlaidTransactions = (transactions: any[], recurring: boolean) => {
   const descriptionToUse = recurring ? "description" : "original_description";
   let response = [];
@@ -87,11 +116,21 @@ export const formatPlaidTransactions = (transactions: any[], recurring: boolean)
     const category = transaction.category ? transaction.category[0].replace("and", "&") : "Others";
     const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
     const description = transaction[descriptionToUse] || transaction.name;
-    
-    return {
+    const defaultResponse = {
       ...transaction,
       category: [mapDefaultCategoryToCustomCategory(description, mappedCategory)],
     };
+
+    if (recurring) {
+      const { last_amount: { amount }, frequency } = transaction;
+
+      return {
+        ...defaultResponse,
+        last_amount: { amount: matchFrequencyAmountToMonthly(frequency, amount) },
+      }
+    }
+    
+    return defaultResponse;
   });
 
   if (recurring) {

@@ -12,12 +12,14 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  accounts     PlaidAccount[]
-  reports      Report[]
-  transactions Transaction[]
-  authorized   Boolean        @default(false)
+  id                    String                 @id @default(uuid())
+  email                 String                 @unique
+  accounts              PlaidAccount[]
+  reports               Report[]
+  recurringReports      RecurringReport[]
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
+  authorized            Boolean                @default(false)
   // mappings     Mapping?
 }
 
@@ -63,6 +65,36 @@ model Report {
   total              Float         @default(0)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+}
+
+model RecurringReport {
+  id                  Int                    @id @default(autoincrement())
+  userId              String // Foreign key to User
+  user                User                   @relation(fields: [userId], references: [id])
+  inflowTransactions  RecurringTransaction[] @relation(name: "InflowReport")
+  outflowTransactions RecurringTransaction[] @relation(name: "OutflowReport")
+  reportName          String
+  inflow              Float                  @default(0)
+  outflow             Float                  @default(0)
+  total               Float                  @default(0)
+  createdAt           DateTime               @default(now())
+}
+
+model RecurringTransaction {
+  id              Int             @id @default(autoincrement())
+  outflowReportId Int? // Foreign key to RecurringReport
+  outflowReport   RecurringReport? @relation(name: "OutflowReport", fields: [outflowReportId], references: [id])
+  inflowReportId  Int? // Foreign key to RecurringReport
+  inflowReport    RecurringReport? @relation(name: "InflowReport", fields: [inflowReportId], references: [id])
+  userId          String // Foreign key to User
+  user            User            @relation(fields: [userId], references: [id])
+  account_id      String
+  stream_id       String
+  description     String
+  amount          Float
+  last_date       String
+  frequency       String
+  createdAt       DateTime        @default(now())
 }
 
 model Transaction {

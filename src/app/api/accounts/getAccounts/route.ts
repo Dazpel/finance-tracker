@@ -25,7 +25,7 @@ export async function GET() {
 
   try {
     if (accounts.length === 0) {
-      return Response.json({ ...response, success: true });
+      return Response.json({ response, success: true });
     }
 
     const accountPromises = accounts.map(async (account) => {

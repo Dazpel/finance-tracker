@@ -1,5 +1,5 @@
 import { options } from "@api/auth/[...nextauth]/options";
-import { getTransactions } from "@lib/prisma/prismaFunctions";
+import { getRecurringTransactions } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
 
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const id = searchParams.get('reportId')
 
   try {
-    const response = await getTransactions(
+    const response = await getRecurringTransactions(
       prisma,
       session.user.email,
       id as string

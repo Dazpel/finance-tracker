@@ -2,94 +2,71 @@
 
 import React, { useState } from "react";
 import FullScreenOverlay from "@components/Loader/Loader";
-import { Button } from "@nextui-org/react";
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import { TransactionStream } from "plaid";
-import RecurringTransactionsTable from "@components/RecurringTransactionsTable/RecurringTransactionsTable";
-import { getTotalFlowAmount } from "./_utils/functions";
+import { useQuery } from "@tanstack/react-query";
+import PageLoader from "@components/PageLoader/PageLoader";
+import RecurringReportsTable from "@components/RecurringReportsTable/RecurringReportsTable";
+import { useRouter } from "next/navigation";
 
-type TransactionFlows = {
-    inflows: TransactionStream[];
-    outflows: TransactionStream[];
-};
-
-type TransactionFlowTotal = {
-    inflowTotal: number;
-    outflowTotal: number;
-};
+export type FlowType = "inflows" | "outflows";
 
 function RecurringTransactionsPage() {
+  const router = useRouter();
+  const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [transactions, setTransactions] = useState<TransactionFlows>({ inflows: [], outflows: [] });
-  const [totalFlowAmount, setTotalFlowAmount] = useState<TransactionFlowTotal>({ inflowTotal: 0, outflowTotal: 0 });
-  const isButtonDisabled = transactions.inflows.length > 0 || transactions.outflows.length > 0;
 
-  const { isPending, data: isValid } = useQuery({
-    queryKey: ["accessTokenValid"],
+  const { isPending, isError, data } = useQuery({
+    queryKey: ["recurringReportsData"],
     queryFn: async () => {
-      const response = await fetch("/api/accessToken/checkValid");
+      const response = await fetch("/api/reports/getReports?recurring=true");
       const data = await response.json();
-      return data?.isAccessTokenValid || false;
+      return data?.reportData || [];
     },
   });
+  
+  const handleOnEdit = (encodedURI: string): void => {
+    setIsLoading(true);
+    router.push(`/recurring-transactions/edit?data=${encodedURI}`);
+  };
 
-  const getTransactionData = async () => {
-    setIsError(false);
-    setErrorMessage("");
+  const handleOnView = (encodedURI: string): void => {
+    setIsLoading(true);
+    router.push(`/recurring-transactions/details?data=${encodedURI}`);
+  };
 
+  const handleOnDelete = async (reportId: number): Promise<void> => {
     try {
       setIsLoading(true);
-      const res = await axios.get("/api/plaid/getRecurringTransactions");
-
-      setTransactions({
-        inflows: res.data.inflows,
-        outflows: res.data.outflows,
-      })
-
-      setTotalFlowAmount({
-        inflowTotal: getTotalFlowAmount(res.data.inflows),
-        outflowTotal: getTotalFlowAmount(res.data.outflows),
+      const response = await fetch("/api/prisma/recurringReports/delete", {
+        method: "POST",
+        body: JSON.stringify({ reportId }),
       });
-
+      const data = await response.json();
+      if (data.success) {
+        setIsLoading(false);
+        return router.refresh();
+      }
       setIsLoading(false);
-    } catch (e) {
-      console.error({ e });
-      setErrorMessage(
-        "Error fetching transactions, check your bank connections and try again."
-      );
-      setIsError(true);
-      setIsLoading(false);
+    } catch {
+      setError(true);
+      setErrorMessage("Error deleting report");
     }
   };
 
   return (
-    <div className="h-inherit">
-      {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
-      <Button
-        onClick={getTransactionData}
-        disabled={isPending || isButtonDisabled}
-        color="primary"
-        variant="solid"
-      >
-        Fetch Transactions
-      </Button>
-      {transactions.outflows.length > 0 && (
-        <div className="flex flex-col gap-4 mt-8">
-          <span>Total outflows: {totalFlowAmount.outflowTotal} </span>
-          <RecurringTransactionsTable transactions={transactions.outflows} />
-        </div>
+    <>
+      {isPending && <PageLoader />}
+      {!isPending && (
+        <RecurringReportsTable
+          reportData={data || []}
+          handleOnEdit={handleOnEdit}
+          handleOnView={handleOnView}
+          handleOnDelete={handleOnDelete}
+        />
       )}
-        {transactions.inflows.length > 0 && (
-            <div className="flex flex-col gap-4 mt-8">
-            <span>Total inflows: {totalFlowAmount.inflowTotal} </span>
-            <RecurringTransactionsTable transactions={transactions.inflows} />
-            </div>
-        )}
       {isLoading && <FullScreenOverlay />}
-    </div>
+    </>
   );
 }
 

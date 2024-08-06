@@ -57,7 +57,9 @@ function RecurringTransactionsTable({
         last_date: '2024-01-01',
         description: "New Transaction",
         frequency: "MONTHLY",
-        amount: 0,
+        last_amount: {
+          amount: 0
+        }
       };
 
       prevTransactions.unshift(newTransaction as any);

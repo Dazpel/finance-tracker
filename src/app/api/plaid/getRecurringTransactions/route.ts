@@ -5,7 +5,9 @@ import { getServerSession } from "next-auth";
 import { TransactionStream } from "plaid";
 import { formatPlaidTransactions, refreshUserTransactions } from "utils/functions";
 
-export async function GET(req: Request) {
+export const maxDuration = 20;
+
+export async function GET() {
   const session = await getServerSession(options);
   const accounts: plaidAccount[] = session?.user?.accounts || [];
   let inflows: TransactionStream[] = [];

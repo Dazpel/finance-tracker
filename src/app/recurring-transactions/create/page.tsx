@@ -6,18 +6,12 @@ import { Button, Input } from "@nextui-org/react";
 import axios from "axios";
 import { TransactionStream } from "plaid";
 import RecurringTransactionsTable from "@components/RecurringTransactionsTable/RecurringTransactionsTable";
-import { getTotalFlowAmount } from "../_utils/functions";
 import EditRecurringTransactionModal from "@components/EditRecurringTransactionModal/EditRecurringTransactionModal";
 import { useRouter } from "next/navigation";
 
 type TransactionFlows = {
   inflows: TransactionStream[];
   outflows: TransactionStream[];
-};
-
-type TransactionFlowTotal = {
-  inflowTotal: number;
-  outflowTotal: number;
 };
 
 export type FlowType = "inflows" | "outflows";
@@ -30,10 +24,6 @@ function RecurringTransactionsPage() {
   const [transactions, setTransactions] = useState<TransactionFlows>({
     inflows: [],
     outflows: [],
-  });
-  const [totalFlowAmount, setTotalFlowAmount] = useState<TransactionFlowTotal>({
-    inflowTotal: 0,
-    outflowTotal: 0,
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableTransaction, setEditableTransaction] = useState({} as TransactionStream);
@@ -54,11 +44,6 @@ function RecurringTransactionsPage() {
       setTransactions({
         inflows: res.data.inflows,
         outflows: res.data.outflows,
-      });
-
-      setTotalFlowAmount({
-        inflowTotal: getTotalFlowAmount(res.data.inflows),
-        outflowTotal: getTotalFlowAmount(res.data.outflows),
       });
 
       setIsLoading(false);
@@ -128,39 +113,35 @@ function RecurringTransactionsPage() {
   };
 
   const generatedReportData = useMemo(() => {
-    let inflow = 0;
-    let outflow = 0;
+    const processTransactions = (transactions: any[]) => {
+      return transactions.reduce(
+        (acc, transaction) => {
+          const amount = Math.abs(transaction.last_amount.amount || 0).toFixed(2);
+          acc.total += Number(amount);
 
-    const inflowTransactions = transactions.inflows.map((transaction) => {
-      inflow += Math.abs(transaction.last_amount.amount || 0);
-      return {
-        account_id: transaction.account_id,
-        stream_id: transaction.stream_id,
-        description: transaction.description,
-        amount: transaction.last_amount.amount,
-        last_date: transaction.last_date,
-        frequency: transaction.frequency,
-      };
-    });
-
-    const outflowTransactions = transactions.outflows.map((transaction) => {
-      outflow += Math.abs(transaction.last_amount.amount || 0);
-      return {
-        account_id: transaction.account_id,
-        stream_id: transaction.stream_id,
-        description: transaction.description,
-        amount: transaction.last_amount.amount,
-        last_date: transaction.last_date,
-        frequency: transaction.frequency,
-      };
-    });
-
+          acc.transactions.push({
+            account_id: transaction.account_id,
+            stream_id: transaction.stream_id,
+            description: transaction.description,
+            amount: transaction.last_amount.amount,
+            last_date: transaction.last_date,
+            frequency: transaction.frequency,
+          });
+          return acc;
+        },
+        { total: 0, transactions: [] }
+      );
+    };
+  
+    const inflowData = processTransactions(transactions.inflows);
+    const outflowData = processTransactions(transactions.outflows);
+  
     return {
-      inflow,
-      outflow,
-      inflowTransactions,
-      outflowTransactions,
-      total: Math.abs(inflow - outflow).toFixed(2),
+      inflow: inflowData.total,
+      outflow: outflowData.total,
+      inflowTransactions: inflowData.transactions,
+      outflowTransactions: outflowData.transactions,
+      total: Math.abs(inflowData.total - outflowData.total).toFixed(2),
     };
   }, [transactions]);
 
@@ -235,7 +216,7 @@ function RecurringTransactionsPage() {
           {transactions.outflows.length > 0 && (
             <div className="flex flex-col gap-4 mt-2">
               <p className="font-bold">
-                Total outflows: <span className="font-normal">{totalFlowAmount.outflowTotal}</span>
+                Total outflows: <span className="font-normal">{generatedReportData.outflow}</span>
               </p>
               <RecurringTransactionsTable
                 transactions={transactions.outflows}
@@ -248,7 +229,7 @@ function RecurringTransactionsPage() {
           {transactions.inflows.length > 0 && (
             <div className="flex flex-col gap-4 mt-8">
               <p className="font-bold">
-                Total inflows: <span className="font-normal">{totalFlowAmount.inflowTotal}</span>
+                Total inflows: <span className="font-normal">{generatedReportData.inflow}</span>
               </p>
               <RecurringTransactionsTable
                 transactions={transactions.inflows}

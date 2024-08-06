@@ -105,13 +105,16 @@ const matchFrequencyAmountToMonthly = (frequency: string, amount: number) => {
     case "WEEKLY":
       response.amount = amount * 52 / 12;
       response.frequency = "MONTHLY";
+      break;
     case "SEMI_MONTHLY":
     case "BI-WEEKLY":
       response.amount = amount * 2;
       response.frequency = "MONTHLY";
+      break;
     case "ANNUALLY":
       response.amount = amount / 12;
       response.frequency = "MONTHLY";
+      break;
   }
 
   return response;
@@ -132,7 +135,7 @@ export const formatPlaidTransactions = (transactions: any[], recurring: boolean)
 
     if (recurring) {
       const { last_amount: { amount }, frequency } = transaction;
-      const { amount: newAmount, frequency: newFrequency } = matchFrequencyAmountToMonthly(frequency, amount);
+      const { amount: newAmount, frequency: newFrequency } = matchFrequencyAmountToMonthly(frequency, Math.abs(amount));
 
       return {
         ...defaultResponse,

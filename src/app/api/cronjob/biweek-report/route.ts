@@ -4,6 +4,8 @@ import { fetchUserTransactions, formatToDefaultCategories, getBiweekRange, refre
 import { defaultCategorieToValueObject } from "utils/constants";
 import { sendBiweekReportEmail } from "utils/emailTemplates";
 
+export const maxDuration = 20;
+
 export async function POST(request: Request) {
     const initTimer = Date.now();
   try {

@@ -263,6 +263,7 @@ export const refreshUserTransactions = async (accounts: PlaidAccount[], userEmai
               access_token: account.accessToken || "",
             });
           } catch (error: any) {
+            console.error("Error refreshing transactions", error);
             const errorCode = error?.response?.data?.error_code;
 
             if (errorCode === "ITEM_LOGIN_REQUIRED") {
@@ -275,6 +276,11 @@ export const refreshUserTransactions = async (accounts: PlaidAccount[], userEmai
         }
       })
     );
+  }
+  if (!success) {
+    console.error("Failed to refresh transactions");
+  } else {
+    console.log("--------Transactions refreshed--------");
   }
   return success;
 };

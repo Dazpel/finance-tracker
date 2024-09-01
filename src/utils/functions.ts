@@ -6,6 +6,7 @@ import { DateTime } from "next-auth/providers/kakao";
 import { Transaction, TransactionBase, TransactionStream } from "plaid";
 import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
+import { ignoredTransactions } from "./constants";
 
 type FormattedTransaction = {
   amount: number;
@@ -243,6 +244,16 @@ export const convertToCSV = (data: any) => {
   return csvRows.join('\n');
 }
 
+export const trimTransactions = (transactions: Transaction[]): Transaction[] => {
+  const trimedTransactions: Transaction[] = [];
+  for (const transaction of transactions) {
+    if (!ignoredTransactions.some((ignored) => transaction.name.toLowerCase().includes(ignored))) {
+      trimedTransactions.push(transaction);
+    }
+  }
+  return trimedTransactions;
+}
+
 export const refreshUserTransactions = async (accounts: PlaidAccount[], userEmail: string): Promise<Boolean> => {
   console.log("--------Refreshing transactions--------");
   let success = true;
@@ -315,17 +326,9 @@ export const fetchUserTransactions = async (
       })
     );
 
-    const formmattedTransactions = transactions.map((transaction) => {
-      const category = transaction.category
-        ? transaction.category[0].replace("and", "&")
-        : "Others";
-      return {
-        ...transaction,
-        category: [mapPlaidCategoryToDefaultCategory(category)],
-      };
-    });
+    const trimmedTransactions = trimTransactions(transactions);
     
-    transactions = formmattedTransactions;
+    transactions = formatPlaidTransactions(trimmedTransactions, false);
   } catch (error) {
     console.error(error);
     success = false;

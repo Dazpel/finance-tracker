@@ -325,7 +325,7 @@ export default function TransactionsTable({
         emptyContent="No transactions found yet."
       >
         {(item) => (
-          <TableRow key={item.key}>
+          <TableRow className="hover:bg-default-100" key={item.key}>
             {(columnKey) => (
               <TableCell>{renderCell(item, columnKey)}</TableCell>
             )}

@@ -10,22 +10,10 @@ const usePreventNavigation = (canPreventNav: boolean) => {
       e.returnValue = warningText;
     };
 
-    const handlePopState = (e: PopStateEvent) => {
-      if (canPreventNav) {
-        const confirmLeave = window.confirm(warningText);
-        if (!confirmLeave) {
-          // Push the current state back to prevent navigation
-          window.history.pushState(null, '', window.location.href);
-        }
-      }
-    };
-
     window.addEventListener('beforeunload', handleWindowClose);
-    window.addEventListener('popstate', handlePopState);
 
     return () => {
       window.removeEventListener('beforeunload', handleWindowClose);
-      window.removeEventListener('popstate', handlePopState);
     };
   }, [canPreventNav]);
 };

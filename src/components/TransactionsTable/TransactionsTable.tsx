@@ -1,3 +1,4 @@
+import { InfoIcon } from "@components/icons/table/info-icon";
 import {
   Button,
   Dropdown,
@@ -22,9 +23,11 @@ import { TransactionBase } from "plaid";
 import React, { useMemo, useState } from "react";
 import {
   LOCAL_ACCOUNT_ID,
+  defaultCategories,
   defaultCategoryFilterOptions,
 } from "utils/constants";
-import { formatDate } from "utils/functions";;
+import { formatDate } from "utils/functions";
+import { defaultColorVariants } from "utils/types";
 import { v4 as uuidv4 } from "uuid";
 
 type TableMode = "view" | "edit";
@@ -146,6 +149,31 @@ export default function TransactionsTable({
     return setCategoryFilter(keys);
   };
 
+  const handleSelectionChange = (keys: Set<string>, id: string) => {
+    const prevKeys = { ...selectedKeys };
+    const selectedCategories = new Set();
+    keys.forEach((key) => selectedCategories.add(key));
+
+    const newKeys = { ...prevKeys, [id]: selectedCategories };
+
+    const prevTransactions = [...transactions];
+    const transactionIndex = prevTransactions.findIndex(
+      (transaction) => transaction.transaction_id === id
+    );
+
+    if (transactionIndex === -1) {
+      return prevTransactions;
+    }
+
+    const updatedTransactions = [...prevTransactions];
+    updatedTransactions[transactionIndex] = {
+      ...updatedTransactions[transactionIndex],
+      category: Array.from(keys),
+    };
+
+    return updateHistory(updatedTransactions, newKeys);
+  };
+
   const handleCreateTransaction = (transactions: TransactionBase[]) => {
     const prevTransactions = [...transactions];
     const newTransaction = {
@@ -195,6 +223,63 @@ export default function TransactionsTable({
 
     return filteredTransactions;
   }, [transactions, categoryFilter]);
+
+  const renderDropDown = (transactionId: string) => {
+    let categories = defaultCategories;
+    let categoryColor = defaultColorVariants.primary;
+    const invalidCategory = !defaultCategories.includes(
+      selectedValues[transactionId]
+    );
+
+    if (invalidCategory) {
+      categoryColor = defaultColorVariants.danger;
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <Dropdown>
+          <DropdownTrigger>
+            <Button
+              color={categoryColor}
+              variant="bordered"
+              className="capitalize"
+              endContent={<ChevronDownIcon className="text-small" />}
+            >
+              {invalidCategory && (
+                <Tooltip
+                  content="This category is not recognized, please select a different one"
+                  color="danger"
+                >
+                  <p>
+                    <InfoIcon />
+                  </p>
+                </Tooltip>
+              )}
+              {selectedValues[transactionId]}
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu
+            aria-label="Single selection example"
+            variant="flat"
+            color="primary"
+            disallowEmptySelection
+            selectionMode="single"
+            //@ts-ignore
+            selectedKeys={selectedKeys[transactionId]}
+            onSelectionChange={(keys) =>
+              handleSelectionChange(keys as Set<string>, transactionId)
+            }
+          >
+            {categories.map((category) => (
+              <DropdownItem key={category} className="capitalize">
+                {category}
+              </DropdownItem>
+            ))}
+          </DropdownMenu>
+        </Dropdown>
+      </div>
+    );
+  };
 
   const topContent = useMemo(() => {
     return (
@@ -278,11 +363,13 @@ export default function TransactionsTable({
             <span>{-cellValue}</span>
           );
         case "category":
-          return (
+          return canEdit ? (
+            renderDropDown(transaction["key"])
+          ) : (
             <span className="capitalize">
               {selectedValues[transaction["key"]]}
             </span>
-          )
+          );
         case "actions":
           return (
             <div className="text-center">

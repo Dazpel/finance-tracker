@@ -3,9 +3,10 @@ import { plaidClient } from "@lib/plaid";
 import { PlaidAccount } from "@prisma/client";
 import { decompressFromEncodedURIComponent } from "lz-string";
 import { DateTime } from "next-auth/providers/kakao";
-import { Transaction, TransactionBase } from "plaid";
+import { Transaction, TransactionBase, TransactionStream } from "plaid";
 import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
+import { ignoredTransactions } from "./constants";
 
 type FormattedTransaction = {
   amount: number;
@@ -41,6 +42,22 @@ export const formatDate = (date: Date) => {
 
   return [year, month, day].join("-");
 };
+
+export const formatRecurringTransactions = (transactions: TransactionStream[], userId: string) => {
+  const formattedTransactions = transactions.map((transaction) => {
+    return {
+      userId,
+      amount: transaction?.last_amount?.amount,
+      frequency: transaction?.frequency,
+      last_date: transaction?.last_date,
+      description: transaction?.description || "No name",
+      account_id: transaction.account_id,
+      stream_id: transaction.stream_id,
+    };
+  });
+
+  return formattedTransactions;
+}
 
 export const formatTransactions = (transactions: TransactionBase[], userId: string): FormattedTransaction[] => {
   const formattedTransactions = transactions.map((transaction) => {
@@ -78,6 +95,66 @@ export const formatReportKeys = (report: ReportData) => {
 
   return formattedReport;
 };
+
+const matchFrequencyAmountToMonthly = (frequency: string, amount: number) => {
+  let response = {
+    amount,
+    frequency,
+  }
+
+  switch (frequency) {
+    case "WEEKLY":
+      response.amount = amount * 52 / 12;
+      response.frequency = "MONTHLY";
+      break;
+    case "SEMI_MONTHLY":
+    case "BI-WEEKLY":
+      response.amount = amount * 2;
+      response.frequency = "MONTHLY";
+      break;
+    case "ANNUALLY":
+      response.amount = amount / 12;
+      response.frequency = "MONTHLY";
+      break;
+  }
+
+  return response;
+}
+
+export const formatPlaidTransactions = (transactions: any[], recurring: boolean) => {
+  const descriptionToUse = recurring ? "description" : "original_description";
+  let response = [];
+  
+    response = transactions.map((transaction) => {
+    const category = transaction.category ? transaction.category[0].replace("and", "&") : "Others";
+    const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
+    const description = transaction[descriptionToUse] || transaction.name;
+    const defaultResponse = {
+      ...transaction,
+      category: [mapDefaultCategoryToCustomCategory(description, mappedCategory)],
+    };
+
+    if (recurring) {
+      const { last_amount: { amount }, frequency } = transaction;
+      const { amount: newAmount, frequency: newFrequency } = matchFrequencyAmountToMonthly(frequency, Math.abs(amount));
+
+      return {
+        ...defaultResponse,
+        frequency: newFrequency,
+        last_amount: { amount: newAmount },
+      }
+    }
+    
+    return defaultResponse;
+  });
+
+  if (recurring) {
+    const skippedFrequency = ["ANNUALLY"]
+    return response.filter((transaction: TransactionStream) => transaction.is_active === true && !skippedFrequency.includes(transaction.frequency));
+  }
+
+  return response;
+}
 
 export const mapPlaidCategoryToDefaultCategory = (category: string) => {
   switch (category) {
@@ -167,6 +244,16 @@ export const convertToCSV = (data: any) => {
   return csvRows.join('\n');
 }
 
+export const trimTransactions = (transactions: Transaction[]): Transaction[] => {
+  const trimedTransactions: Transaction[] = [];
+  for (const transaction of transactions) {
+    if (!ignoredTransactions.some((ignored) => transaction.name.toLowerCase().includes(ignored))) {
+      trimedTransactions.push(transaction);
+    }
+  }
+  return trimedTransactions;
+}
+
 export const refreshUserTransactions = async (accounts: PlaidAccount[], userEmail: string): Promise<Boolean> => {
   console.log("--------Refreshing transactions--------");
   let success = true;
@@ -187,6 +274,7 @@ export const refreshUserTransactions = async (accounts: PlaidAccount[], userEmai
               access_token: account.accessToken || "",
             });
           } catch (error: any) {
+            console.error("Error refreshing transactions", error);
             const errorCode = error?.response?.data?.error_code;
 
             if (errorCode === "ITEM_LOGIN_REQUIRED") {
@@ -199,6 +287,11 @@ export const refreshUserTransactions = async (accounts: PlaidAccount[], userEmai
         }
       })
     );
+  }
+  if (!success) {
+    console.error("Failed to refresh transactions");
+  } else {
+    console.log("--------Transactions refreshed--------");
   }
   return success;
 };
@@ -233,17 +326,9 @@ export const fetchUserTransactions = async (
       })
     );
 
-    const formmattedTransactions = transactions.map((transaction) => {
-      const category = transaction.category
-        ? transaction.category[0].replace("and", "&")
-        : "Others";
-      return {
-        ...transaction,
-        category: [mapPlaidCategoryToDefaultCategory(category)],
-      };
-    });
+    const trimmedTransactions = trimTransactions(transactions);
     
-    transactions = formmattedTransactions;
+    transactions = formatPlaidTransactions(trimmedTransactions, false);
   } catch (error) {
     console.error(error);
     success = false;
@@ -258,4 +343,24 @@ export async function getAccessToken(): Promise<boolean> {
   const isAccessTokenValid = accounts?.length > 0 || false;
   
   return isAccessTokenValid;
+}
+
+export function mapDefaultCategoryToCustomCategory(description: string, category: string): string {
+  const categoryMap: { [key: string]: string[] } = {
+    "Gas": ['chevron', 'shell', 'exxon', 'mobil', 'gas'],
+    "Groceries": ['grocery', 'supermarket', 'costco', 'walmart', 'safeway', 'trader', 'joe', 'whole', 'foods', 'instacart', 'winn-dixie'],
+    "Food & Drink": ['brew'],
+    "Bills & Utilities": ['fpl', 'att', 'at&t', 'xfinity', 'chantilly', 'comcast', 'chatgpt', 'mortgage', 'github'],
+    "Revenue": ['unit', 'interest', 'fee', 'reimbursement'],
+  };
+
+  const lowerCaseDescription = description.toLowerCase();
+
+  for (const [customCategory, keywords] of Object.entries(categoryMap)) {
+    if (keywords.some((key) => lowerCaseDescription.includes(key))) {
+      return customCategory;
+    }
+  }
+
+  return category;
 }

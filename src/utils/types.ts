@@ -12,6 +12,14 @@ export type CategoryValues = {
   revenue: number;
 };
 
+export type RecurringReportDataDTO = {
+  id: number
+  inflow: number;
+  outflow: number;
+  total: number;
+  reportName: string;
+};
+
 export type ReportDataDTO = {
   id: number;
   reportName: string;

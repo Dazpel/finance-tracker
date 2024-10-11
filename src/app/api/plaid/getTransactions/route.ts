@@ -3,28 +3,7 @@ import { plaidClient } from "@lib/plaid";
 import { plaidAccount } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import { Transaction } from "plaid";
-import { refreshUserTransactions } from "utils/functions";
-
-const mapPlaidCategoryToDefaultCategory = (category: string) => {
-  switch (category) {
-    case "Shops":
-      return "Shopping";
-    case "Bank Fees":
-      return "Fees & Adjustments";
-    case "Service":
-    case "Payment":
-      return "Bills & Utilities";
-    case "Travel":
-      return "Entertainment";
-    case "Transfer":
-    case "Interest":
-      return "Revenue";
-    case "Recreation":
-      return "Health & Wellness";
-    default:
-    return category;
-  }
-}
+import { formatPlaidTransactions, refreshUserTransactions, trimTransactions } from "utils/functions";
 
 export async function GET(req: Request) {
   const session = await getServerSession(options);
@@ -63,13 +42,9 @@ export async function GET(req: Request) {
       } while (transactions.length < totalTransactions);
     }));
 
-    const formattedTransactions = transactions.map((transaction) => {
-      const category = transaction.category ? transaction.category[0].replace("and", "&") : "Others";
-      return {
-        ...transaction,
-        category: [mapPlaidCategoryToDefaultCategory(category)],
-      };
-    });
+    const trimmedTransactions = trimTransactions(transactions);
+
+    const formattedTransactions = formatPlaidTransactions(trimmedTransactions, false);
     
     return Response.json({ success: true, transactions: formattedTransactions });
   } catch (error) {

@@ -1,5 +1,6 @@
 import { ReportData } from "@components/ReportCard/ReportCard";
 import { PrismaClient } from "@prisma/client";
+import { RecurringReportData } from "app/recurring-transactions/_utils/constants";
 import { TransactionBase } from "plaid";
 import { formatReportKeys, formatTransactions } from "utils/functions";
 
@@ -48,23 +49,75 @@ export const findOrCreateUser = async (
   return user.accounts;
 };
 
-export const getReports = async (prisma: PrismaClient, userEmail: string) => {
+export const getReports = async (prisma: PrismaClient, userEmail: string, recurring?: boolean) => {
+  let response: PrismaResponse = {
+    success: false,
+  };
+
+  let reports = [];
+
+  try {
+
+    if (recurring) {
+      reports = await prisma.recurringReport.findMany({
+        where: {
+          user: {
+            email: userEmail,
+          },
+        },
+      });
+    } else {
+      reports = await prisma.report.findMany({
+        where: {
+          user: {
+            email: userEmail,
+          },
+        },
+      });
+    }
+
+    response = {
+      success: true,
+      data: reports,
+    };
+  } catch (error) {
+    response = {
+      success: false,
+      error,
+    };
+  }
+
+  return response;
+};
+
+export const getRecurringTransactions = async (
+  prisma: PrismaClient,
+  userEmail: string,
+  reportId: string
+) => {
   let response: PrismaResponse = {
     success: false,
   };
 
   try {
-    const reports = await prisma.report.findMany({
+    const transactions = await prisma.recurringReport.findUnique({
       where: {
-        user: {
-          email: userEmail,
+        id: Number(reportId),
+        AND: {
+          user: {
+            email: userEmail,
+          },
         },
+      },
+      select: {
+        inflowTransactions: true,
+        outflowTransactions: true,
       },
     });
 
     response = {
       success: true,
-      data: reports,
+      data: transactions,
     };
   } catch (error) {
     response = {
@@ -162,6 +215,77 @@ export const createReport = async (
           },
         },
       },
+    });
+
+    response = {
+      success: true,
+    };
+  } catch (error: any) {
+    console.log(error?.message);
+    response = {
+      success: false,
+      error,
+    };
+  }
+
+  return response;
+};
+
+export const createRecurringReport = async (
+  prisma: PrismaClient,
+  report: RecurringReportData,
+  reportName: string,
+  userEmail: string
+): Promise<PrismaResponse> => {
+  let response: PrismaResponse = {
+    success: false,
+  };
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: userEmail,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      return (response = {
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    const {inflow, outflow, inflowTransactions, outflowTransactions, total} = report;
+
+    await prisma.$transaction(async (tx) => {
+      const createdReport = await tx.recurringReport.create({
+        data: {
+          reportName,
+          inflow,
+          outflow,
+          total: Number(total),
+          userId: user.id,
+        },
+      });
+
+      await tx.recurringTransaction.createMany({
+        data: inflowTransactions.map(transaction => ({
+          ...transaction,
+          userId: user.id,
+          inflowReportId: createdReport.id,
+        })),
+      });
+
+      await tx.recurringTransaction.createMany({
+        data: outflowTransactions.map(transaction => ({
+          ...transaction,
+          userId: user.id,
+          outflowReportId: createdReport.id,
+        })),
+      });
     });
 
     response = {

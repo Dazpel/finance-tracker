@@ -3,9 +3,9 @@
 import React from "react";
 import { Sidebar } from "./sidebar.styles";
 import { Tooltip } from "@nextui-org/react";
-import { HomeIcon } from "../icons/sidebar/home-icon";
-import { PaymentsIcon } from "../icons/sidebar/payments-icon";
-import { AccountsIcon } from "../icons/sidebar/accounts-icon";
+import { HomeIcon } from "@components/icons/sidebar/home-icon";
+import { PaymentsIcon } from "@components/icons/sidebar/payments-icon";
+import { AccountsIcon } from "@components/icons/sidebar/accounts-icon";
 import { SidebarItem } from "./sidebar-item";
 import { SidebarMenu } from "./sidebar-menu";
 import { useSidebarContext } from "../layout/layout-context";
@@ -16,6 +16,7 @@ import { MoonIcon } from "@components/icons/sidebar/MoonIcon";
 import { useIsSSR } from "@react-aria/ssr";
 import { appRoutes } from "utils/constants";
 import TransactionIcon from "@components/icons/sidebar/currency-dollar";
+import { RecurringPaymentsIcon } from "@components/icons/sidebar/recurring-payments-icon";
 
 export const SidebarWrapper = () => {
   const pathname = usePathname();
@@ -62,6 +63,12 @@ export const SidebarWrapper = () => {
                 title="Reports"
                 icon={<PaymentsIcon />}
                 href={appRoutes.REPORTS_PAGE}
+              />
+              <SidebarItem
+                isActive={pathname.includes(appRoutes.RECURRING_TRANSACTIONS_PAGE)}
+                title="Recurring"
+                icon={<RecurringPaymentsIcon />}
+                href={appRoutes.RECURRING_TRANSACTIONS_PAGE}
               />
             </SidebarMenu>
           </div>

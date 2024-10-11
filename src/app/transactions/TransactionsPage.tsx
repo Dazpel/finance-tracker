@@ -21,6 +21,7 @@ import FullScreenOverlay from "@components/Loader/Loader";
 import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";
 import { useQuery } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
+import usePreventNavigation from "@components/hooks/usePreventNavigation";
 
 export default function TransactionsPage() {
   const router = useRouter();
@@ -48,6 +49,8 @@ export default function TransactionsPage() {
   const { transactions, selectedKeys } = history;
   const canUndo = index > 1;
   const canRedo = index < lastIndex;
+
+  usePreventNavigation(canUndo);
 
   const handleReportNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsReportNameValid(true);

@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Button } from "@nextui-org/react";
+import React, { useCallback, useState } from "react";
+import { Button, Skeleton } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -9,6 +9,7 @@ import {
   PlaidLinkOnExit,
   PlaidLinkOptions,
 } from "react-plaid-link";
+import { useQuery } from "@tanstack/react-query";
 
 type PlaidButtonProps = {
   updateMode?: Boolean;
@@ -17,22 +18,22 @@ type PlaidButtonProps = {
 };
 
 function PlaidButton({ updateMode = false, accessToken, buttonText }: PlaidButtonProps) {
-  const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<boolean>(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const createLinkToken = async () => {
+  
+  const { isFetching, isLoading, isError: queryError, data: token } = useQuery({
+    queryKey: ['plaidToken'],
+    queryFn: async () => {
       const response = await fetch("/api/plaid/createLink", {
         method: "POST",
         body: JSON.stringify({ updateMode, accessToken }),
       });
       const { link_token } = await response.json();
-      setToken(link_token);
-    };
-    createLinkToken();
-  }, []);
 
+      return link_token;
+    },
+  })
+  
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (publicToken, metadata) => {
       if (!updateMode){
@@ -79,6 +80,10 @@ function PlaidButton({ updateMode = false, accessToken, buttonText }: PlaidButto
     // exit
   } = usePlaidLink(config);
 
+  if (isFetching || isLoading) {
+    return <Skeleton className="h-10 w-[150px] rounded-lg mb-4" />;
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Button
@@ -89,7 +94,7 @@ function PlaidButton({ updateMode = false, accessToken, buttonText }: PlaidButto
       >
         {buttonText || "Connect a bank account"}
       </Button>
-      {error && <p className="mb-4 text-danger">Error connecting accounts</p>}
+      {(error || queryError) && <p className="mb-4 text-danger">Error connecting accounts</p>}
     </div>
   );
 }

@@ -46,6 +46,10 @@ export async function GET(req: Request) {
 
     const formattedTransactions = formatPlaidTransactions(trimmedTransactions, false);
     
+    formattedTransactions.sort((a, b) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+    
     return Response.json({ success: true, transactions: formattedTransactions });
   } catch (error) {
     console.error(error);

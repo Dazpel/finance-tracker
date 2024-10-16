@@ -1,8 +1,9 @@
 "use client";
 
+import { useDeviceSize } from "@components/hooks/useDeviceSize";
 import ReportCard from "@components/ReportCard/ReportCard";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
-import { Button } from "@nextui-org/react";
+import { Button, Tab, Tabs } from "@nextui-org/react";
 import { TransactionBase } from "plaid";
 import React, { useState } from "react";
 import { decodeQueryString, formatCreatedDate } from "utils/functions";
@@ -15,6 +16,7 @@ export default function Page({
   searchParams: { data: string };
 }) {
   //todo: abstract generateSelectedCategoryKeys so it can be reused
+  const isMobile = useDeviceSize();
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -66,6 +68,42 @@ export default function Page({
     }
   };
 
+  const renderTransactionsTable = () =>
+    displayTransactions && (
+      <TransactionsTable
+        tableMode="view"
+        generateSelectedCategoryKeys={noop}
+        goBack={noop}
+        goForward={noop}
+        selectedKeys={selectedKeys}
+        transactions={transactions}
+        updateHistory={noop}
+        descriptionToUse="name"
+        onEdit={noop}
+      />
+    );
+
+  const renderReportCard = () => (
+    <ReportCard reportData={rest} />
+  );
+
+  const renderTabs = () =>
+    isMobile && displayTransactions ?  (
+      <Tabs aria-label="Options">
+        <Tab key="transactions" title="Transactions">
+          {renderTransactionsTable()}
+        </Tab>
+        <Tab key="report" title="Report">
+          {renderReportCard()}
+        </Tab>
+      </Tabs>
+    ) : (
+      <div className="flex gap-4">
+        {renderTransactionsTable()}
+        {renderReportCard()}
+      </div>
+    );
+
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-xl font-semibold mb-4">Details</h3>
@@ -87,21 +125,8 @@ export default function Page({
           View Transactions
         </Button>
         {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
-        <div className="flex gap-4">
-          {displayTransactions && (
-            <TransactionsTable
-              tableMode="view"
-              generateSelectedCategoryKeys={noop}
-              goBack={noop}
-              goForward={noop}
-              selectedKeys={selectedKeys}
-              transactions={transactions}
-              updateHistory={noop}
-              descriptionToUse="name"
-              onEdit={noop}
-            />
-          )}
-          <ReportCard reportData={rest} />
+        <div className="flex flex-col gap-4">
+          {renderTabs()}
         </div>
       </div>
     </div>

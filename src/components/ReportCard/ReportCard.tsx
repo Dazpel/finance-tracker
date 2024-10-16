@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@nextui-org/react";
+import { useWindowHeight } from "@components/hooks/useWindowHeight";
 
 type TableRow = {
   key: number;
@@ -69,6 +70,13 @@ export default function ReportCard({
   showFooter = false,
   fixedPosition = false,
 }: ReportCardProps) {
+  const deviceHeight = useWindowHeight();
+  const cardPosition = useMemo(() => {
+    const position = fixedPosition ? "fixed" : "relative"
+
+    return deviceHeight < 600 ? "relative" : position;
+  }, [deviceHeight, fixedPosition]);
+  
   const renderCell = React.useCallback(
     (item: TableRow, columnKey: React.Key) => {
       const boldedArray = ["expenses", "total", "revenue"];
@@ -112,7 +120,7 @@ export default function ReportCard({
   }, [showFooter, handleOnViewDetails]);
   return (
     <div className="flex flex-col w-80 relative">
-      <div className={`flex flex-col gap-4 ${fixedPosition ? "fixed" : "relative"} bottom-[10px]`}>
+      <div className={`flex flex-col gap-4 ${cardPosition} bottom-[10px]`}>
         <Table
           isCompact
           aria-label="Report card table"

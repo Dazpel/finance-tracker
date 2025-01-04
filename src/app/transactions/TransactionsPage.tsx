@@ -15,16 +15,18 @@ import { CategoryValues } from "utils/types";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
-import { Input } from "@nextui-org/react";
+import { Input, Tab, Tabs } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import FullScreenOverlay from "@components/Loader/Loader";
 import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";
 import { useQuery } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
 import usePreventNavigation from "@components/hooks/usePreventNavigation";
+import { useDeviceSize } from "@components/hooks/useDeviceSize";
 
 export default function TransactionsPage() {
   const router = useRouter();
+  const isMobile = useDeviceSize();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableTransaction, setEditableTransaction] = useState({} as TransactionBase);
   const [selectedCategory, setSelectedCategory] = useState(new Set<string>());
@@ -33,7 +35,7 @@ export default function TransactionsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [reportName, setReportName] = useState("");
   const [isReportNameValid, setIsReportNameValid] = useState(true);
-
+  
   const { isPending, data: isValid } = useQuery({
     queryKey: ['accessTokenValid'],
     queryFn: async () => {
@@ -239,6 +241,46 @@ export default function TransactionsPage() {
     return <PageLoader />;
   }
 
+  const renderTransactionsTable = () => (
+    <TransactionsTable
+      canRedo={canRedo}
+      canUndo={canUndo}
+      generateSelectedCategoryKeys={generateSelectedCategoryKeys}
+      goBack={goBack}
+      goForward={goForward}
+      selectedKeys={selectedKeys}
+      transactions={transactions}
+      updateHistory={updateHistory}
+      onEdit={handleEdit}
+    />
+  );
+
+  const renderReportCard = () => (
+    <ReportCard
+      showReportButton={transactions.length > 0}
+      reportData={generatedReportData}
+      handleSubmitReport={handleSubmitReport}
+      fixedPosition={!isMobile}
+    />
+  );
+
+  const renderTabs = () =>
+    isMobile ? (
+      <Tabs aria-label="Options">
+        <Tab key="transactions" title="Transactions">
+          {renderTransactionsTable()}
+        </Tab>
+        <Tab key="report" title="Report">
+          {renderReportCard()}
+        </Tab>
+      </Tabs>
+    ) : (
+      <div className="flex gap-4">
+        {renderTransactionsTable()}
+        {renderReportCard()}
+      </div>
+    );
+
   return (
     <div className="h-inherit">
       {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
@@ -263,34 +305,17 @@ export default function TransactionsPage() {
             label="Report name"
             placeholder="Enter a report name"
             className="w-fit"
+            variant="faded"
             value={reportName}
             isInvalid={!isReportNameValid}
             errorMessage={!isReportNameValid && "Please enter a report name"}
             onChange={handleReportNameChange}
           />
-          <div className="flex gap-4">
-            <TransactionsTable
-              canRedo={canRedo}
-              canUndo={canUndo}
-              generateSelectedCategoryKeys={generateSelectedCategoryKeys}
-              goBack={goBack}
-              goForward={goForward}
-              selectedKeys={selectedKeys}
-              transactions={transactions}
-              updateHistory={updateHistory}
-              onEdit={handleEdit}
-            />
-            <ReportCard
-              showReportButton={transactions.length > 0}
-              reportData={generatedReportData}
-              handleSubmitReport={handleSubmitReport}
-              fixedPosition
-            />
-          </div>
+          {renderTabs()}
         </div>
       )}
       {isLoading && <FullScreenOverlay />}
-      <EditTransactionModal 
+      <EditTransactionModal
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
         editableTransaction={editableTransaction}

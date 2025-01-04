@@ -1,10 +1,11 @@
 "use client";
 
 import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";
+import { useDeviceSize } from "@components/hooks/useDeviceSize";
 import FullScreenOverlay from "@components/Loader/Loader";
 import ReportCard from "@components/ReportCard/ReportCard";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
-import { Button, Input } from "@nextui-org/react";
+import { Input, Tab, Tabs } from "@nextui-org/react";
 import axios from "axios";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import { useRouter } from "next/navigation";
@@ -42,6 +43,7 @@ export default function Page({
   searchParams: { data: string };
 }) {
   //todo: abstract generateSelectedCategoryKeys so it can be reused
+  const isMobile = useDeviceSize();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableTransaction, setEditableTransaction] = useState({} as TransactionBase);
@@ -238,6 +240,48 @@ export default function Page({
       setIsLoading(false);
     }
   };
+  
+  const renderTransactionsTable = () => (
+    <TransactionsTable
+      canRedo={canRedo}
+      canUndo={canUndo}
+      generateSelectedCategoryKeys={generateSelectedCategoryKeys}
+      goBack={goBack}
+      goForward={goForward}
+      selectedKeys={selectedKeys}
+      transactions={transactions}
+      updateHistory={updateHistory}
+      onEdit={handleEdit}
+      descriptionToUse="name"
+    />
+  );
+
+  const renderReportCard = () => (
+    <ReportCard
+      actionButtonText="Update Report"
+      showReportButton={transactions.length > 0}
+      reportData={generatedReportData}
+      handleSubmitReport={handleUpdateReport}
+      fixedPosition={!isMobile}
+    />
+  );
+
+  const renderTabs = () =>
+    isMobile ? (
+      <Tabs aria-label="Options" className="mt-4">
+        <Tab key="transactions" title="Transactions">
+          {renderTransactionsTable()}
+        </Tab>
+        <Tab key="report" title="Report">
+          {renderReportCard()}
+        </Tab>
+      </Tabs>
+    ) : (
+      <div className="flex gap-4">
+        {renderTransactionsTable()}
+        {renderReportCard()}
+      </div>
+    );
 
   useEffect(() => {
     let isMounted = true;
@@ -272,32 +316,13 @@ export default function Page({
               label="Report name"
               placeholder="Enter a report name"
               className="w-fit"
+              variant="faded"
               value={reportName}
               isInvalid={!isReportNameValid}
               errorMessage={!isReportNameValid && "Please enter a report name"}
               onChange={handleReportNameChange}
             />
-            <div className="flex gap-4">
-              <TransactionsTable
-                canRedo={canRedo}
-                canUndo={canUndo}
-                generateSelectedCategoryKeys={generateSelectedCategoryKeys}
-                goBack={goBack}
-                goForward={goForward}
-                selectedKeys={selectedKeys}
-                transactions={transactions}
-                updateHistory={updateHistory}
-                onEdit={handleEdit}
-                descriptionToUse="name"
-              />
-              <ReportCard
-                actionButtonText="Update Report"
-                showReportButton={transactions.length > 0}
-                reportData={generatedReportData}
-                handleSubmitReport={handleUpdateReport}
-                fixedPosition
-              />
-            </div>
+            {renderTabs()}
           </div>
         )}
       </div>

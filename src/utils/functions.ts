@@ -350,8 +350,9 @@ export function mapDefaultCategoryToCustomCategory(description: string, category
     "Gas": ['chevron', 'shell', 'exxon', 'mobil', 'gas'],
     "Groceries": ['grocery', 'supermarket', 'costco', 'walmart', 'safeway', 'trader', 'joe', 'whole', 'foods', 'instacart', 'winn-dixie'],
     "Food & Drink": ['brew'],
-    "Bills & Utilities": ['fpl', 'att', 'at&t', 'xfinity', 'chantilly', 'comcast', 'chatgpt', 'mortgage', 'github'],
+    "Bills & Utilities": ['fpl', 'att', 'at&t', 'xfinity', 'chantilly', 'comcast', 'chatgpt', 'mortgage', 'github', 'cooper'],
     "Revenue": ['unit', 'interest', 'fee', 'reimbursement'],
+    "Entertainment": ["amc", "ticket", "movie"],
   };
 
   const lowerCaseDescription = description.toLowerCase();

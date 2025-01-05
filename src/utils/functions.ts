@@ -365,3 +365,11 @@ export function mapDefaultCategoryToCustomCategory(description: string, category
 
   return category;
 }
+
+export const filterTransactions = (childReports: any[]) => {
+  let transactions: Transaction[] = []
+  childReports.forEach((report) => {
+    transactions = transactions.concat(report.transactions as Transaction[]);
+  })
+  return transactions;
+}

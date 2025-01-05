@@ -107,7 +107,7 @@ export default function Page() {
             accept=".csv"
             onChange={handleOnChange}
           />
-          <Button color="primary" className="mt-4 w-fit" onClick={handleUpload}>
+          <Button color="primary" className="mt-4 w-fit" onPress={handleUpload}>
             IMPORT CSV
           </Button>
         </div>

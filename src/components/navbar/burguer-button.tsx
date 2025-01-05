@@ -8,7 +8,7 @@ export const BurguerButton = () => {
 
   return (
     <NavbarMenuToggle
-      onClick={setCollapsed}
+      onPress={setCollapsed}
       aria-label={collapsed ? "Close menu" : "Open menu"}
     />
   );

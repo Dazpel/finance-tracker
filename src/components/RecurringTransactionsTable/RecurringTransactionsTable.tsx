@@ -103,11 +103,14 @@ function RecurringTransactionsTable({
                   </DropdownTrigger>
                   <DropdownMenu aria-label="dropdown options">
                     <DropdownItem
-                      onClick={() => onEdit(transaction["key"], flowType)}
+                      key="edit button"
+                      onPress={() => onEdit(transaction["key"], flowType)}
                     >
                       Edit
                     </DropdownItem>
-                    <DropdownItem onClick={() => onDelete(transaction["key"])}>
+                    <DropdownItem
+                      key="delete button" 
+                      onPress={() => onDelete(transaction["key"])}>
                       Delete
                     </DropdownItem>
                   </DropdownMenu>
@@ -128,7 +131,7 @@ function RecurringTransactionsTable({
             <div className="flex justify-between gap-3 items-end">
               <div className="flex gap-3">
                     <Button
-                    onClick={() =>
+                    onPress={() =>
                       handleCreateTransaction(transactions)
                     }
                     color="primary"

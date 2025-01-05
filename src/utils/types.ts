@@ -1,3 +1,5 @@
+import { ReportType } from "@prisma/client";
+
 export type CategoryValues = {
   "food & drink": number;
   "bills & utilities": number;
@@ -22,6 +24,7 @@ export type RecurringReportDataDTO = {
 
 export type ReportDataDTO = {
   id: number;
+  reportType: ReportType;
   reportName: string;
   createdAt: string;
   foodAndDrink: number;

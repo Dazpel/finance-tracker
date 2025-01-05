@@ -84,7 +84,7 @@ export default function DateRangePicker({
           radius="full"
           size="md"
           color="primary"
-          onClick={handleSearch}
+          onPress={handleSearch}
         >
           Search
         </Button>

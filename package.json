@@ -10,7 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@nextui-org/react": "^2.4.6",
+    "@nextui-org/react": "^2.6.10",
     "@prisma/client": "^5.7.1",
     "@react-aria/ssr": "^3.9.0",
     "@sendgrid/mail": "^8.1.3",

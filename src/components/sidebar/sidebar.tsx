@@ -76,7 +76,7 @@ export const SidebarWrapper = () => {
             <Tooltip content={"Dark mode"} color="primary">
               <div
                 className="max-w-fit hover:cursor-pointer"
-                onClick={handleThemeChange}
+                onPress={handleThemeChange}
               >
                 {isDarkTheme || isSSR ? <SunIcon /> : <MoonIcon />}
               </div>

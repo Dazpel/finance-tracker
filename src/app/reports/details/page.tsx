@@ -6,7 +6,7 @@ import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
 import { Button, Tab, Tabs } from "@nextui-org/react";
 import { TransactionBase } from "plaid";
 import React, { useState } from "react";
-import { decodeQueryString, formatCreatedDate } from "utils/functions";
+import { decodeQueryString, filterTransactions, formatCreatedDate } from "utils/functions";
 
 const noop = () => {};
 
@@ -24,7 +24,7 @@ export default function Page({
   const [transactions, setTransactions] = useState([] as TransactionBase[]);
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const reportData = decodeQueryString(searchParams.data);
-  const { reportName, createdAt, id, ...rest } = reportData;
+  const { reportName, createdAt, id, reportType, ...rest } = reportData;
 
   const generateSelectedCategoryKeys = (transactions: TransactionBase[]) => {
     let newKeys = transactions.reduce(
@@ -50,14 +50,20 @@ export default function Page({
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/prisma/transactions/get?reportId=${id}`,
+        `/api/prisma/transactions/get?reportId=${id}&reportType=${reportType}`,
         {
           method: "GET",
         }
       );
       const res = await response.json();
       if (res.success) {
-        generateSelectedCategoryKeys(res.response.data.transactions);
+        let transactions = res.response.data.transactions;
+
+        if (reportType === "ANNUAL") {
+          transactions = filterTransactions(res.response.data.childReports);
+        }
+        
+        generateSelectedCategoryKeys(transactions);
       }
       setIsLoading(false);
     } catch (error) {
@@ -120,7 +126,7 @@ export default function Page({
           color="primary"
           isLoading={isLoading}
           isDisabled={isLoading || displayTransactions}
-          onClick={() => fetchTransactions()}
+          onPress={() => fetchTransactions()}
         >
           View Transactions
         </Button>

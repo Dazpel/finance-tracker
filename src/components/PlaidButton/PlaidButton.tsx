@@ -89,7 +89,7 @@ function PlaidButton({ updateMode = false, accessToken, buttonText }: PlaidButto
       <Button
         color="primary"
         className="w-fit"
-        onClick={() => open()}
+        onPress={() => open()}
         disabled={!ready}
       >
         {buttonText || "Connect a bank account"}

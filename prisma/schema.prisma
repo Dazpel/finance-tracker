@@ -50,6 +50,10 @@ model Report {
   user               User          @relation(fields: [userId], references: [id])
   transactions       Transaction[]
   reportName         String
+  reportType         ReportType    @default(MONTHLY)
+  parentReportId     Int? // For hierarchical reports
+  parentReport       Report?       @relation("ParentChild", fields: [parentReportId], references: [id])
+  childReports       Report[]      @relation("ParentChild")
   foodAndDrink       Float         @default(0)
   billsAndUtilities  Float         @default(0)
   gas                Float         @default(0)
@@ -81,20 +85,20 @@ model RecurringReport {
 }
 
 model RecurringTransaction {
-  id              Int             @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   outflowReportId Int? // Foreign key to RecurringReport
   outflowReport   RecurringReport? @relation(name: "OutflowReport", fields: [outflowReportId], references: [id])
   inflowReportId  Int? // Foreign key to RecurringReport
   inflowReport    RecurringReport? @relation(name: "InflowReport", fields: [inflowReportId], references: [id])
   userId          String // Foreign key to User
-  user            User            @relation(fields: [userId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
   account_id      String
   stream_id       String
   description     String
   amount          Float
   last_date       String
   frequency       String
-  createdAt       DateTime        @default(now())
+  createdAt       DateTime         @default(now())
 }
 
 model Transaction {
@@ -110,4 +114,9 @@ model Transaction {
   date           String
   category       String[]
   createdAt      DateTime @default(now())
+}
+
+enum ReportType {
+  MONTHLY
+  ANNUAL
 }

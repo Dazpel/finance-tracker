@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import ReportsTable from "@components/ReportsTable/ReportsTable";
 import FullScreenOverlay from "@components/Loader/Loader";
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
+import { ReportDataDTO } from "utils/types";
+import { ReportType } from "@prisma/client";
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -13,14 +15,14 @@ export default function ReportsPage() {
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const { isPending, isError, data } = useQuery({
-    queryKey: ['reportsData'],
+    queryKey: ["reportsData"],
     queryFn: async () => {
-      const response = await fetch('/api/reports/getReports')
-      const data = await response.json()
-      return data?.reportData || []
-    }
-  })
-  
+      const response = await fetch("/api/reports/getReports");
+      const data = await response.json();
+      return data?.reportData || [];
+    },
+  });
+
   const handleOnEdit = (encodedURI: string): void => {
     setIsLoading(true);
     router.push(`/reports/edit?data=${encodedURI}`);
@@ -80,18 +82,61 @@ export default function ReportsPage() {
     }
   };
 
+  const filterMonthlyReports = (reports: ReportDataDTO[]) => {
+    return reports.filter((report) => report.reportType === ReportType.MONTHLY);
+  }
+
+  const filterAnualReports = (reports: ReportDataDTO[]) => {
+    return reports.filter((report) => report.reportType === ReportType.ANNUAL);
+  }
+
+  const handleAnualReport = async (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => {
+    try {
+      const response = await fetch("/api/prisma/reports/create-anual", {
+        method: "POST",
+        body: JSON.stringify({ reportIds, reportName, reports }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIsLoading(false);
+        return router.refresh();
+      }
+      setIsLoading(false);
+    } catch {
+      setIsLoading(false);
+      setError(true);
+      setErrorMessage("Error merging reports");
+    }
+  };
+
   return (
     <>
-     {isPending && <PageLoader />}
+      {isPending && <PageLoader />}
       {!isPending && (
-        <ReportsTable
-          reportData={data || []}
-          handleOnEdit={handleOnEdit}
-          handleOnView={handleOnView}
-          handleOnCompare={handleOnCompare}
-          handleOnDelete={handleOnDelete}
-          handleMerge={handleMerge}
-      />
+        <div className="flex flex-col gap-4">
+          <ReportsTable
+            reportData={filterMonthlyReports(data) || []}
+            handleOnEdit={handleOnEdit}
+            handleOnView={handleOnView}
+            handleOnCompare={handleOnCompare}
+            handleOnDelete={handleOnDelete}
+            handleAnualReport={handleAnualReport}
+            handleMerge={handleMerge}
+            showCreateAnualReportHeader
+          />
+          <h3 className="text-xl font-semibold mt-4">Anual Reports</h3>
+          <ReportsTable
+            reportType="anual"
+            reportData={filterAnualReports(data) || []}
+            handleOnEdit={handleOnEdit}
+            handleOnView={handleOnView}
+            handleOnCompare={handleOnCompare}
+            handleOnDelete={handleOnDelete}
+            handleMerge={handleMerge}
+            handleAnualReport={handleAnualReport}
+            disableHeader
+          />
+        </div>
       )}
       {isLoading && <FullScreenOverlay />}
     </>

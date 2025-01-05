@@ -140,17 +140,20 @@ export default function RecurringReportsTable({
                 </DropdownTrigger>
                 <DropdownMenu aria-label="dropdown options">
                   <DropdownItem
-                    onClick={() => handleActions(report.key, "view")}
+                    key="view button"
+                    onPress={() => handleActions(report.key, "view")}
                   >
                     View
                   </DropdownItem>
                   <DropdownItem
-                    onClick={() => handleActions(report.key, "edit")}
+                    key="edit button"
+                    onPress={() => handleActions(report.key, "edit")}
                   >
                     Edit
                   </DropdownItem>
                   <DropdownItem
-                    onClick={() => handleActions(report.key, "delete")}
+                    key="delete button"
+                    onPress={() => handleActions(report.key, "delete")}
                   >
                     Delete
                   </DropdownItem>

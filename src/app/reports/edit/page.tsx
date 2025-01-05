@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useEffect, useMemo, useState } from "react";
 import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";
 import { useDeviceSize } from "@components/hooks/useDeviceSize";
 import FullScreenOverlay from "@components/Loader/Loader";
@@ -10,12 +11,11 @@ import axios from "axios";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import { useRouter } from "next/navigation";
 import { TransactionBase } from "plaid";
-import React, { useEffect, useMemo, useState } from "react";
 import {
   defaultCategorieToValueObject,
   defaultCategories,
 } from "utils/constants";
-import { convertToCSV, decodeQueryString, formatCreatedDate } from "utils/functions";
+import { convertToCSV, decodeQueryString, filterTransactions, formatCreatedDate } from "utils/functions";
 import { CategoryValues } from "utils/types";
 
 const noop = () => {};
@@ -51,9 +51,9 @@ export default function Page({
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [displayTransactions, setDisplayTransactions] = useState(false);
   const reportData = decodeQueryString(searchParams.data);
-  const { reportName: currentReportName, createdAt, id, ...rest } = reportData;
+  
+  const { reportName: currentReportName, createdAt, id, reportType, ...rest } = reportData;
 
   const [reportName, setReportName] = useState(currentReportName);
   const [isReportNameValid, setIsReportNameValid] = useState(true);
@@ -223,14 +223,20 @@ export default function Page({
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/prisma/transactions/get?reportId=${id}`,
+        `/api/prisma/transactions/get?reportId=${id}&reportType=${reportType}`,
         {
           method: "GET",
         }
       );
       const res = await response.json();
       if (res.success) {
-        generateSelectedCategoryKeys(res.response.data.transactions);
+        let transactions = res.response.data.transactions;
+
+        if (reportType === "ANNUAL") {
+          transactions = filterTransactions(res.response.data.childReports);
+        }
+        
+        generateSelectedCategoryKeys(transactions);
       }
       setIsLoading(false);
     } catch (error) {
@@ -308,7 +314,7 @@ export default function Page({
           <span className="font-normal">{formatCreatedDate(createdAt)}</span>
         </p>
         {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
-        {/* <button onClick={() => handleDownload(transactions)}>Download CSV</button> */}
+        {/* <button onPress={() => handleDownload(transactions)}>Download CSV</button> */}
         {transactions.length > 0 && (
           <div className="flex flex-col gap-4">
             <Input

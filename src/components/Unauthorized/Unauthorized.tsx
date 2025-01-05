@@ -11,7 +11,7 @@ function Unauthorized() {
       <Card className="flex flex-col justify-center items-center w-fit bg-[#0d1117] p-4">
         <CardBody className="flex flex-col gap-4 items-center">
           <h1 className="text-white">You are not authorized, please contact an admin</h1>
-          <Button onClick={() => signOut()} color="primary">
+          <Button onPress={() => signOut()} color="primary">
             Sign Out
           </Button>
         </CardBody>

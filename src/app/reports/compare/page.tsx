@@ -99,7 +99,7 @@ export default function Page({
             isIconOnly
             color="primary"
             aria-label="swap"
-            onClick={handleOrderSwap}
+            onPress={handleOrderSwap}
           >
             <SwapIcon />
           </Button>

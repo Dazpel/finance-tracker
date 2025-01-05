@@ -65,7 +65,7 @@ function RecurringTransactionsPage() {
             handleOnView={handleOnView}
             handleOnDelete={handleOnDelete}
           />
-          <Button className="w-fit" onClick={() => router.push("/recurring-transactions/create")} color="primary">
+          <Button className="w-fit" onPress={() => router.push("/recurring-transactions/create")} color="primary">
             Create New Report
           </Button>
         </div>

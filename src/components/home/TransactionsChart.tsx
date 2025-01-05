@@ -70,7 +70,7 @@
 //   return (
 //     <div>
 //       <h1>Transaction Summary</h1>
-//       <PieChart data={data} onSectionClick={handleSectionClick} />
+//       <PieChart data={data} onSectionPress={handleSectionClick} />
 //       <h2>Transactions</h2>
 //       <p>Selected category: {selectedCategory}</p>
 //       <ul>

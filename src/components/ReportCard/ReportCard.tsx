@@ -111,7 +111,7 @@ export default function ReportCard({
         <Button
           color="primary"
           className="w-full"
-          onClick={handleOnViewDetails}
+          onPress={handleOnViewDetails}
         >
           View Details
         </Button>
@@ -147,7 +147,7 @@ export default function ReportCard({
           </TableBody>
         </Table>
         {showReportButton && (
-          <Button color="primary" onClick={handleSubmitReport}>
+          <Button color="primary" onPress={handleSubmitReport}>
             {actionButtonText}
           </Button>
         )}

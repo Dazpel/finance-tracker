@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import {
   Button,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownTrigger,
   Input,
   Modal,
   ModalBody,
@@ -12,14 +8,7 @@ import {
   ModalFooter,
   ModalHeader,
   Select,
-  Selection,
   SelectItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
 } from "@nextui-org/react";
 import { ReportDataDTO } from "utils/types";
 

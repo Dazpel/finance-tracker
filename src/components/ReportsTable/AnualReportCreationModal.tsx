@@ -50,6 +50,7 @@ export default function AnualReportCreationModal({
     }
 
     await handleAnualReport(reportIds, reportName, filteredReports as ReportDataDTO[]);
+    setIsOpen(false);
   };
 
   return (

@@ -151,7 +151,7 @@ export default function TransactionsPage() {
     return {
       ...categoryValues,
       expenses: -Number(totalExpenses.toFixed(2)),
-      total: Math.ceil(profit),
+      total: profit,
     };
   }, [selectedKeys, transactions]);
 

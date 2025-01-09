@@ -10,6 +10,7 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Pagination,
   Selection,
   Table,
   TableBody,
@@ -102,6 +103,7 @@ export default function ReportsTable({
   showCreateAnualReportHeader = false,
   disableHeader = false,
 }: ReportsTableProps) {
+  const isAnnual = reportType === "anual";
   const [canCompareReports, setCanCompareReports] = useState(false);
   const [maxRowExceeded, setMaxRowExceeded] = useState(false);
   const [reportsToCompare, setReportsToCompare] = useState<Key[]>([]);
@@ -111,6 +113,19 @@ export default function ReportsTable({
   const [reportIndexToDelete, setReportIndexToDelete] = useState<number | null>(
     null
   );
+
+  //pagination
+  const [page, setPage] = React.useState(1);
+  const rowsPerPage = 4;
+
+  const pages = Math.ceil(reportData.length / rowsPerPage);
+
+  const currentPageItems = React.useMemo(() => {
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+
+    return reportData.slice(start, end);
+  }, [page, reportData]);
 
   const handleRowSelection = (key: Selection | string) => {
     setMaxRowExceeded(false);
@@ -228,6 +243,21 @@ export default function ReportsTable({
     );
   }, [canCompareReports, maxRowExceeded, reportsToCompare, showCreateAnualReportHeader, handleCompare]);
 
+  const bottomContent = useMemo(() => {
+    return (
+      <div className="flex w-full justify-center">
+        <Pagination
+          isCompact
+          showControls
+          color="default"
+          page={page}
+          total={pages}
+          onChange={(page) => setPage(page)}
+        />
+      </div>
+    );
+  }, [ reportData ]);
+
   const renderCell = useCallback(
     (report: TableRow, columnKey: React.Key) => {
       const cellValue = report[columnKey as keyof TableRow] as string;
@@ -244,7 +274,7 @@ export default function ReportsTable({
                 </DropdownTrigger>
                 <DropdownMenu aria-label="dropdown options">
                   <DropdownItem key="view button" onPress={() => handleActions(report.key, "view")}>View</DropdownItem>
-                  <DropdownItem key="edit button" onPress={() => handleActions(report.key, "edit")}>Edit</DropdownItem>
+                  {!isAnnual ? <DropdownItem key="edit button" onPress={() => handleActions(report.key, "edit")}>Edit</DropdownItem> : null}
                   <DropdownItem key="delete button" onPress={() => handleActions(report.key, "delete")}>
                     Delete
                   </DropdownItem>
@@ -270,6 +300,7 @@ export default function ReportsTable({
         isCompact
         aria-label="Reports table"
         topContent={!disableHeader && topContent}
+        bottomContent={reportData.length > rowsPerPage && bottomContent}
         topContentPlacement="inside"
         onSelectionChange={handleRowSelection}
         selectionMode={canCompareReports ? "multiple" : "none"}
@@ -283,7 +314,7 @@ export default function ReportsTable({
           )}
         </TableHeader>
         <TableBody
-          items={rows(reportData)}
+          items={rows(currentPageItems)}
           emptyContent="No reports found."
         >
           {(item) => (

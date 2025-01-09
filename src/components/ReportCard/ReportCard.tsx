@@ -76,6 +76,10 @@ export default function ReportCard({
 
     return deviceHeight < 600 ? "relative" : position;
   }, [deviceHeight, fixedPosition]);
+
+  const formatNumber = (value: number) => {
+    return value % 1 !== 0 ? value.toFixed(2) : value;
+  };
   
   const renderCell = React.useCallback(
     (item: TableRow, columnKey: React.Key) => {
@@ -91,7 +95,7 @@ export default function ReportCard({
           );
 
         default:
-          return cellValue;
+          return formatNumber(cellValue as unknown as number) || cellValue;
       }
     },
     []

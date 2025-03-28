@@ -20,8 +20,8 @@ export default function DateRangePicker({
   isLoading,
   title
 }: DateRangePickerProps) {
-  const [startDateRaw, setStartDateRaw] = useState<Date | null>(null);
-  const [endDateRaw, setEndDateRaw] = useState<Date | null>(null);
+  const [startDateRaw, setStartDateRaw] = useState<Date | undefined>(undefined);
+  const [endDateRaw, setEndDateRaw] = useState<Date | undefined>(undefined);
   const [error, setError] = useState(false);
   const maxDate = new Date();
 

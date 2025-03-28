@@ -118,7 +118,7 @@ export default function ReportsPage() {
       {!isPending && (
         <div className="flex flex-col gap-4">
           <ReportsTable
-            reportData={filterMonthlyReports(data) || []}
+            reportData={filterMonthlyReports(data).reverse() || []}
             handleOnEdit={handleOnEdit}
             handleOnView={handleOnView}
             handleOnCompare={handleOnCompare}
@@ -130,7 +130,7 @@ export default function ReportsPage() {
           <h3 className="text-xl font-semibold mt-4">Anual Reports</h3>
           <ReportsTable
             reportType="anual"
-            reportData={filterAnualReports(data) || []}
+            reportData={filterAnualReports(data).reverse() || []}
             handleOnEdit={handleOnEdit}
             handleOnView={handleOnView}
             handleOnCompare={handleOnCompare}

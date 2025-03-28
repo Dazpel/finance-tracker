@@ -28,6 +28,7 @@ import AnualReportCreationModal from "./AnualReportCreationModal";
 type RowActions = "edit" | "delete" | "view";
 
 type TableRow = {
+  id: number;
   key: number;
   name: string;
   date: string;
@@ -81,6 +82,7 @@ const columns = [
 const rows = (data: ReportDataDTO[]): TableRow[] => {
   return data.map((report, index) => {
     return {
+      id: report.id,
       key: index,
       name: report.reportName,
       date: formatCreatedDate(report.createdAt),
@@ -163,21 +165,22 @@ export default function ReportsTable({
     }
   };
 
-  const displayDeleteModal = useCallback((index: number) => {
-    setReportIndexToDelete(reportData[index].id);
+  const displayDeleteModal = useCallback((id: number) => {
+    setReportIndexToDelete(id);
     setIsDeleteModalOpen(true);
   }, [reportData]);
 
-  const handleActions = useCallback((index: number, action: RowActions) => {
+  const handleActions = useCallback((id: number, action: RowActions) => {
+    const report = reportData.find((report) => report.id === id);
     switch (action) {
       case "edit":
-        handleOnEdit && handleOnEdit(compressToEncodedURIComponent(JSON.stringify(reportData[index])));
+        handleOnEdit && handleOnEdit(compressToEncodedURIComponent(JSON.stringify(report)));
         break;
       case "delete":
-        displayDeleteModal(index);
+        displayDeleteModal(id);
         break;
       case "view":
-        handleOnView && handleOnView(compressToEncodedURIComponent(JSON.stringify(reportData[index])));
+        handleOnView && handleOnView(compressToEncodedURIComponent(JSON.stringify(report)));
         break;
       default:
         break;
@@ -256,12 +259,11 @@ export default function ReportsTable({
         />
       </div>
     );
-  }, [ reportData ]);
+  }, [ page, pages ]);
 
   const renderCell = useCallback(
     (report: TableRow, columnKey: React.Key) => {
       const cellValue = report[columnKey as keyof TableRow] as string;
-
       switch (columnKey) {
         case "actions":
           return (
@@ -273,9 +275,9 @@ export default function ReportsTable({
                   </Button>
                 </DropdownTrigger>
                 <DropdownMenu aria-label="dropdown options">
-                  <DropdownItem key="view button" onPress={() => handleActions(report.key, "view")}>View</DropdownItem>
-                  {!isAnnual ? <DropdownItem key="edit button" onPress={() => handleActions(report.key, "edit")}>Edit</DropdownItem> : null}
-                  <DropdownItem key="delete button" onPress={() => handleActions(report.key, "delete")}>
+                  <DropdownItem key="view button" onPress={() => handleActions(report.id, "view")}>View</DropdownItem>
+                  {!isAnnual ? <DropdownItem key="edit button" onPress={() => handleActions(report.id, "edit")}>Edit</DropdownItem> : null}
+                  <DropdownItem key="delete button" onPress={() => handleActions(report.id, "delete")}>
                     Delete
                   </DropdownItem>
                 </DropdownMenu>

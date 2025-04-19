@@ -9,7 +9,7 @@ import {
   ModalHeader,
   Select,
   SelectItem,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { ReportDataDTO } from "utils/types";
 
 type AnualReportCreationModalProps = {

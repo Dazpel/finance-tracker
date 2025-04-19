@@ -6,7 +6,7 @@ import { useDeviceSize } from "@components/hooks/useDeviceSize";
 import FullScreenOverlay from "@components/Loader/Loader";
 import ReportCard from "@components/ReportCard/ReportCard";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
-import { Input, Tab, Tabs } from "@nextui-org/react";
+import { Input, Tab, Tabs } from "@heroui/react";
 import axios from "axios";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import { useRouter } from "next/navigation";

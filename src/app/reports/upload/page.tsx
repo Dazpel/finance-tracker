@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import ReportCard, { ReportData } from "@components/ReportCard/ReportCard";
-import { Button, Divider, Input, Tooltip } from "@nextui-org/react";
+import { Button, Divider, Input, Tooltip } from "@heroui/react";
 import SwapIcon from "assets/icons/SwapIcon";
 import { decodeQueryString } from "utils/functions";
 
@@ -37,7 +37,6 @@ export default function Page() {
     // update csvHeader split, comma is messing it up 
     const csvHeader = text.slice(0, text.indexOf("\n")).split(",");
     const csvRows = text.slice(text.indexOf("\n") + 1).split("\n");
-    console.log(csvRows);
     
     const array = csvRows.map((i) => {
       const values = i.split(",");
@@ -76,9 +75,6 @@ export default function Page() {
       csvFileToArray(csv as string);
     };
   };
-
-  console.log(transactions);
-  
 
   return (
     <div className="flex flex-col">

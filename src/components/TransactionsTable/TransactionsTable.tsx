@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
   Tooltip,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { ChevronDownIcon } from "assets/icons/ChevronDownIcon";
 import { PlusIcon } from "assets/icons/PlusIcon";
 import RedoIcon from "assets/icons/RedoIcon";

@@ -3,7 +3,7 @@
 import { useDeviceSize } from "@components/hooks/useDeviceSize";
 import ReportCard from "@components/ReportCard/ReportCard";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
-import { Button, Tab, Tabs } from "@nextui-org/react";
+import { Button, Tab, Tabs } from "@heroui/react";
 import { TransactionBase } from "plaid";
 import React, { useState } from "react";
 import { decodeQueryString, filterTransactions, formatCreatedDate } from "utils/functions";

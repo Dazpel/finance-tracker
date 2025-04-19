@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
   getKeyValue,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { AccountBase } from "plaid";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 import ItemRemoveTable from "@components/ItemRemoveTable/ItemRemoveTable";

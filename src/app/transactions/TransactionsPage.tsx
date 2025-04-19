@@ -15,7 +15,7 @@ import { CategoryValues } from "utils/types";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
-import { Input, Tab, Tabs } from "@nextui-org/react";
+import { Input, Tab, Tabs } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import FullScreenOverlay from "@components/Loader/Loader";
 import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";

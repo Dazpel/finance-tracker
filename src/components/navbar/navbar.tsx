@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Navbar, NavbarContent } from "@nextui-org/react";
+import { Navbar, NavbarContent } from "@heroui/react";
 import { BurguerButton } from "./burguer-button";
 import { NotificationsDropdown } from "./notifications-dropdown";
 import { UserDropdown } from "./user-dropdown";

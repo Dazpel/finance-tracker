@@ -18,7 +18,7 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { ReportDataDTO } from "utils/types";
 import { compressToEncodedURIComponent } from "lz-string";
 import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";

@@ -13,7 +13,7 @@ import {
   TableColumn,
   TableHeader,
   TableRow
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { TransactionStream } from "plaid";
 import { TableRowType, defaultColumns, rows } from "./constants";
 import { PlusIcon } from "assets/icons/PlusIcon";

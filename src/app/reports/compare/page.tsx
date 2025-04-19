@@ -1,9 +1,9 @@
 "use client";
 
 import ReportCard, { ReportData } from "@components/ReportCard/ReportCard";
-import { Button, Tooltip } from "@nextui-org/react";
+import { Button, Tooltip } from "@heroui/react";
 import SwapIcon from "assets/icons/SwapIcon";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { decodeQueryString } from "utils/functions";
 
 type ReportsToCompare = {

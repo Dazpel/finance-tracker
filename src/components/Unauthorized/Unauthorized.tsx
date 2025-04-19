@@ -1,9 +1,7 @@
 "use client";
-
-import EyeLogo from "@components/navbar/EyeLogo";
-import { Button, Card, CardBody, CardHeader } from "@nextui-org/react";
-import { signOut } from "next-auth/react";
 import React from "react";
+import { Button, Card, CardBody, CardHeader } from "@heroui/react";
+import { signOut } from "next-auth/react";
 
 function Unauthorized() {
   return (

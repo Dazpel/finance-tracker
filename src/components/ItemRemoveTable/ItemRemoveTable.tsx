@@ -9,7 +9,7 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { ConnectionType } from "app/accounts/AccountsPage";
 

@@ -1,7 +1,6 @@
 import React from "react";
 import { useSidebarContext } from "../layout/layout-context";
-import { StyledBurgerButton } from "./navbar.styles";
-import { NavbarMenuToggle } from "@nextui-org/react";
+import { NavbarMenuToggle } from "@heroui/react";
 
 export const BurguerButton = () => {
   const { collapsed, setCollapsed } = useSidebarContext();

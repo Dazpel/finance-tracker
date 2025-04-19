@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
 import RecurringReportsTable from "@components/RecurringReportsTable/RecurringReportsTable";
 import { useRouter } from "next/navigation";
-import { Button } from "@nextui-org/react";
+import { Button } from "@heroui/react";
 
 export type FlowType = "inflows" | "outflows";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { use } from "react";
 import PageLoader from "@components/PageLoader/PageLoader";
 import RecurringTransactionsTable from "@components/RecurringTransactionsTable/RecurringTransactionsTable";
 import { useQuery } from "@tanstack/react-query";
@@ -8,11 +8,10 @@ import { decodeQueryString, formatCreatedDate } from "utils/functions";
 
 const noop = () => {};
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams: { data: string };
+export default function Page(props: {
+  searchParams: Promise<{ data: string }>;
 }) {
+  const searchParams = use(props.searchParams);
   const reportData = decodeQueryString(searchParams.data);
   const { reportName, createdAt, id, inflow, outflow } = reportData;
 
@@ -43,7 +42,11 @@ export default function Page({
           Created At:{" "}
           <span className="font-normal">{formatCreatedDate(createdAt)}</span>
         </p>
-        {isError && <p className="mb-4 text-danger">There was an error fetching details</p>}
+        {isError && (
+          <p className="mb-4 text-danger">
+            There was an error fetching details
+          </p>
+        )}
         <div className="flex flex-col gap-4">
           {data?.outflowTransactions.length > 0 && (
             <div className="flex flex-col gap-4 mt-2">

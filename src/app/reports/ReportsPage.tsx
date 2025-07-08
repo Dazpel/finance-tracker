@@ -8,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
 import { ReportDataDTO } from "utils/types";
 import { ReportType } from "@prisma/client";
-import { revalidatePath } from "next/cache";
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -85,13 +84,17 @@ export default function ReportsPage() {
 
   const filterMonthlyReports = (reports: ReportDataDTO[]) => {
     return reports.filter((report) => report.reportType === ReportType.MONTHLY);
-  }
+  };
 
   const filterAnualReports = (reports: ReportDataDTO[]) => {
     return reports.filter((report) => report.reportType === ReportType.ANNUAL);
-  }
+  };
 
-  const handleAnualReport = async (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => {
+  const handleAnualReport = async (
+    reportIds: number[],
+    reportName: string,
+    reports: ReportDataDTO[]
+  ) => {
     try {
       setIsLoading(true);
       const response = await fetch("/api/prisma/reports/create-anual", {
@@ -101,7 +104,6 @@ export default function ReportsPage() {
       const data = await response.json();
       if (data.success) {
         setIsLoading(false);
-        revalidatePath("/reports");
         return router.refresh();
       }
       setIsLoading(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, use } from "react";
 import EditTransactionModal from "@components/EditTransactionModal/EditTransactionModal";
 import { useDeviceSize } from "@components/hooks/useDeviceSize";
 import FullScreenOverlay from "@components/Loader/Loader";
@@ -37,11 +37,12 @@ const handleDownload = (transactions: TransactionBase[]) => {
   link.click();
 };
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams: { data: string };
-}) {
+export default function Page(
+  props: {
+    searchParams: Promise<{ data: string }>;
+  }
+) {
+  const searchParams = use(props.searchParams);
   //todo: abstract generateSelectedCategoryKeys so it can be reused
   const isMobile = useDeviceSize();
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function Page({
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const reportData = decodeQueryString(searchParams.data);
-  
+
   const { reportName: currentReportName, createdAt, id, reportType, ...rest } = reportData;
 
   const [reportName, setReportName] = useState(currentReportName);
@@ -64,7 +65,7 @@ export default function Page({
   const { transactions, selectedKeys } = history;
   const canUndo = index > 1;
   const canRedo = index < lastIndex;
-  
+
   const handleReportNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsReportNameValid(true);
     const reportNameRegex = /^[a-zA-Z0-9\s]+$/;
@@ -246,7 +247,7 @@ export default function Page({
       setIsLoading(false);
     }
   };
-  
+
   const renderTransactionsTable = () => (
     <TransactionsTable
       canRedo={canRedo}

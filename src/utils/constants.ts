@@ -8,7 +8,7 @@ export const appRoutes = {
   RECURRING_TRANSACTIONS_PAGE: "/recurring-transactions",
 };
 
-export const ignoredTransactions = ['internet transfer', 'zelle', 'payment thank you-mobile', 'ticketmaster', 'ROBINHOOD Funds', 'Requested transfer'];
+export const ignoredTransactions = ['internet transfer', 'zelle', 'payment thank you-mobile', 'ticketmaster', 'robinhood funds', 'requested transfer'];
 
 export const defaultCategoryFilterOptions = [
   { name: "Food & Drink", uid: "Food & Drink" },

@@ -347,7 +347,7 @@ export async function getAccessToken(): Promise<boolean> {
 
 export function mapDefaultCategoryToCustomCategory(description: string, category: string): string {
   const categoryMap: { [key: string]: string[] } = {
-    "Gas": ['chevron', 'shell', 'exxon', 'mobil', 'gas'],
+    "Car": ['chevron', 'shell', 'exxon', 'mobil', 'gas', 'tire', 'oil', 'maintenance', 'insurance', 'car', 'auto', 'vehicle'],
     "Groceries": ['grocery', 'supermarket', 'costco', 'walmart', 'safeway', 'trader', 'joe', 'whole', 'foods', 'instacart', 'winn-dixie'],
     "Food & Drink": ['brew'],
     "Bills & Utilities": ['fpl', 'att', 'at&t', 'xfinity', 'chantilly', 'comcast', 'chatgpt', 'mortgage', 'github', 'cooper'],

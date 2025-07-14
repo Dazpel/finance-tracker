@@ -545,7 +545,7 @@ export const createAnnualReport = async (
       (totals, report) => ({
         foodAndDrink: totals.foodAndDrink + report.foodAndDrink,
         billsAndUtilities: totals.billsAndUtilities + report.billsAndUtilities,
-        gas: totals.gas + report.gas,
+        car: totals.car + report.car,
         entertainment: totals.entertainment + report.entertainment,
         groceries: totals.groceries + report.groceries,
         healthAndWellness: totals.healthAndWellness + report.healthAndWellness,
@@ -560,7 +560,7 @@ export const createAnnualReport = async (
       {
         foodAndDrink: 0,
         billsAndUtilities: 0,
-        gas: 0,
+        car: 0,
         entertainment: 0,
         groceries: 0,
         healthAndWellness: 0,

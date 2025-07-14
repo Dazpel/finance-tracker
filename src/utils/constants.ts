@@ -13,7 +13,7 @@ export const ignoredTransactions = ['internet transfer', 'zelle', 'payment thank
 export const defaultCategoryFilterOptions = [
   { name: "Food & Drink", uid: "Food & Drink" },
   { name: "Bills & Utilities", uid: "Bills & Utilities" },
-  { name: "Gas", uid: "Gas" },
+  { name: "Car", uid: "Car" },
   { name: "Entertainment", uid: "Entertainment" },
   { name: "Groceries", uid: "Groceries" },
   { name: "Health & Wellness", uid: "Health & Wellness" },
@@ -51,7 +51,7 @@ export const plaidCategories = [
 export const defaultCategories = [
   "food & drink",
   "bills & utilities",
-  "gas",
+  "car",
   "entertainment",
   "groceries",
   "health & wellness",
@@ -65,7 +65,7 @@ export const defaultCategories = [
 export const defaultCategorieToValueObject = {
   "food & drink": 0,
   "bills & utilities": 0,
-  gas: 0,
+  car: 0,
   entertainment: 0,
   groceries: 0,
   "health & wellness": 0,

@@ -10,7 +10,7 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { ChevronDownIcon } from "assets/icons/ChevronDownIcon";
 import React from "react";
 import { defaultCategories } from "utils/constants";

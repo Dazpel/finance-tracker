@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Sidebar } from "./sidebar.styles";
-import { Tooltip } from "@nextui-org/react";
+import { Tooltip } from "@heroui/react";
 import { HomeIcon } from "@components/icons/sidebar/home-icon";
 import { PaymentsIcon } from "@components/icons/sidebar/payments-icon";
 import { AccountsIcon } from "@components/icons/sidebar/accounts-icon";

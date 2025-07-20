@@ -1,5 +1,7 @@
-import React from 'react'
-import { Card, Skeleton } from '@nextui-org/react'
+"use client";
+
+import React from "react";
+import { Card, Skeleton } from "@heroui/react";
 
 function PageLoader() {
   return (
@@ -11,7 +13,7 @@ function PageLoader() {
         ))}
       </div>
     </Card>
-  )
+  );
 }
 
-export default PageLoader
+export default PageLoader;

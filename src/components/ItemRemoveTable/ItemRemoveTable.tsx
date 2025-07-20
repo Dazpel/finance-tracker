@@ -9,7 +9,7 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { ConnectionType } from "app/accounts/AccountsPage";
 
@@ -71,7 +71,7 @@ export default function ItemRemoveTable({ connections }: ItemRemoveTableProps) {
             <Button
               color="danger"
               className="w-fit"
-              onClick={() => removeConnection(itemId)}
+              onPress={() => removeConnection(itemId)}
             >
               Remove connection
             </Button>

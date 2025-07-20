@@ -10,6 +10,7 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Pagination,
   Selection,
   Table,
   TableBody,
@@ -17,15 +18,17 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { ReportDataDTO } from "utils/types";
 import { compressToEncodedURIComponent } from "lz-string";
 import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 import { formatCreatedDate } from "utils/functions";
+import AnualReportCreationModal from "./AnualReportCreationModal";
 
 type RowActions = "edit" | "delete" | "view";
 
 type TableRow = {
+  id: number;
   key: number;
   name: string;
   date: string;
@@ -36,6 +39,7 @@ type TableRow = {
 
 type ReportsTableProps = {
   reportData: ReportDataDTO[];
+  reportType?: "monthly" | "anual";
   showFooter?: boolean;
   showReportButton?: boolean;
   handleOnCompare: (encodedURI: string) => void;
@@ -43,6 +47,9 @@ type ReportsTableProps = {
   handleOnEdit?: (encodedURI: string) => void;
   handleOnDelete: (index: number) => Promise<void>;
   handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>
+  handleAnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>
+  showCreateAnualReportHeader?: boolean;
+  disableHeader?: boolean;
 };
 
 const columns = [
@@ -75,6 +82,7 @@ const columns = [
 const rows = (data: ReportDataDTO[]): TableRow[] => {
   return data.map((report, index) => {
     return {
+      id: report.id,
       key: index,
       name: report.reportName,
       date: formatCreatedDate(report.createdAt),
@@ -87,20 +95,39 @@ const rows = (data: ReportDataDTO[]): TableRow[] => {
 
 export default function ReportsTable({
   reportData,
+  reportType = "monthly",
   handleOnCompare,
   handleOnDelete,
   handleOnEdit,
   handleOnView,
-  handleMerge
+  handleMerge,
+  handleAnualReport,
+  showCreateAnualReportHeader = false,
+  disableHeader = false,
 }: ReportsTableProps) {
+  const isAnnual = reportType === "anual";
   const [canCompareReports, setCanCompareReports] = useState(false);
   const [maxRowExceeded, setMaxRowExceeded] = useState(false);
   const [reportsToCompare, setReportsToCompare] = useState<Key[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+  const [isAnualReportModalOpen, setIsAnualReportModalOpen] = useState(false);
   const [reportIndexToDelete, setReportIndexToDelete] = useState<number | null>(
     null
   );
+
+  //pagination
+  const [page, setPage] = React.useState(1);
+  const rowsPerPage = 4;
+
+  const pages = Math.ceil(reportData.length / rowsPerPage);
+
+  const currentPageItems = React.useMemo(() => {
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+
+    return reportData.slice(start, end);
+  }, [page, reportData]);
 
   const handleRowSelection = (key: Selection | string) => {
     setMaxRowExceeded(false);
@@ -138,21 +165,22 @@ export default function ReportsTable({
     }
   };
 
-  const displayDeleteModal = useCallback((index: number) => {
-    setReportIndexToDelete(reportData[index].id);
+  const displayDeleteModal = useCallback((id: number) => {
+    setReportIndexToDelete(id);
     setIsDeleteModalOpen(true);
   }, [reportData]);
 
-  const handleActions = useCallback((index: number, action: RowActions) => {
+  const handleActions = useCallback((id: number, action: RowActions) => {
+    const report = reportData.find((report) => report.id === id);
     switch (action) {
       case "edit":
-        handleOnEdit && handleOnEdit(compressToEncodedURIComponent(JSON.stringify(reportData[index])));
+        handleOnEdit && handleOnEdit(compressToEncodedURIComponent(JSON.stringify(report)));
         break;
       case "delete":
-        displayDeleteModal(index);
+        displayDeleteModal(id);
         break;
       case "view":
-        handleOnView && handleOnView(compressToEncodedURIComponent(JSON.stringify(reportData[index])));
+        handleOnView && handleOnView(compressToEncodedURIComponent(JSON.stringify(report)));
         break;
       default:
         break;
@@ -174,28 +202,38 @@ export default function ReportsTable({
           <Button
             variant="flat"
             className="w-fit"
-            onClick={() => setCanCompareReports(!canCompareReports)}
+            onPress={() => setCanCompareReports(!canCompareReports)}
           >
             {!canCompareReports ? "Merge or Compare" : "Disable"}
           </Button>
           {canCompare && (
+          <div className="flex space-x-2">
             <Button
               color="primary"
               variant="flat"
               className="w-fit"
-              onClick={handleCompare}
+              onPress={handleCompare}
             >
               Compare
             </Button>
-          )}
-          {canCompare && (
             <Button
               color="primary"
               variant="flat"
               className="w-fit"
-              onClick={() => setIsMergeModalOpen(true)}
+              onPress={() => setIsMergeModalOpen(true)}
             >
               Merge
+            </Button>
+          </div>
+        )}
+          {showCreateAnualReportHeader && (
+            <Button
+              color="primary"
+              variant="flat"
+              className="w-fit"
+              onPress={() => setIsAnualReportModalOpen(true)}
+            >
+              Create Anual Report
             </Button>
           )}
         </div>
@@ -206,12 +244,26 @@ export default function ReportsTable({
         )}
       </div>
     );
-  }, [canCompareReports, maxRowExceeded, reportsToCompare, handleCompare]);
+  }, [canCompareReports, maxRowExceeded, reportsToCompare, showCreateAnualReportHeader, handleCompare]);
+
+  const bottomContent = useMemo(() => {
+    return (
+      <div className="flex w-full justify-center">
+        <Pagination
+          isCompact
+          showControls
+          color="default"
+          page={page}
+          total={pages}
+          onChange={(page) => setPage(page)}
+        />
+      </div>
+    );
+  }, [ page, pages ]);
 
   const renderCell = useCallback(
     (report: TableRow, columnKey: React.Key) => {
       const cellValue = report[columnKey as keyof TableRow] as string;
-
       switch (columnKey) {
         case "actions":
           return (
@@ -223,9 +275,9 @@ export default function ReportsTable({
                   </Button>
                 </DropdownTrigger>
                 <DropdownMenu aria-label="dropdown options">
-                  <DropdownItem onClick={() => handleActions(report.key, "view")}>View</DropdownItem>
-                  <DropdownItem onClick={() => handleActions(report.key, "edit")}>Edit</DropdownItem>
-                  <DropdownItem onClick={() => handleActions(report.key, "delete")}>
+                  <DropdownItem key="view button" onPress={() => handleActions(report.id, "view")}>View</DropdownItem>
+                  {!isAnnual ? <DropdownItem key="edit button" onPress={() => handleActions(report.id, "edit")}>Edit</DropdownItem> : null}
+                  <DropdownItem key="delete button" onPress={() => handleActions(report.id, "delete")}>
                     Delete
                   </DropdownItem>
                 </DropdownMenu>
@@ -249,7 +301,8 @@ export default function ReportsTable({
       <Table
         isCompact
         aria-label="Reports table"
-        topContent={topContent}
+        topContent={!disableHeader && topContent}
+        bottomContent={reportData.length > rowsPerPage && bottomContent}
         topContentPlacement="inside"
         onSelectionChange={handleRowSelection}
         selectionMode={canCompareReports ? "multiple" : "none"}
@@ -263,7 +316,7 @@ export default function ReportsTable({
           )}
         </TableHeader>
         <TableBody
-          items={rows(reportData)}
+          items={rows(currentPageItems)}
           emptyContent="No reports found."
         >
           {(item) => (
@@ -335,6 +388,11 @@ export default function ReportsTable({
           )}
         </ModalContent>
       </Modal>
+      <AnualReportCreationModal 
+        reportData={reportData}
+        isOpen={isAnualReportModalOpen} 
+        handleAnualReport={handleAnualReport}
+        setIsOpen={setIsAnualReportModalOpen} />
     </>
   );
 }

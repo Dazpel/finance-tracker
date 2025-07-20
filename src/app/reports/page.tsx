@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
-import ReportsPage from "./ReportsPage";
 import PageLoader from "@components/PageLoader/PageLoader";
+import ReportsPage from "./ReportsPage";
 
 // Needs work, doesn't reload data on page change
 // Explore react query for this

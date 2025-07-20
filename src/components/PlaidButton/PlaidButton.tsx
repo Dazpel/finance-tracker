@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Button, Skeleton } from "@nextui-org/react";
+import { Button, Skeleton } from "@heroui/react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -89,7 +89,7 @@ function PlaidButton({ updateMode = false, accessToken, buttonText }: PlaidButto
       <Button
         color="primary"
         className="w-fit"
-        onClick={() => open()}
+        onPress={() => open()}
         disabled={!ready}
       >
         {buttonText || "Connect a bank account"}

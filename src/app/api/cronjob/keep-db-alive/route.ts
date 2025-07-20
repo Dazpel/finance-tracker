@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import prisma from "@lib/prisma/prismaClient";
 
+async function pingWithRetry(attempts = 3, delayMs = 500): Promise<void> {
+  let lastErr: any;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await prisma.$queryRaw`SELECT 1;`;
+      return;
+    } catch (err) {
+      lastErr = err;
+      // if this was the last try, rethrow
+      if (i === attempts - 1) break;
+      await new Promise((res) => setTimeout(res, delayMs * 2 ** i));
+    }
+  }
+  throw lastErr;
+}
+
 export async function POST(request: Request) {
-    const initTimer = Date.now();
+  const initTimer = Date.now();
   try {
     if (
       request.headers.get("Authorization") !==
@@ -17,38 +33,9 @@ export async function POST(request: Request) {
     console.log("------- Request to create keep db alive -------");
     console.log("-----------------------------------");
 
-    const users = await prisma.user.findMany({
-      select: {
-        email: true,
-        accounts: true,
-      },
-      where: {
-        accounts: {
-          some: {
-            NOT: {
-              accessToken: undefined,
-            },
-            AND: {
-              user: {
-                email: {
-                  in: process.env.EMAIL_WHITELIST
-                    ? process.env.EMAIL_WHITELIST.split(",")
-                    : [],
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-    
-    if (users.length === 0) {
-      return NextResponse.json({ status: 200 });
-    }
-
-    console.log("-------- Request completed --------");
-
-    return NextResponse.json({ status: 200 });
+    await pingWithRetry();
+    console.log(`✅ db is awake (${Date.now() - initTimer}ms)`);
+    return NextResponse.json({ status: "ok" });
   } catch (error) {
     console.log(error);
     return NextResponse.json({ status: 500 });

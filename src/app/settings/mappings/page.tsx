@@ -1,7 +1,7 @@
 "use client";
 
 import { plaidClient } from "@lib/plaid";
-import { Button, Select, SelectItem } from "@nextui-org/react";
+import { Button, Select, SelectItem } from "@heroui/react";
 import React from "react";
 import { defaultCategories, plaidCategories } from "utils/constants";
 
@@ -20,7 +20,7 @@ export default function Page() {
               label="Select a category"
             >
               {plaidCategories.map((category, index) => (
-                <SelectItem key={index} value={category}>
+                <SelectItem key={index}>
                   {category}
                 </SelectItem>
               ))}
@@ -33,7 +33,7 @@ export default function Page() {
               label="Select a category"
             >
               {defaultCategories.map((category, index) => (
-                <SelectItem key={index} value={category}>
+                <SelectItem key={index}>
                   {category}
                 </SelectItem>
               ))}

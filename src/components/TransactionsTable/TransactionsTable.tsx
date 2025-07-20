@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
   Tooltip,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { ChevronDownIcon } from "assets/icons/ChevronDownIcon";
 import { PlusIcon } from "assets/icons/PlusIcon";
 import RedoIcon from "assets/icons/RedoIcon";
@@ -314,7 +314,7 @@ export default function TransactionsTable({
             </Dropdown>
             {canEdit && (
               <Button
-                onClick={() =>
+                onPress={() =>
                   handleCreateTransaction(transactions)
                 }
                 color="primary"
@@ -327,7 +327,7 @@ export default function TransactionsTable({
               <Tooltip content="Undo action" color="default">
                 <Button
                   isIconOnly
-                  onClick={() => goBack()}
+                  onPress={() => goBack()}
                   variant="flat"
                   aria-label="undo"
                 >
@@ -339,7 +339,7 @@ export default function TransactionsTable({
               <Tooltip content="Redo action" color="default">
                 <Button
                   isIconOnly
-                  onClick={() => goForward()}
+                  onPress={() => goForward()}
                   variant="flat"
                   aria-label="redo"
                 >
@@ -380,8 +380,8 @@ export default function TransactionsTable({
                   </Button>
                 </DropdownTrigger>
                 <DropdownMenu aria-label="dropdown options">
-                  <DropdownItem onClick={() => onEdit(transaction["key"])}>Edit</DropdownItem>
-                  <DropdownItem onClick={() => onDelete(transaction["key"])}>
+                  <DropdownItem key="edit transaction button" onPress={() => onEdit(transaction["key"])}>Edit</DropdownItem>
+                  <DropdownItem key="delete transaction button" onPress={() => onDelete(transaction["key"])}>
                     Delete
                   </DropdownItem>
                 </DropdownMenu>

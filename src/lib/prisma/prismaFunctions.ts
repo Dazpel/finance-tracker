@@ -1,8 +1,9 @@
 import { ReportData } from "@components/ReportCard/ReportCard";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, ReportType } from "@prisma/client";
 import { RecurringReportData } from "app/recurring-transactions/_utils/constants";
 import { TransactionBase } from "plaid";
 import { formatReportKeys, formatTransactions } from "utils/functions";
+import { ReportDataDTO } from "utils/types";
 
 export type PrismaResponse = {
   success: boolean;
@@ -132,27 +133,50 @@ export const getRecurringTransactions = async (
 export const getTransactions = async (
   prisma: PrismaClient,
   userEmail: string,
+  reportType: ReportType,
   reportId: string
 ) => {
   let response: PrismaResponse = {
     success: false,
   };
 
+  let transactions;
+
   try {
-    const transactions = await prisma.report.findUnique({
-      where: {
-        id: Number(reportId),
-        AND: {
-          user: {
-            email: userEmail,
+    if (reportType === ReportType.ANNUAL) {
+      transactions = await prisma.report.findUnique({
+        where: {
+          id: Number(reportId),
+          AND: {
+            user: {
+              email: userEmail,
+            },
           },
         },
-      },
-      select: {
-        transactions: true,
-      },
-    });
-
+        select: {
+          childReports: {
+            select: {
+              transactions: true,
+            },
+          },
+        },
+      });
+    } else {
+      transactions = await prisma.report.findUnique({
+        where: {
+          id: Number(reportId),
+          AND: {
+            user: {
+              email: userEmail,
+            },
+          },
+        },
+        select: {
+          transactions: true,
+        },
+      });
+    }
+    
     response = {
       success: true,
       data: transactions,
@@ -208,9 +232,7 @@ export const createReport = async (
             reportName,
             ...formattedReport,
             transactions: {
-              createMany: {
-                data: formattedTransactions,
-              },
+              create: formattedTransactions,
             },
           },
         },
@@ -389,9 +411,7 @@ export const updateReport = async (
         reportName,
         ...formattedReport,
         transactions: {
-          createMany: {
-            data: formattedTransactions,
-          },
+          create: formattedTransactions,
         },
       },
     });
@@ -483,6 +503,93 @@ export const mergeReports = async (
 
     response = {
       success: true,
+    };
+  } catch (error) {
+    console.log({ error });
+
+    response = {
+      success: false,
+      error,
+    };
+  }
+
+  return response;
+};
+
+export const createAnnualReport = async (
+  prisma: PrismaClient,
+  reports: ReportDataDTO[],
+  monthlyReportIds: number[],
+  annualReportName: string,
+  userEmail: string
+): Promise<PrismaResponse> => {
+  let response: PrismaResponse = {
+    success: false,
+  };
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: userEmail },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        error: "User not found",
+      };
+    }
+
+    // Aggregate category values
+    const aggregatedValues = reports.reduce(
+      (totals, report) => ({
+        foodAndDrink: totals.foodAndDrink + report.foodAndDrink,
+        billsAndUtilities: totals.billsAndUtilities + report.billsAndUtilities,
+        car: totals.car + report.car,
+        entertainment: totals.entertainment + report.entertainment,
+        groceries: totals.groceries + report.groceries,
+        healthAndWellness: totals.healthAndWellness + report.healthAndWellness,
+        personal: totals.personal + report.personal,
+        shopping: totals.shopping + report.shopping,
+        feesAndAdjustments: totals.feesAndAdjustments + report.feesAndAdjustments,
+        others: totals.others + report.others,
+        revenue: totals.revenue + report.revenue,
+        expenses: totals.expenses + report.expenses,
+        total: totals.total + report.total,
+      }),
+      {
+        foodAndDrink: 0,
+        billsAndUtilities: 0,
+        car: 0,
+        entertainment: 0,
+        groceries: 0,
+        healthAndWellness: 0,
+        personal: 0,
+        shopping: 0,
+        feesAndAdjustments: 0,
+        others: 0,
+        revenue: 0,
+        expenses: 0,
+        total: 0,
+      }
+    );
+
+    // Create the annual report
+    const annualReport = await prisma.report.create({
+      data: {
+        reportName: annualReportName,
+        reportType: "ANNUAL",
+        user: { connect: { id: user.id } },
+        childReports: {
+          connect: monthlyReportIds.map((id) => ({ id })),
+        },
+        ...aggregatedValues,
+      },
+    });
+
+    response = {
+      success: true,
+      data: annualReport,
     };
   } catch (error) {
     console.log({ error });

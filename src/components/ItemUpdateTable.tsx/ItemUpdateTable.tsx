@@ -8,7 +8,7 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { AccountWithErrors, ConnectionType } from "app/accounts/AccountsPage";
 import PlaidButton from "@components/PlaidButton/PlaidButton";

@@ -1,20 +1,23 @@
 "use client";
 
+import React, { useState, use } from "react";
 import { useDeviceSize } from "@components/hooks/useDeviceSize";
 import ReportCard from "@components/ReportCard/ReportCard";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
-import { Button, Tab, Tabs } from "@nextui-org/react";
+import { Button, Tab, Tabs } from "@heroui/react";
 import { TransactionBase } from "plaid";
-import React, { useState } from "react";
-import { decodeQueryString, formatCreatedDate } from "utils/functions";
+import {
+  decodeQueryString,
+  filterTransactions,
+  formatCreatedDate,
+} from "utils/functions";
 
 const noop = () => {};
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams: { data: string };
+export default function Page(props: {
+  searchParams: Promise<{ data: string }>;
 }) {
+  const searchParams = use(props.searchParams);
   //todo: abstract generateSelectedCategoryKeys so it can be reused
   const isMobile = useDeviceSize();
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +27,7 @@ export default function Page({
   const [transactions, setTransactions] = useState([] as TransactionBase[]);
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const reportData = decodeQueryString(searchParams.data);
-  const { reportName, createdAt, id, ...rest } = reportData;
+  const { reportName, createdAt, id, reportType, ...rest } = reportData;
 
   const generateSelectedCategoryKeys = (transactions: TransactionBase[]) => {
     let newKeys = transactions.reduce(
@@ -50,14 +53,20 @@ export default function Page({
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/prisma/transactions/get?reportId=${id}`,
+        `/api/prisma/transactions/get?reportId=${id}&reportType=${reportType}`,
         {
           method: "GET",
         }
       );
       const res = await response.json();
       if (res.success) {
-        generateSelectedCategoryKeys(res.response.data.transactions);
+        let transactions = res.response.data.transactions;
+
+        if (reportType === "ANNUAL") {
+          transactions = filterTransactions(res.response.data.childReports);
+        }
+
+        generateSelectedCategoryKeys(transactions);
       }
       setIsLoading(false);
     } catch (error) {
@@ -83,12 +92,10 @@ export default function Page({
       />
     );
 
-  const renderReportCard = () => (
-    <ReportCard reportData={rest} />
-  );
+  const renderReportCard = () => <ReportCard reportData={rest} />;
 
   const renderTabs = () =>
-    isMobile && displayTransactions ?  (
+    isMobile && displayTransactions ? (
       <Tabs aria-label="Options">
         <Tab key="transactions" title="Transactions">
           {renderTransactionsTable()}
@@ -120,14 +127,12 @@ export default function Page({
           color="primary"
           isLoading={isLoading}
           isDisabled={isLoading || displayTransactions}
-          onClick={() => fetchTransactions()}
+          onPress={() => fetchTransactions()}
         >
           View Transactions
         </Button>
         {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
-        <div className="flex flex-col gap-4">
-          {renderTabs()}
-        </div>
+        <div className="flex flex-col gap-4">{renderTabs()}</div>
       </div>
     </div>
   );

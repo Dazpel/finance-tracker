@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import FullScreenOverlay from "@components/Loader/Loader";
-import { Button, Input } from "@nextui-org/react";
+import { Button, Input } from "@heroui/react";
 import axios from "axios";
 import { TransactionStream } from "plaid";
 import RecurringTransactionsTable from "@components/RecurringTransactionsTable/RecurringTransactionsTable";
@@ -194,7 +194,7 @@ function RecurringTransactionsPage() {
     <div className="h-inherit">
       {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
       <Button
-        onClick={getTransactionData}
+        onPress={getTransactionData}
         disabled={isButtonDisabled}
         color="primary"
         variant="solid"
@@ -240,7 +240,7 @@ function RecurringTransactionsPage() {
             </div>
           )}
           <div className="flex mt-4 justify-end">
-            <Button color="primary" onClick={handleSubmitReport}>
+            <Button color="primary" onPress={handleSubmitReport}>
               {isLoading ? "Submitting..." : "Submit Report"}
             </Button>
           </div>

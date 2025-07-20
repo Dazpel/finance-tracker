@@ -7,7 +7,7 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { useWindowHeight } from "@components/hooks/useWindowHeight";
 
 type TableRow = {
@@ -76,6 +76,10 @@ export default function ReportCard({
 
     return deviceHeight < 600 ? "relative" : position;
   }, [deviceHeight, fixedPosition]);
+
+  const formatNumber = (value: number) => {
+    return value % 1 !== 0 ? value.toFixed(2) : value;
+  };
   
   const renderCell = React.useCallback(
     (item: TableRow, columnKey: React.Key) => {
@@ -91,7 +95,7 @@ export default function ReportCard({
           );
 
         default:
-          return cellValue;
+          return formatNumber(cellValue as unknown as number) || cellValue;
       }
     },
     []
@@ -111,7 +115,7 @@ export default function ReportCard({
         <Button
           color="primary"
           className="w-full"
-          onClick={handleOnViewDetails}
+          onPress={handleOnViewDetails}
         >
           View Details
         </Button>
@@ -147,7 +151,7 @@ export default function ReportCard({
           </TableBody>
         </Table>
         {showReportButton && (
-          <Button color="primary" onClick={handleSubmitReport}>
+          <Button color="primary" onPress={handleSubmitReport}>
             {actionButtonText}
           </Button>
         )}

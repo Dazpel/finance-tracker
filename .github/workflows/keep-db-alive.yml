@@ -2,11 +2,11 @@ name: Keep DB Alive
 
 on:
   schedule:
-    - cron: '0 0 */3 * *'
+    - cron: '0 */1 * * *'
   workflow_dispatch:
 
 jobs:
-  create-report:
+  ping-db:
     runs-on: ubuntu-latest
 
     steps:

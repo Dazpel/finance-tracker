@@ -97,7 +97,7 @@ export default function InsightsPage({ years }: InsightsPageProps) {
       {!isLoaded && (
         <div className="text-center py-12 text-gray-500">
           <p>
-            Select a date range and click "Get Insights" to view your financial
+            Select a date range and click &quot;Get Insights&quot; to view your financial
             data.
           </p>
         </div>

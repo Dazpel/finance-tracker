@@ -80,14 +80,14 @@ export const NotesModal = ({
       size="lg"
       classNames={{
         base: "max-w-md",
-        backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20",
+        backdrop: "backdrop-opacity-20",
       }}
     >
       <ModalContent>
         {(onClose) => (
-          <div className="bg-gradient-to-br from-yellow-200 via-yellow-100 to-yellow-200 border-2 border-yellow-300 shadow-lg transform rotate-1">
-            <div className="p-4 -rotate-1">
-              <ModalHeader className="flex flex-col gap-1 text-gray-800 font-handwriting text-xl border-b border-yellow-300 pb-2">
+          <div className="shadow-lg">
+            <div className="p-4">
+              <ModalHeader className="flex flex-col gap-1 font-handwriting text-xl border-b pb-2">
                 {isEditing ? "Edit Note" : "New Note"}
               </ModalHeader>
               <ModalBody className="gap-4 py-4">
@@ -98,12 +98,8 @@ export const NotesModal = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   classNames={{
-                    base: "max-w-full",
-                    mainWrapper: "h-full",
-                    input: "text-small bg-transparent text-gray-800 placeholder:text-gray-600",
-                    inputWrapper: "h-full font-normal text-default-500 bg-yellow-50 border border-yellow-300 shadow-sm",
+                    inputWrapper: "border shadow-sm",
                   }}
-                  size="sm"
                 />
                 <Textarea
                   label="Content"
@@ -113,19 +109,12 @@ export const NotesModal = ({
                   minRows={6}
                   maxRows={12}
                   classNames={{
-                    base: "max-w-full",
-                    input: "resize-none bg-transparent text-gray-800 placeholder:text-gray-600",
-                    inputWrapper: "bg-yellow-50 border border-yellow-300 shadow-sm",
+                    inputWrapper: "border shadow-sm",
                   }}
                 />
               </ModalBody>
-              <ModalFooter className="border-t border-yellow-300 pt-2">
-                <Button
-                  color="danger"
-                  variant="light"
-                  onPress={handleClose}
-                  className="text-gray-700 hover:bg-yellow-300"
-                >
+              <ModalFooter className="border-t pt-2">
+                <Button color="danger" variant="light" onPress={handleClose}>
                   Cancel
                 </Button>
                 <Button
@@ -133,7 +122,6 @@ export const NotesModal = ({
                   onPress={handleSave}
                   isLoading={isLoading}
                   isDisabled={!title.trim() || !content.trim()}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white shadow-md"
                 >
                   {isEditing ? "Update" : "Save"}
                 </Button>

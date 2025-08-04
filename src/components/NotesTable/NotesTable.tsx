@@ -10,7 +10,12 @@ import {
   TableCell,
   Button,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
 } from "@heroui/react";
+import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 
 interface Note {
   id: number;
@@ -22,13 +27,15 @@ interface Note {
 
 interface NotesTableProps {
   notes: Note[];
-  onOpenNote: (note: Note) => void;
+  onEditNote: (note: Note) => void;
+  onDeleteNote: (noteId: number) => void;
   isLoading?: boolean;
 }
 
 export const NotesTable = ({
   notes,
-  onOpenNote,
+  onEditNote,
+  onDeleteNote,
   isLoading = false,
 }: NotesTableProps): React.ReactElement => {
   const formatDate = (dateString: string) => {
@@ -96,21 +103,28 @@ export const NotesTable = ({
         );
       case "actions":
         return (
-          <div className="relative flex items-center gap-2">
-            <Button
-              size="sm"
-              color="primary"
-              variant="flat"
-              onPress={() => onOpenNote(note)}
-            >
-              Open
-            </Button>
+          <div className="text-center">
+            <Dropdown aria-label="actions dropdown">
+              <DropdownTrigger>
+                <Button isIconOnly size="sm" variant="light">
+                  <VerticalDotsIcon className="text-default-300" />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="dropdown options">
+                <DropdownItem key="edit button" onPress={() => onEditNote(note)}>
+                  Edit
+                </DropdownItem>
+                <DropdownItem key="delete button" onPress={() => onDeleteNote(note.id)}>
+                  Delete
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
           </div>
         );
       default:
         return null;
     }
-  }, [onOpenNote]);
+  }, [onEditNote, onDeleteNote]);
 
   return (
     <div className="w-full">

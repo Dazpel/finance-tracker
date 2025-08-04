@@ -6,7 +6,7 @@ import DOMPurify from "isomorphic-dompurify";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(options);
@@ -16,7 +16,8 @@ export async function PUT(
     }
 
     const { title, content } = await request.json();
-    const noteId = parseInt(params.id);
+    const { id } = await params;
+    const noteId = parseInt(id);
 
     if (!title || !content) {
       return NextResponse.json(
@@ -68,7 +69,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(options);
@@ -77,7 +78,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const noteId = parseInt(params.id);
+    const { id } = await params;
+    const noteId = parseInt(id);
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },

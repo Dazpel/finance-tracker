@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import {
   Table,
   TableHeader,
@@ -26,11 +26,11 @@ interface NotesTableProps {
   isLoading?: boolean;
 }
 
-export const NotesTable: React.FC<NotesTableProps> = ({
+export const NotesTable = ({
   notes,
   onOpenNote,
   isLoading = false,
-}) => {
+}: NotesTableProps): React.ReactElement => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -55,7 +55,7 @@ export const NotesTable: React.FC<NotesTableProps> = ({
     { name: "ACTIONS", uid: "actions" },
   ];
 
-  const renderCell = React.useCallback((note: Note, columnKey: React.Key) => {
+  const renderCell = useCallback((note: Note, columnKey: React.Key) => {
     switch (columnKey) {
       case "title":
         return (

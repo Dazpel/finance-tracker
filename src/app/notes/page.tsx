@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 import { NotesModal } from "@components/NotesModal/NotesModal";
 import { NotesTable } from "@components/NotesTable/NotesTable";
+import { useNotes, useCreateNote, useUpdateNote } from "@hooks/useNotes";
 
 interface Note {
   id: number;
@@ -13,114 +14,45 @@ interface Note {
   updatedAt: string;
 }
 
-export default function NotesPage() {
-  const [notes, setNotes] = useState<Note[]>([]);
+export default function NotesPage(): React.ReactElement {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch notes from API
-  const fetchNotes = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/notes");
-      if (response.ok) {
-        const data = await response.json();
-        setNotes(data.notes || []);
-      } else {
-        console.error("Failed to fetch notes");
-      }
-    } catch (error) {
-      console.error("Error fetching notes:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotes();
-  }, []);
-
-  // Handle creating a new note
-  const handleCreateNote = async (noteData: { title: string; content: string }) => {
-    try {
-      const response = await fetch("/api/notes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(noteData),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setNotes(prev => [data.note, ...prev]);
-      } else {
-        console.error("Failed to create note");
-      }
-    } catch (error) {
-      console.error("Error creating note:", error);
-    }
-  };
-
-  // Handle updating an existing note
-  const handleUpdateNote = async (noteData: { title: string; content: string }) => {
-    if (!selectedNote) return;
-
-    try {
-      const response = await fetch(`/api/notes/${selectedNote.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(noteData),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setNotes(prev => 
-          prev.map(note => 
-            note.id === selectedNote.id ? data.note : note
-          )
-        );
-      } else {
-        console.error("Failed to update note");
-      }
-    } catch (error) {
-      console.error("Error updating note:", error);
-    }
-  };
+  // Tanstack Query hooks
+  const { data: notes = [], isLoading, error } = useNotes();
+  const createNoteMutation = useCreateNote();
+  const updateNoteMutation = useUpdateNote();
 
   // Handle opening modal for adding new note
-  const handleAddNote = () => {
+  const handleAddNote = useCallback(() => {
     setSelectedNote(null);
     setIsEditing(false);
     setIsModalOpen(true);
-  };
+  }, []);
 
   // Handle opening modal for editing note
-  const handleOpenNote = (note: Note) => {
+  const handleOpenNote = useCallback((note: Note) => {
     setSelectedNote(note);
     setIsEditing(true);
     setIsModalOpen(true);
-  };
+  }, []);
 
   // Handle closing modal
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedNote(null);
     setIsEditing(false);
-  };
+  }, []);
 
   // Handle saving note (create or update)
-  const handleSaveNote = async (noteData: { title: string; content: string }) => {
-    if (isEditing) {
-      await handleUpdateNote(noteData);
+  const handleSaveNote = useCallback(async (noteData: { title: string; content: string }) => {
+    if (isEditing && selectedNote) {
+      await updateNoteMutation.mutateAsync({ id: selectedNote.id, noteData });
     } else {
-      await handleCreateNote(noteData);
+      await createNoteMutation.mutateAsync(noteData);
     }
-  };
+  }, [isEditing, selectedNote, updateNoteMutation, createNoteMutation]);
 
   return (
     <div className="h-full flex flex-col gap-6 p-6">

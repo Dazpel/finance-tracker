@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Modal,
   ModalContent,
@@ -28,13 +28,13 @@ interface NotesModalProps {
   isEditing?: boolean;
 }
 
-export const NotesModal: React.FC<NotesModalProps> = ({
+export const NotesModal = ({
   isOpen,
   onClose,
   onSave,
   note,
   isEditing = false,
-}) => {
+}: NotesModalProps): React.ReactElement => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +49,7 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     }
   }, [note, isEditing, isOpen]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!title.trim() || !content.trim()) {
       return;
     }
@@ -65,13 +65,13 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [title, content, onSave, onClose]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setTitle("");
     setContent("");
     onClose();
-  };
+  }, [onClose]);
 
   return (
     <Modal

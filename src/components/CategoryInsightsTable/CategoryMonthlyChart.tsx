@@ -32,31 +32,6 @@ const CategoryMonthlyChart: React.FC<CategoryMonthlyChartProps> = ({
       dateRange,
     });
 
-  if (!selectedCategory) {
-    return (
-      <div className="w-full h-64 flex items-center justify-center rounded-lg border bg-background border-gray-600">
-        <p className="text-sm">Select a category to view monthly trends</p>
-      </div>
-    );
-  }
-
-  if (monthlyData.length === 0) {
-    return (
-      <div className="w-full rounded-lg border p-4 mb-6 bg-background border-gray-600">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 capitalize">
-            Monthly Trends: {selectedCategory}
-          </h3>
-        </div>
-        <div className="w-full h-64 flex items-center justify-center rounded-lg">
-          <p className="text-sm">
-            No data available for the selected category in this date range
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const maxAmount = useMemo(
     () =>
       monthlyData.length > 0
@@ -97,6 +72,31 @@ const CategoryMonthlyChart: React.FC<CategoryMonthlyChartProps> = ({
     (label: string) => `Month: ${label}`,
     []
   );
+
+  if (!selectedCategory) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center rounded-lg border bg-background border-gray-600">
+        <p className="text-sm">Select a category to view monthly trends</p>
+      </div>
+    );
+  }
+
+  if (monthlyData.length === 0) {
+    return (
+      <div className="w-full rounded-lg border p-4 mb-6 bg-background border-gray-600">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 capitalize">
+            Monthly Trends: {selectedCategory}
+          </h3>
+        </div>
+        <div className="w-full h-64 flex items-center justify-center rounded-lg">
+          <p className="text-sm">
+            No data available for the selected category in this date range
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card

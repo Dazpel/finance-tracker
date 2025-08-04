@@ -19,6 +19,7 @@ model User {
   recurringReports      RecurringReport[]
   transactions          Transaction[]
   recurringTransactions RecurringTransaction[]
+  notes                 Note[]
   authorized            Boolean                @default(false)
 }
 
@@ -103,6 +104,16 @@ model Transaction {
   date           String
   category       String[]
   createdAt      DateTime @default(now())
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  userId    String   // Foreign key to User
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum ReportType {

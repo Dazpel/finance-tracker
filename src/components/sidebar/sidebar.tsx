@@ -17,6 +17,7 @@ import { useIsSSR } from "@react-aria/ssr";
 import { appRoutes } from "utils/constants";
 import TransactionIcon from "@components/icons/sidebar/currency-dollar";
 import { RecurringPaymentsIcon } from "@components/icons/sidebar/recurring-payments-icon";
+import { NotesIcon } from "@components/icons/sidebar/notes-icon";
 
 export const SidebarWrapper = () => {
   const pathname = usePathname();
@@ -69,6 +70,12 @@ export const SidebarWrapper = () => {
                 title="Recurring"
                 icon={<RecurringPaymentsIcon />}
                 href={appRoutes.RECURRING_TRANSACTIONS_PAGE}
+              />
+              <SidebarItem
+                isActive={pathname === appRoutes.NOTES_PAGE}
+                title="Notes"
+                icon={<NotesIcon />}
+                href={appRoutes.NOTES_PAGE}
               />
             </SidebarMenu>
           </div>

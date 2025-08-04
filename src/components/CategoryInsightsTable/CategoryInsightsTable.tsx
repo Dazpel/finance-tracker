@@ -13,9 +13,12 @@ import {
 } from "@heroui/react";
 import { Transaction } from "@prisma/client";
 import { defaultCategories } from "../../utils/constants";
+import CategoryMonthlyChart from "./CategoryMonthlyChart";
+import { DateRange } from "./types";
 
 interface CategoryInsightsTableProps {
   transactions: Array<Transaction>;
+  dateRange?: DateRange;
 }
 
 interface CategoryData {
@@ -93,6 +96,7 @@ const TopContent = ({
 
 export default function CategoryInsightsTable({
   transactions,
+  dateRange,
 }: CategoryInsightsTableProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
@@ -151,7 +155,17 @@ export default function CategoryInsightsTable({
     : [];
 
   return (
-    <div className="w-full">
+    <div className="w-full flex flex-col gap-4">
+      {/* Monthly Chart Section */}
+      {selectedCategory && dateRange && (
+        <CategoryMonthlyChart
+          key={`${selectedCategory}-${dateRange.startDate}-${dateRange.endDate}`}
+          transactions={transactions}
+          selectedCategory={selectedCategory}
+          dateRange={dateRange}
+        />
+      )}
+
       <Table
         isVirtualized
         aria-label="Category insights table"
@@ -190,9 +204,7 @@ export default function CategoryInsightsTable({
               <TableCell>{transaction.name}</TableCell>
               <TableCell className="text-right">
                 <span
-                  className={
-                    transaction.amount < 0 ? "text-red-600" : "text-green-600"
-                  }
+                  className={transaction.amount < 0 ? "text-green-600" : ""}
                 >
                   ${Math.abs(transaction.amount).toFixed(2)}
                 </span>

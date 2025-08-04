@@ -88,7 +88,13 @@ export default function InsightsPage({ years }: InsightsPageProps) {
           {/* Category Insights Table */}
           <section className="mb-8">
             <h2 className="text-lg font-semibold mb-4">Category Insights</h2>
-            <CategoryInsightsTable transactions={transactions} />
+            <CategoryInsightsTable 
+              transactions={transactions} 
+              dateRange={{
+                startDate: formatDate(selectedDates!.start),
+                endDate: formatDate(selectedDates!.end),
+              }}
+            />
           </section>
         </>
       )}

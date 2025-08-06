@@ -42,9 +42,9 @@ export async function GET(req: Request) {
       } while (transactions.length < totalTransactions);
     }));
 
-    const trimmedTransactions = trimTransactions(transactions);
+    // const trimmedTransactions = trimTransactions(transactions);
 
-    const formattedTransactions = formatPlaidTransactions(trimmedTransactions, false);
+    const formattedTransactions = formatPlaidTransactions(transactions, false);
     
     formattedTransactions.sort((a, b) => {
       return new Date(b.date).getTime() - new Date(a.date).getTime();

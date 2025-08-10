@@ -2,44 +2,39 @@
 
 import React, { useState } from "react";
 import { getTransactionsByDateRange } from "../../app/insights/actions";
-import { Button, DateRangePicker, RangeValue } from "@heroui/react";
 import { Transaction } from "@prisma/client";
-import { getLocalTimeZone, parseDate, today } from "@internationalized/date";
-import { formatDate } from "../../app/insights/utils";
+import DateRangePicker, { DateRange } from "../DateRangePicker/DateRangePicker";
 import CategoryInsightsTable from "../CategoryInsightsTable/CategoryInsightsTable";
 import PieChart from "../PieChart/PieChart";
 import { useToast } from "../../hooks/useToast";
+import { today, getLocalTimeZone, parseDate } from "@internationalized/date";
 
 interface InsightsPageProps {
   years: number;
 }
 
 export default function InsightsPage({ years }: InsightsPageProps) {
-  const [selectedDates, setSelectedDates] = useState<RangeValue<Date>>();
   const [isLoaded, setIsLoaded] = useState(false);
   const [transactions, setTransactions] = useState<Array<Transaction>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentDateRange, setCurrentDateRange] = useState<DateRange | null>(null);
   const { errorToast } = useToast();
 
   // Handle getting insights based on selected date range
-  const handleGetInsights = async () => {
-    if (!selectedDates?.start || !selectedDates?.end) {
-      errorToast("Please select a date range");
-      return;
-    }
-
+  const handleGetInsights = async (dates: DateRange) => {
     setIsLoading(true);
     try {
       const result = await getTransactionsByDateRange({
-        start: formatDate(selectedDates.start),
-        end: formatDate(selectedDates.end),
+        start: dates.startDate,
+        end: dates.endDate,
       });
 
       if (result.success && result.data) {
         setTransactions(result.data);
+        setCurrentDateRange(dates);
         setIsLoaded(true);
       } else {
-        errorToast(result.error || "Failed to fetch transactions");
+        errorToast(result.error || "Failed to fetch insights");
       }
     } catch (error) {
       console.error("Error fetching insights:", error);
@@ -62,19 +57,10 @@ export default function InsightsPage({ years }: InsightsPageProps) {
           showMonthAndYearPickers
           maxValue={today(getLocalTimeZone())}
           minValue={parseDate(`${years}-01-01`)}
-          onChange={(value) => {
-            value && setSelectedDates(value);
-          }}
-        />
-        <Button
-          onPress={handleGetInsights}
-          isDisabled={isLoading || !selectedDates?.start || !selectedDates?.end}
-          color="primary"
-          className="w-fit"
+          onSubmit={handleGetInsights}
+          buttonText="Get Insights"
           isLoading={isLoading}
-        >
-          Get Insights
-        </Button>
+        />
       </div>
 
       {/* Show insights only after user clicks "Get Insights" */}
@@ -91,8 +77,8 @@ export default function InsightsPage({ years }: InsightsPageProps) {
             <CategoryInsightsTable 
               transactions={transactions} 
               dateRange={{
-                startDate: formatDate(selectedDates!.start),
-                endDate: formatDate(selectedDates!.end),
+                startDate: currentDateRange!.startDate,
+                endDate: currentDateRange!.endDate,
               }}
             />
           </section>

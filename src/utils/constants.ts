@@ -9,8 +9,6 @@ export const appRoutes = {
   RECURRING_TRANSACTIONS_PAGE: "/recurring-transactions",
 };
 
-export const ignoredTransactions = [''];
-
 export const defaultCategoryFilterOptions = [
   { name: "Food & Drink", uid: "Food & Drink" },
   { name: "Bills & Utilities", uid: "Bills & Utilities" },

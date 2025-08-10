@@ -3,7 +3,7 @@ import { plaidClient } from "@lib/plaid";
 import { plaidAccount } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import { Transaction } from "plaid";
-import { formatPlaidTransactions, refreshUserTransactions, trimTransactions } from "utils/functions";
+import { formatPlaidTransactions, refreshUserTransactions } from "utils/functions";
 
 export async function GET(req: Request) {
   const session = await getServerSession(options);
@@ -41,8 +41,6 @@ export async function GET(req: Request) {
         offset = transactions.length;
       } while (transactions.length < totalTransactions);
     }));
-
-    // const trimmedTransactions = trimTransactions(transactions);
 
     const formattedTransactions = formatPlaidTransactions(transactions, false);
     

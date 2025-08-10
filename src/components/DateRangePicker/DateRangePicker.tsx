@@ -1,99 +1,70 @@
-import { Button } from "@heroui/react";
 import React, { useState } from "react";
-import ReactDatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { formatDate } from "utils/functions";
+import { DateRangePicker as HeroUIDateRangePicker, Button, RangeValue } from "@heroui/react";
+import { getLocalTimeZone, today, CalendarDate } from "@internationalized/date";
+import { formatDate } from "../../app/insights/utils";
 
 export type DateRange = {
-  startDate: String;
-  endDate: String;
+  startDate: string;
+  endDate: string;
 };
 
 type DateRangePickerProps = {
-  onFetch: (dates: DateRange) => void;
+  onSubmit: (dates: DateRange) => void;
+  maxValue?: CalendarDate;
+  minValue?: CalendarDate;
+  label?: string;
+  labelPlacement?: "inside" | "outside";
+  showMonthAndYearPickers?: boolean;
+  className?: string;
+  buttonText?: string;
   isLoading?: boolean;
-  title: string;
 };
 
 export default function DateRangePicker({
-  onFetch,
-  isLoading,
-  title
+  onSubmit,
+  maxValue = today(getLocalTimeZone()),
+  minValue,
+  label = "Select dates",
+  labelPlacement = "outside",
+  showMonthAndYearPickers = false,
+  className = "",
+  buttonText = "Submit",
+  isLoading = false
 }: DateRangePickerProps) {
-  const [startDateRaw, setStartDateRaw] = useState<Date | undefined>(undefined);
-  const [endDateRaw, setEndDateRaw] = useState<Date | undefined>(undefined);
-  const [error, setError] = useState(false);
-  const maxDate = new Date();
+  const [selectedDates, setSelectedDates] = useState<RangeValue<CalendarDate>>();
 
-  const handleSearch = () => {
-    setError(false);
-    if (startDateRaw && endDateRaw) {
-      const startDate = formatDate(startDateRaw);
-      const endDate = formatDate(endDateRaw);
-      onFetch({ startDate, endDate });
-    } else {
-      setError(true);
+  const handleSubmit = () => {
+    if (selectedDates?.start && selectedDates?.end) {
+      const formattedDates: DateRange = {
+        startDate: formatDate(selectedDates.start),
+        endDate: formatDate(selectedDates.end),
+      };
+      onSubmit(formattedDates);
     }
   };
 
+  const isSubmitDisabled = !selectedDates?.start || !selectedDates?.end;
+
   return (
-    <div className="flex flex-col gap-2">
-      <p>{title}</p>
-      <div className="flex flex-col gap-4 mb-4">
-        <div className="flex gap-2">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="startDate">From:</label>
-            <ReactDatePicker
-              showIcon
-              closeOnScroll
-              className="date-picker"
-              autoComplete="off"
-              icon="fa fa-calendar"
-              name="startDate"
-              placeholderText="Start Date"
-              selectsStart
-              selected={startDateRaw}
-              onChange={(date) => date && setStartDateRaw(date)}
-              startDate={startDateRaw}
-              maxDate={maxDate}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="endDate">To:</label>
-            <ReactDatePicker
-              showIcon
-              className="date-picker"
-              autoComplete="off"
-              icon="fa fa-calendar"
-              closeOnScroll
-              name="endDate"
-              placeholderText="End Date"
-              selectsEnd
-              selected={endDateRaw}
-              onChange={(date) => date && setEndDateRaw(date)}
-              startDate={startDateRaw}
-              endDate={endDateRaw}
-              minDate={startDateRaw}
-              maxDate={maxDate}
-            />
-          </div>
-        </div>
-        <Button
-          isLoading={isLoading}
-          className="w-fit"
-          radius="full"
-          size="md"
-          color="primary"
-          onPress={handleSearch}
-        >
-          Search
-        </Button>
-        {error && (
-          <p className="text-danger">
-            Please ensure both Start and End dates are selected.
-          </p>
-        )}
-      </div>
+    <div className={`flex flex-col gap-4 ${className}`}>
+      <HeroUIDateRangePicker
+        label={label}
+        labelPlacement={labelPlacement}
+        showMonthAndYearPickers={showMonthAndYearPickers}
+        maxValue={maxValue}
+        minValue={minValue}
+        onChange={(value) => value && setSelectedDates(value)}
+      />
+      
+      <Button
+        onPress={handleSubmit}
+        isDisabled={isSubmitDisabled}
+        color="primary"
+        className="w-fit"
+        isLoading={isLoading}
+      >
+        {buttonText}
+      </Button>
     </div>
   );
 }

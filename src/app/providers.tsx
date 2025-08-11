@@ -1,7 +1,7 @@
 "use client";
 
 import { Layout } from "@components/layout/layout";
-import { HeroUIProvider } from "@heroui/react";
+import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
@@ -17,6 +17,7 @@ export function Providers({ children, themeProps, session }: ProvidersProps) {
   const queryClient = new QueryClient();
   return (
     <HeroUIProvider className="font-mono">
+      <ToastProvider />
       <NextThemesProvider {...themeProps}>
         <SessionProvider session={session}>
           <Layout>

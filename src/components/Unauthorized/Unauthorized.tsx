@@ -1,6 +1,7 @@
 "use client";
+
 import React from "react";
-import { Button, Card, CardBody, CardHeader } from "@heroui/react";
+import { Button, Card, CardBody } from "@heroui/react";
 import { signOut } from "next-auth/react";
 
 function Unauthorized() {

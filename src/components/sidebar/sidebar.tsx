@@ -17,6 +17,7 @@ import { useIsSSR } from "@react-aria/ssr";
 import { appRoutes } from "utils/constants";
 import TransactionIcon from "@components/icons/sidebar/currency-dollar";
 import { RecurringPaymentsIcon } from "@components/icons/sidebar/recurring-payments-icon";
+import { InsightsIcon } from "@components/icons/sidebar/insights-icon";
 import { NotesIcon } from "@components/icons/sidebar/notes-icon";
 
 export const SidebarWrapper = () => {
@@ -35,7 +36,7 @@ export const SidebarWrapper = () => {
       <div
         className={`${Sidebar({
           collapsed: collapsed,
-        })} ${!collapsed && 'static'}`}
+        })} ${!collapsed && "static"}`}
       >
         <div className="flex flex-col justify-between h-full">
           <div className={Sidebar.Body()}>
@@ -64,6 +65,12 @@ export const SidebarWrapper = () => {
                 title="Reports"
                 icon={<PaymentsIcon />}
                 href={appRoutes.REPORTS_PAGE}
+              />
+              <SidebarItem
+                isActive={pathname.includes(appRoutes.INSIGHTS_PAGE)}
+                title="Insights"
+                icon={<InsightsIcon />}
+                href={appRoutes.INSIGHTS_PAGE}
               />
               <SidebarItem
                 isActive={pathname.includes(appRoutes.RECURRING_TRANSACTIONS_PAGE)}

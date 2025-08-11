@@ -286,9 +286,12 @@ export default function TransactionsPage() {
       {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
       {isValid ? (
         <DateRangePicker
-          title="Select date range to fetch transactions"
+          label="Select date range to fetch transactions"
+          labelPlacement="outside"
+          onSubmit={getTransactionData}
+          buttonText="Fetch Transactions"
+          className="w-fit mb-4"
           isLoading={isLoading}
-          onFetch={getTransactionData}
         />
       ) : (
         <div>

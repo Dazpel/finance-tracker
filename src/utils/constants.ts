@@ -7,6 +7,7 @@ export const appRoutes = {
   LOGIN_PAGE: "/login",
   LOG_OUT_PAGE: "/logout",
   RECURRING_TRANSACTIONS_PAGE: "/recurring-transactions",
+  NOTES_PAGE: "/notes",
 };
 
 export const defaultCategoryFilterOptions = [

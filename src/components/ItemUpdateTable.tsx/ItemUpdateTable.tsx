@@ -8,10 +8,12 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
+  Chip,
 } from "@heroui/react";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AccountWithErrors, ConnectionType } from "app/accounts/AccountsPage";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
+import { useToast } from "../../hooks/useToast";
 
 type TableRow = {
   key: string;
@@ -26,6 +28,10 @@ const columns = [
   {
     key: "institutionName",
     label: "INSTITUTION",
+  },
+  {
+    key: "status",
+    label: "STATUS",
   },
   {
     key: "actions",
@@ -45,35 +51,65 @@ const rows = (entries: AccountWithErrors[]) => {
 };
 
 export default function ItemUpdateTable({ connections }: ItemRemoveTableProps) {
-  const router = useRouter();
-  const [error, setError] = useState(false);
+  const queryClient = useQueryClient();
+  const { successToast } = useToast();
+
+  const handleUpdateSuccess = useCallback(async () => {
+    successToast("Bank connection updated successfully!");
+    // Invalidate queries to refresh data
+    await queryClient.invalidateQueries({ queryKey: ['accountsData'] });
+  }, [queryClient, successToast]);
 
   const renderCell = useCallback(
     (connection: TableRow, columnKey: React.Key) => {
       switch (columnKey) {
+        case "status":
+          return (
+            <Chip 
+              color="warning"
+              variant="flat"
+              size="sm"
+            >
+              Needs Update
+            </Chip>
+          );
         case "actions":
           return (
             <PlaidButton
               updateMode
               accessToken={connection.key}
-              buttonText="Update connection"
+              buttonText="Update"
+              variant="update"
+              size="sm"
+              onSuccessCallback={handleUpdateSuccess}
             />
+          );
+        case "institutionName":
+          return (
+            <div className="flex items-center gap-2">
+              <span>{connection.institutionName}</span>
+            </div>
           );
         default:
           return connection.institutionName;
       }
     },
-    []
+    [handleUpdateSuccess]
   );
 
   return (
     <div className="h-full">
-      <h3 className="text-l font-semibold mb-2">Update connections</h3>
-      <p className="mb-2">
-        The following accounts need to be updated to be used again
-      </p>
-      {error && <p className="mb-4 text-danger">Error updating connection</p>}
-      <Table aria-label="Connections table">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold mb-2">Update connections</h3>
+        <p className="text-sm text-gray-600">
+          The following bank connections need to be updated to continue working properly
+        </p>
+      </div>
+      
+      <Table 
+        aria-label="Bank connections that need updates"
+        className="min-h-[200px]"
+      >
         <TableHeader columns={columns}>
           {(column) => (
             <TableColumn key={column.key}>{column.label}</TableColumn>
@@ -81,7 +117,7 @@ export default function ItemUpdateTable({ connections }: ItemRemoveTableProps) {
         </TableHeader>
         <TableBody
           items={rows(connections)}
-          emptyContent="No Connections linked yet."
+          emptyContent="All bank connections are up to date."
         >
           {(item) => (
             <TableRow key={item.key}>
@@ -92,6 +128,13 @@ export default function ItemUpdateTable({ connections }: ItemRemoveTableProps) {
           )}
         </TableBody>
       </Table>
+      
+      {connections.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <p>All your bank connections are working properly!</p>
+          <p className="text-sm mt-2">No updates needed at this time.</p>
+        </div>
+      )}
     </div>
   );
 }

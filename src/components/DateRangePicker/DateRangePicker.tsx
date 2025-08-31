@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { DateRangePicker as HeroUIDateRangePicker, Button, RangeValue } from "@heroui/react";
-import { getLocalTimeZone, today, CalendarDate } from "@internationalized/date";
+import { getLocalTimeZone, today, DateValue } from "@internationalized/date";
 import { formatDate } from "../../app/insights/utils";
 
 export type DateRange = {
@@ -10,8 +10,8 @@ export type DateRange = {
 
 type DateRangePickerProps = {
   onSubmit: (dates: DateRange) => void;
-  maxValue?: CalendarDate;
-  minValue?: CalendarDate;
+  maxValue?: DateValue;
+  minValue?: DateValue;
   label?: string;
   labelPlacement?: "inside" | "outside";
   showMonthAndYearPickers?: boolean;
@@ -31,7 +31,7 @@ export default function DateRangePicker({
   buttonText = "Submit",
   isLoading = false
 }: DateRangePickerProps) {
-  const [selectedDates, setSelectedDates] = useState<RangeValue<CalendarDate>>();
+  const [selectedDates, setSelectedDates] = useState<any>();
 
   const handleSubmit = () => {
     if (selectedDates?.start && selectedDates?.end) {

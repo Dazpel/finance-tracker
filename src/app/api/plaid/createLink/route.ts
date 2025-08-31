@@ -1,5 +1,5 @@
 import { plaidClient } from "@lib/plaid";
-import { CountryCode, Products, DepositoryAccountSubtype } from "plaid";
+import { CountryCode, Products } from "plaid";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";

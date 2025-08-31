@@ -32,6 +32,8 @@ model PlaidAccount {
   itemId          String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
 }
 
 model Report {
@@ -59,6 +61,9 @@ model Report {
   total              Float         @default(0)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+  
+  @@index([userId, reportType])
+  @@index([parentReportId])
 }
 
 model RecurringReport {
@@ -72,6 +77,8 @@ model RecurringReport {
   outflow             Float                  @default(0)
   total               Float                  @default(0)
   createdAt           DateTime               @default(now())
+  
+  @@index([userId])
 }
 
 model RecurringTransaction {
@@ -89,6 +96,10 @@ model RecurringTransaction {
   last_date       String
   frequency       String
   createdAt       DateTime         @default(now())
+  
+  @@index([userId])
+  @@index([outflowReportId])
+  @@index([inflowReportId])
 }
 
 model Transaction {
@@ -104,6 +115,9 @@ model Transaction {
   date           String
   category       String[]
   createdAt      DateTime @default(now())
+  
+  @@index([userId, date])
+  @@index([reportId])
 }
 
 model Note {
@@ -114,6 +128,8 @@ model Note {
   content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  @@index([userId])
 }
 
 enum ReportType {

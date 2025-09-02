@@ -74,7 +74,13 @@ const rows = (entries: AccountType[]) => {
 
 export default function AccountsPage() {
   const [error, setError] = useState(false);
-  const { isFetching, isLoading, isError: queryError, data: accountsData } = useQuery({
+  const { 
+    isFetching, 
+    isLoading, 
+    isError: queryError, 
+    data: accountsData,
+    refetch: refetchAccounts 
+  } = useQuery({
     queryKey: ['accountsData'],
     queryFn: async () => {
       const response = await fetch('/api/accounts/getAccounts')
@@ -92,6 +98,11 @@ export default function AccountsPage() {
   
   if (isFetching || isLoading) {
     return <PageLoader />
+  }
+
+  const onPlaidSuccess = async () => {
+    // Refetch accounts data to update the UI without page reload
+    await refetchAccounts();
   }
   
   const buttonText = accountsData?.accounts.length > 0 ? "Link more accounts" : "No accounts linked yet.";
@@ -128,7 +139,7 @@ export default function AccountsPage() {
         !queryError && !error && (
         <div className="flex flex-col gap-2 mt-4">
           <p>{buttonText}</p>
-          <PlaidButton />
+          <PlaidButton onSuccessCallback={onPlaidSuccess} />
         </div>
         )
       }

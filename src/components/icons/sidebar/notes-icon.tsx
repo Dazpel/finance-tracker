@@ -9,7 +9,7 @@ interface NotesIconProps {
 
 export const NotesIcon: React.FC<NotesIconProps> = ({
   size = 24,
-  fill = "currentColor",
+  fill = "#969696",
   width,
   height,
   ...props
@@ -25,7 +25,7 @@ export const NotesIcon: React.FC<NotesIconProps> = ({
     >
       <path
         d="M13 3L18 8V21C18 21.5523 17.5523 22 17 22H7C6.44772 22 6 21.5523 6 21V4C6 3.44772 6.44772 3 7 3H13ZM13 9H18L13 4V9Z"
-        stroke="currentColor"
+        stroke="#969696"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -33,7 +33,7 @@ export const NotesIcon: React.FC<NotesIconProps> = ({
       />
       <path
         d="M9 12H15M9 15H15M9 18H12"
-        stroke="currentColor"
+        stroke="#969696"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"

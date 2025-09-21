@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownTrigger,
   Selection,
+  Spinner,
   Table,
   TableBody,
   TableCell,
@@ -18,9 +19,10 @@ import { ChevronDownIcon } from "assets/icons/ChevronDownIcon";
 import { PlusIcon } from "assets/icons/PlusIcon";
 import RedoIcon from "assets/icons/RedoIcon";
 import UndoIcon from "assets/icons/UndoIcon";
+import UploadIcon from "assets/icons/UploadIcon";
 import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 import { TransactionBase } from "plaid";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   LOCAL_ACCOUNT_ID,
   defaultCategories,
@@ -109,6 +111,8 @@ export default function TransactionsTable({
 }: TransactionsTableProps) {
   const canEdit = tableMode === "edit";
   const [categoryFilter, setCategoryFilter] = useState<Selection>("all");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const capitalize = (s: string) => {
     const wordArray = s.split(" ");
@@ -203,6 +207,114 @@ export default function TransactionsTable({
 
     updatedTransactions.splice(transactionIndex, 1);
     return generateSelectedCategoryKeys(updatedTransactions);
+  };
+
+  const parseCSV = (csvText: string): TransactionBase[] => {
+    const lines = csvText.split('\n').filter(line => line.trim() !== '');
+    const transactions: TransactionBase[] = [];
+
+    if (lines.length === 0) return transactions;
+
+    // Parse header row to determine column positions
+    const headerRow = lines[0].split(',').map(item => item.trim().replace(/"/g, '').toLowerCase());
+    const dataLines = lines.slice(1);
+
+    // Find column indices
+    const descriptionIndex = headerRow.findIndex(col => 
+      col.includes('description') || col.includes('name') || col.includes('memo')
+    );
+    const categoryIndex = headerRow.findIndex(col => 
+      col.includes('category') || col.includes('type')
+    );
+    const amountIndex = headerRow.findIndex(col => 
+      col.includes('amount') || col.includes('value') || col.includes('total')
+    );
+    const dateIndex = headerRow.findIndex(col => 
+      col.includes('date') || col.includes('transaction_date')
+    );
+
+    // If required columns are not found, try default order (description, category, amount)
+    const hasRequiredColumns = descriptionIndex !== -1 && categoryIndex !== -1 && amountIndex !== -1;
+    
+    for (const line of dataLines) {
+      const columns = line.split(',').map(item => item.trim().replace(/"/g, ''));
+      
+      let description, category, amount, date;
+      
+      if (hasRequiredColumns) {
+        description = columns[descriptionIndex];
+        category = columns[categoryIndex];
+        amount = columns[amountIndex];
+        date = dateIndex !== -1 ? columns[dateIndex] : null;
+      } else {
+        // Fallback to default order (description, category, amount)
+        [description, category, amount] = columns;
+        date = null;
+      }
+      
+      if (description && category && amount) {
+        const parsedAmount = parseFloat(amount) || 0;
+        // Invert the amount: negative values become positive, positive values become negative
+        // This matches how bank registers typically work
+        const invertedAmount = -parsedAmount;
+        
+        const transaction: TransactionBase = {
+          transaction_id: uuidv4(),
+          account_id: LOCAL_ACCOUNT_ID,
+          date: date ? date : formatDate(new Date()),
+          [descriptionToUse]: description,
+          category: [category.toLowerCase()],
+          amount: invertedAmount,
+          iso_currency_code: 'USD',
+          unofficial_currency_code: null,
+          pending: false,
+        } as TransactionBase;
+        
+        transactions.push(transaction);
+      }
+    }
+
+    return transactions;
+  };
+
+  const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      alert('Please select a CSV file');
+      return;
+    }
+
+    setIsUploading(true);
+    
+    try {
+      const text = await file.text();
+      const newTransactions = parseCSV(text);
+      
+      if (newTransactions.length === 0) {
+        alert('No valid transactions found in the CSV file');
+        return;
+      }
+
+      // Add new transactions to the beginning of the existing transactions
+      const updatedTransactions = [...newTransactions, ...transactions];
+      generateSelectedCategoryKeys(updatedTransactions);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error parsing CSV:', error);
+      alert('Error parsing CSV file. Please check the format and try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
   };
 
   const filteredItems = useMemo(() => {
@@ -313,15 +425,33 @@ export default function TransactionsTable({
               </DropdownMenu>
             </Dropdown>
             {canEdit && (
-              <Button
-                onPress={() =>
-                  handleCreateTransaction(transactions)
-                }
-                color="primary"
-                endContent={<PlusIcon />}
-              >
-                Add Transaction
-              </Button>
+              <>
+                <Button
+                  onPress={() =>
+                    handleCreateTransaction(transactions)
+                  }
+                  color="primary"
+                  endContent={<PlusIcon />}
+                >
+                  Add Transaction
+                </Button>
+                <Button
+                  onPress={triggerFileUpload}
+                  color="primary"
+                  variant="bordered"
+                  isDisabled={isUploading}
+                  endContent={isUploading ? <Spinner size="sm" /> : <UploadIcon />}
+                >
+                  {isUploading ? "Uploading..." : "Upload CSV"}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVUpload}
+                  style={{ display: 'none' }}
+                />
+              </>
             )}
             {canUndo && canEdit && (
               <Tooltip content="Undo action" color="default">
@@ -351,7 +481,7 @@ export default function TransactionsTable({
         </div>
       </div>
     );
-  }, [categoryFilter, transactions.length, selectedKeys, canUndo, canRedo]);
+  }, [categoryFilter, transactions.length, selectedKeys, canUndo, canRedo, isUploading]);
 
   const renderCell = React.useCallback(
     (transaction: TableRow, columnKey: React.Key) => {

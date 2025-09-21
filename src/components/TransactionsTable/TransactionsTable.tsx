@@ -30,6 +30,7 @@ import {
 } from "utils/constants";
 import { formatDate } from "utils/functions";
 import { defaultColorVariants } from "utils/types";
+import { parseCSV } from "utils/csvParser";
 import { v4 as uuidv4 } from "uuid";
 
 type TableMode = "view" | "edit";
@@ -209,73 +210,6 @@ export default function TransactionsTable({
     return generateSelectedCategoryKeys(updatedTransactions);
   };
 
-  const parseCSV = (csvText: string): TransactionBase[] => {
-    const lines = csvText.split('\n').filter(line => line.trim() !== '');
-    const transactions: TransactionBase[] = [];
-
-    if (lines.length === 0) return transactions;
-
-    // Parse header row to determine column positions
-    const headerRow = lines[0].split(',').map(item => item.trim().replace(/"/g, '').toLowerCase());
-    const dataLines = lines.slice(1);
-
-    // Find column indices
-    const descriptionIndex = headerRow.findIndex(col => 
-      col.includes('description') || col.includes('name') || col.includes('memo')
-    );
-    const categoryIndex = headerRow.findIndex(col => 
-      col.includes('category') || col.includes('type')
-    );
-    const amountIndex = headerRow.findIndex(col => 
-      col.includes('amount') || col.includes('value') || col.includes('total')
-    );
-    const dateIndex = headerRow.findIndex(col => 
-      col.includes('date') || col.includes('transaction_date')
-    );
-
-    // If required columns are not found, try default order (description, category, amount)
-    const hasRequiredColumns = descriptionIndex !== -1 && categoryIndex !== -1 && amountIndex !== -1;
-    
-    for (const line of dataLines) {
-      const columns = line.split(',').map(item => item.trim().replace(/"/g, ''));
-      
-      let description, category, amount, date;
-      
-      if (hasRequiredColumns) {
-        description = columns[descriptionIndex];
-        category = columns[categoryIndex];
-        amount = columns[amountIndex];
-        date = dateIndex !== -1 ? columns[dateIndex] : null;
-      } else {
-        // Fallback to default order (description, category, amount)
-        [description, category, amount] = columns;
-        date = null;
-      }
-      
-      if (description && category && amount) {
-        const parsedAmount = parseFloat(amount) || 0;
-        // Invert the amount: negative values become positive, positive values become negative
-        // This matches how bank registers typically work
-        const invertedAmount = -parsedAmount;
-        
-        const transaction: TransactionBase = {
-          transaction_id: uuidv4(),
-          account_id: LOCAL_ACCOUNT_ID,
-          date: date ? date : formatDate(new Date()),
-          [descriptionToUse]: description,
-          category: [category.toLowerCase()],
-          amount: invertedAmount,
-          iso_currency_code: 'USD',
-          unofficial_currency_code: null,
-          pending: false,
-        } as TransactionBase;
-        
-        transactions.push(transaction);
-      }
-    }
-
-    return transactions;
-  };
 
   const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -290,7 +224,7 @@ export default function TransactionsTable({
     
     try {
       const text = await file.text();
-      const newTransactions = parseCSV(text);
+      const newTransactions = parseCSV(text, descriptionToUse);
       
       if (newTransactions.length === 0) {
         alert('No valid transactions found in the CSV file');

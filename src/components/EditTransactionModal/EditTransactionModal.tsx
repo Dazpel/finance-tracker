@@ -10,6 +10,7 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Textarea,
 } from "@heroui/react";
 import { ChevronDownIcon } from "assets/icons/ChevronDownIcon";
 import React from "react";
@@ -65,6 +66,13 @@ function EditTransactionModal({
                   type="number"
                   variant="bordered"
                   defaultValue={`${-editableTransaction.amount}`}
+                />
+                <Textarea
+                  label="Notes"
+                  placeholder="Enter notes for this transaction (optional)"
+                  variant="bordered"
+                  defaultValue={editableTransaction.notes || ""}
+                  description="Add any additional notes or comments about this transaction"
                 />
                 <div className="flex gap-2 items-center">
                   <span>Category:</span>

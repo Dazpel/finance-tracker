@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import isEqual from "lodash.isequal";
-import { TransactionBase } from "plaid";
+import { TransactionWithNotes } from "utils/types";
 
 type UndoRedoType = {
-    transactions: TransactionBase[];
+    transactions: TransactionWithNotes[];
     selectedKeys: Set<string>;
   };
 

@@ -21,7 +21,6 @@ import RedoIcon from "assets/icons/RedoIcon";
 import UndoIcon from "assets/icons/UndoIcon";
 import UploadIcon from "assets/icons/UploadIcon";
 import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
-import { TransactionBase } from "plaid";
 import React, { useMemo, useRef, useState } from "react";
 import {
   LOCAL_ACCOUNT_ID,
@@ -29,9 +28,10 @@ import {
   defaultCategoryFilterOptions,
 } from "utils/constants";
 import { formatDate } from "utils/functions";
-import { defaultColorVariants } from "utils/types";
+import { defaultColorVariants, TransactionWithNotes } from "utils/types";
 import { parseCSV } from "utils/csvParser";
 import { v4 as uuidv4 } from "uuid";
+import { NotesIcon } from "assets/icons/NotesIcon";
 
 type TableMode = "view" | "edit";
 
@@ -39,17 +39,17 @@ type DescriptionName = "original_description" | "name";
 
 type TransactionsTableProps = {
   tableMode?: TableMode;
-  transactions: TransactionBase[];
+  transactions: TransactionWithNotes[];
   selectedKeys: Set<string>;
   canUndo?: boolean;
   canRedo?: boolean;
   updateHistory: (
-    transactions: TransactionBase[],
+    transactions: TransactionWithNotes[],
     selectedKeys: Set<string>
   ) => void;
   goForward: (steps?: number) => void;
   goBack: (steps?: number) => void;
-  generateSelectedCategoryKeys: (transactions: TransactionBase[]) => void;
+  generateSelectedCategoryKeys: (transactions: TransactionWithNotes[]) => void;
   descriptionToUse?: DescriptionName;
   onEdit: (transactionId: string) => void;
 };
@@ -60,6 +60,7 @@ type TableRow = {
   description: string;
   category: string;
   amount: number;
+  notes?: string;
 };
 
 const defaultColumns = [
@@ -85,7 +86,7 @@ const defaultColumns = [
   },
 ];
 
-const rows = (transactions: TransactionBase[], descriptionToUse: DescriptionName): TableRow[] => {
+const rows = (transactions: TransactionWithNotes[], descriptionToUse: DescriptionName): TableRow[] => {
   return transactions.map((transaction) => ({
     key: transaction.transaction_id,
     date: transaction.date,
@@ -94,6 +95,7 @@ const rows = (transactions: TransactionBase[], descriptionToUse: DescriptionName
       ? transaction.category[0]
       : "",
     amount: Number((transaction.amount).toFixed(2)),
+    notes: transaction.notes,
   }));
 };
 
@@ -179,7 +181,7 @@ export default function TransactionsTable({
     return updateHistory(updatedTransactions, newKeys);
   };
 
-  const handleCreateTransaction = (transactions: TransactionBase[]) => {
+  const handleCreateTransaction = (transactions: TransactionWithNotes[]) => {
     const prevTransactions = [...transactions];
     const newTransaction = {
       transaction_id: uuidv4(),
@@ -188,6 +190,7 @@ export default function TransactionsTable({
       [descriptionToUse]: "New Transaction",
       category: ["Others"],
       amount: 0,
+      notes: undefined,
     };
 
     prevTransactions.unshift(newTransaction as any);
@@ -425,6 +428,26 @@ export default function TransactionsTable({
         case "amount":
           return (
             <span>{-cellValue}</span>
+          );
+        case "description":
+          return (
+            <div className="flex items-center gap-2">
+              <span>{cellValue}</span>
+              {transaction.notes && (
+                <Tooltip 
+                  content={`Notes: ${transaction.notes}`} 
+                  color="default"
+                  placement="top"
+                  showArrow
+                  delay={300}
+                  closeDelay={100}
+                >
+                  <span className="cursor-pointer">
+                    <NotesIcon className="text-green-500" size={16} />
+                  </span>
+                </Tooltip>
+              )}
+            </div>
           );
         case "category":
           return canEdit ? (

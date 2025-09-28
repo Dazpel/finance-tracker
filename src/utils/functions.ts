@@ -3,9 +3,10 @@ import { plaidClient } from "@lib/plaid";
 import { PlaidAccount } from "@prisma/client";
 import { decompressFromEncodedURIComponent } from "lz-string";
 import { DateTime } from "next-auth/providers/kakao";
-import { Transaction, TransactionBase, TransactionStream } from "plaid";
+import { Transaction, TransactionStream } from "plaid";
 import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
+import { TransactionWithNotes } from "./types";
 
 type FormattedTransaction = {
   amount: number;
@@ -15,6 +16,7 @@ type FormattedTransaction = {
   account_id: string;
   transaction_id: string;
   userId: string;
+  notes?: string; // Optional notes field for transactions
 };
 
 type FetchTransactionsResponse = {
@@ -58,7 +60,7 @@ export const formatRecurringTransactions = (transactions: TransactionStream[], u
   return formattedTransactions;
 }
 
-export const formatTransactions = (transactions: TransactionBase[], userId: string): FormattedTransaction[] => {
+export const formatTransactions = (transactions: TransactionWithNotes[], userId: string): FormattedTransaction[] => {
   const formattedTransactions = transactions.map((transaction) => {
     return {
       userId,
@@ -67,7 +69,8 @@ export const formatTransactions = (transactions: TransactionBase[], userId: stri
       date: transaction?.date,
       name: transaction?.name || transaction?.original_description || "No name",
       account_id: transaction.account_id,
-      transaction_id: transaction.transaction_id
+      transaction_id: transaction.transaction_id,
+      notes: transaction?.notes,
     };
   });
 

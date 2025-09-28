@@ -5,12 +5,12 @@ import { useDeviceSize } from "@components/hooks/useDeviceSize";
 import ReportCard from "@components/ReportCard/ReportCard";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
 import { Button, Tab, Tabs } from "@heroui/react";
-import { TransactionBase } from "plaid";
 import {
   decodeQueryString,
   filterTransactions,
   formatCreatedDate,
 } from "utils/functions";
+import { TransactionWithNotes } from "utils/types";
 
 const noop = () => {};
 
@@ -24,14 +24,14 @@ export default function Page(props: {
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [displayTransactions, setDisplayTransactions] = useState(false);
-  const [transactions, setTransactions] = useState([] as TransactionBase[]);
+  const [transactions, setTransactions] = useState([] as TransactionWithNotes[]);
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const reportData = decodeQueryString(searchParams.data);
   const { reportName, createdAt, id, reportType, ...rest } = reportData;
 
-  const generateSelectedCategoryKeys = (transactions: TransactionBase[]) => {
+  const generateSelectedCategoryKeys = (transactions: TransactionWithNotes[]) => {
     let newKeys = transactions.reduce(
-      (acc: any, transaction: TransactionBase) => {
+      (acc: any, transaction: TransactionWithNotes) => {
         if (transaction.category) {
           acc[transaction.transaction_id] = new Set([
             transaction.category[0].replace("and", "&").toLocaleLowerCase(),

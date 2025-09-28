@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { TransactionBase } from "plaid";
 import DateRangePicker, {
   DateRange,
 } from "@components/DateRangePicker/DateRangePicker";
@@ -11,7 +10,7 @@ import {
   defaultCategorieToValueObject,
 } from "utils/constants";
 import ReportCard from "@components/ReportCard/ReportCard";
-import { CategoryValues } from "utils/types";
+import { CategoryValues, TransactionWithNotes } from "utils/types";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
@@ -28,7 +27,7 @@ export default function TransactionsPage() {
   const router = useRouter();
   const isMobile = useDeviceSize();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editableTransaction, setEditableTransaction] = useState({} as TransactionBase);
+  const [editableTransaction, setEditableTransaction] = useState({} as TransactionWithNotes);
   const [selectedCategory, setSelectedCategory] = useState(new Set<string>());
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
@@ -67,7 +66,7 @@ export default function TransactionsPage() {
   };
 
   const updateHistory = (
-    transactions: TransactionBase[],
+    transactions: TransactionWithNotes[],
     selectedKeys: Set<string>
   ) => {
     const newState = {
@@ -78,9 +77,9 @@ export default function TransactionsPage() {
     setHistory(newState);
   };
 
-  const generateSelectedCategoryKeys = (transactions: TransactionBase[]) => {
+  const generateSelectedCategoryKeys = (transactions: TransactionWithNotes[]) => {
     let newKeys = transactions.reduce(
-      (acc: any, transaction: TransactionBase) => {
+      (acc: any, transaction: TransactionWithNotes) => {
         if (transaction.category) {
           acc[transaction.transaction_id] = new Set([
             transaction.category[0].replace("and", "&").toLocaleLowerCase(),
@@ -199,7 +198,7 @@ export default function TransactionsPage() {
 
 // This needs to be refactored into a hook
   const handleEdit = (transactionId: string) => {
-    setEditableTransaction(transactions.find((t) => t.transaction_id === transactionId) as TransactionBase);
+    setEditableTransaction(transactions.find((t) => t.transaction_id === transactionId) as TransactionWithNotes);
     setSelectedCategory(new Set<string>());
     setIsModalOpen(true);
   }
@@ -219,7 +218,6 @@ export default function TransactionsPage() {
     const newCategory = new Set().add(getCategorySelected.toLowerCase());
     const transactionId = editableTransaction.transaction_id;
     const newKeys = { ...selectedKeys, [transactionId]: newCategory };
-    
     const transactionIndex = prevTransactions.findIndex(
       (transaction) => transaction.transaction_id === transactionId
     );
@@ -228,7 +226,8 @@ export default function TransactionsPage() {
       ...editableTransaction,
       original_description: (formValues[0] as HTMLInputElement)?.value,
       amount: -Number((formValues[1] as HTMLInputElement)?.value),
-      category: [formValues[2]?.ariaLabel || "Others"],
+      notes: (formValues[2] as HTMLTextAreaElement)?.value || undefined,
+      category: [formValues[3]?.ariaLabel || "Others"],
     };
     
     prevTransactions[transactionIndex] = updatedTransaction;

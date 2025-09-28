@@ -1,7 +1,7 @@
-import { TransactionBase } from 'plaid';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDate } from './functions';
 import { LOCAL_ACCOUNT_ID } from './constants';
+import { TransactionWithNotes } from './types';
 
 type DescriptionName = 'original_description' | 'name';
 
@@ -13,9 +13,9 @@ type DescriptionName = 'original_description' | 'name';
  * @param descriptionToUse - Which description field to use ('original_description' or 'name')
  * @returns Array of TransactionBase objects
  */
-export const parseCSV = (csvText: string, descriptionToUse: DescriptionName = 'original_description'): TransactionBase[] => {
+export const parseCSV = (csvText: string, descriptionToUse: DescriptionName = 'original_description'): TransactionWithNotes[] => {
   const lines = csvText.split('\n').filter(line => line.trim() !== '');
-  const transactions: TransactionBase[] = [];
+  const transactions: TransactionWithNotes[] = [];
 
   if (lines.length === 0) return transactions;
 
@@ -100,7 +100,7 @@ export const parseCSV = (csvText: string, descriptionToUse: DescriptionName = 'o
       // This matches how bank registers typically work
       const invertedAmount = -parsedAmount;
       
-      const transaction: TransactionBase = {
+      const transaction: TransactionWithNotes = {
         transaction_id: uuidv4(),
         account_id: LOCAL_ACCOUNT_ID,
         date: date ? date : formatDate(new Date()),
@@ -110,7 +110,8 @@ export const parseCSV = (csvText: string, descriptionToUse: DescriptionName = 'o
         iso_currency_code: 'USD',
         unofficial_currency_code: null,
         pending: false,
-      } as TransactionBase;
+        notes: undefined,
+      } as TransactionWithNotes;
       
       transactions.push(transaction);
     }

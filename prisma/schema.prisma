@@ -114,6 +114,7 @@ model Transaction {
   amount         Float
   date           String
   category       String[]
+  notes          String?  // Optional notes field for transactions
   createdAt      DateTime @default(now())
   
   @@index([userId, date])

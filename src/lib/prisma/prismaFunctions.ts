@@ -1,9 +1,8 @@
 import { ReportData } from "@components/ReportCard/ReportCard";
 import { PrismaClient, ReportType } from "@prisma/client";
 import { RecurringReportData } from "app/recurring-transactions/_utils/constants";
-import { TransactionBase } from "plaid";
 import { formatReportKeys, formatTransactions } from "utils/functions";
-import { ReportDataDTO } from "utils/types";
+import { ReportDataDTO, TransactionWithNotes } from "utils/types";
 
 export type PrismaResponse = {
   success: boolean;
@@ -193,7 +192,7 @@ export const getTransactions = async (
 
 export const createReport = async (
   prisma: PrismaClient,
-  transactions: TransactionBase[],
+  transactions: TransactionWithNotes[],
   report: ReportData,
   reportName: string,
   userEmail: string
@@ -360,7 +359,7 @@ export const deleteReport = async (
 
 export const updateReport = async (
   prisma: PrismaClient,
-  transactions: TransactionBase[],
+  transactions: TransactionWithNotes[],
   reportId: number,
   report: ReportData,
   reportName: string,

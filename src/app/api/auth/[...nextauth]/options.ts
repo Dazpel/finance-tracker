@@ -24,8 +24,10 @@ export const options = {
     },
     async session({ session, token }: any) {
       if (session?.user){
+        // First, ensure the user exists (create if they don't)
+        const accounts = await findOrCreateUser(prisma, session.user.email);
+        // Then check if they're authorized
         const res = await isUserAuthorized(prisma, session.user.email);
-        const accounts = res?.data && await findOrCreateUser(prisma, session.user.email);
         session.user.authorized = res?.data || false;
         session.user.accounts = accounts || [];
         session.user.role = token.role;

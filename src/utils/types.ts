@@ -1,4 +1,10 @@
 import { ReportType } from "@prisma/client";
+import { TransactionBase } from "plaid";
+
+// Extended transaction type that includes notes field
+export type TransactionWithNotes = TransactionBase & {
+  notes?: string;
+};
 
 export type CategoryValues = {
   "food & drink": number;

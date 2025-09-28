@@ -10,17 +10,16 @@ import { Input, Tab, Tabs } from "@heroui/react";
 import axios from "axios";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import { useRouter } from "next/navigation";
-import { TransactionBase } from "plaid";
 import {
   defaultCategorieToValueObject,
   defaultCategories,
 } from "utils/constants";
 import { convertToCSV, decodeQueryString, filterTransactions, formatCreatedDate } from "utils/functions";
-import { CategoryValues } from "utils/types";
+import { CategoryValues, TransactionWithNotes } from "utils/types";
 
 const noop = () => {};
 
-const handleDownload = (transactions: TransactionBase[]) => {
+const handleDownload = (transactions: TransactionWithNotes[]) => {
   const csvData = transactions.map(({ amount, category, date, name }) => ({
     amount,
     category,
@@ -47,7 +46,7 @@ export default function Page(
   const isMobile = useDeviceSize();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editableTransaction, setEditableTransaction] = useState({} as TransactionBase);
+  const [editableTransaction, setEditableTransaction] = useState({} as TransactionWithNotes);
   const [selectedCategory, setSelectedCategory] = useState(new Set<string>());
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
@@ -79,7 +78,7 @@ export default function Page(
   };
 
   const updateHistory = (
-    transactions: TransactionBase[],
+    transactions: TransactionWithNotes[],
     selectedKeys: Set<string>
   ) => {
     const newState = {
@@ -90,9 +89,9 @@ export default function Page(
     setHistory(newState);
   };
 
-  const generateSelectedCategoryKeys = (transactions: TransactionBase[]) => {
+  const generateSelectedCategoryKeys = (transactions: TransactionWithNotes[]) => {
     let newKeys = transactions.reduce(
-      (acc: any, transaction: TransactionBase) => {
+      (acc: any, transaction: TransactionWithNotes) => {
         if (transaction.category) {
           acc[transaction.transaction_id] = new Set([
             transaction.category[0].replace("and", "&").toLocaleLowerCase(),
@@ -183,7 +182,7 @@ export default function Page(
   };
 
   const handleEdit = (transactionId: string) => {
-    setEditableTransaction(transactions.find((t) => t.transaction_id === transactionId) as TransactionBase);
+    setEditableTransaction(transactions.find((t) => t.transaction_id === transactionId) as TransactionWithNotes);
     setSelectedCategory(new Set<string>());
     setIsModalOpen(true);
   }

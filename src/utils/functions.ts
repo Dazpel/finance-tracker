@@ -69,7 +69,8 @@ export const formatTransactions = (transactions: TransactionWithNotes[], userId:
       date: transaction?.date,
       name: transaction?.name || transaction?.original_description || "No name",
       account_id: transaction.account_id,
-      transaction_id: transaction.transaction_id
+      transaction_id: transaction.transaction_id,
+      notes: transaction?.notes,
     };
   });
 

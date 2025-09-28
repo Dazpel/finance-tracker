@@ -211,7 +211,8 @@ export default function Page(
       ...editableTransaction,
       name: (formValues[0] as HTMLInputElement)?.value,
       amount: -Number((formValues[1] as HTMLInputElement)?.value),
-      category: [formValues[2]?.ariaLabel || "Others"],
+      notes: (formValues[2] as HTMLTextAreaElement)?.value || undefined,
+      category: [formValues[3]?.ariaLabel || "Others"],
     };
     
     prevTransactions[transactionIndex] = updatedTransaction;

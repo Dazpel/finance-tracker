@@ -5,6 +5,7 @@ import {
   DropdownItem,
   DropdownMenu,
   DropdownTrigger,
+  Input,
   Selection,
   Spinner,
   Table,
@@ -61,6 +62,7 @@ type TableRow = {
   category: string;
   amount: number;
   notes?: string;
+  account_id?: string;
 };
 
 const defaultColumns = [
@@ -96,6 +98,7 @@ const rows = (transactions: TransactionWithNotes[], descriptionToUse: Descriptio
       : "",
     amount: Number((transaction.amount).toFixed(2)),
     notes: transaction.notes,
+    account_id: transaction.account_id,
   }));
 };
 
@@ -180,6 +183,25 @@ export default function TransactionsTable({
 
     return updateHistory(updatedTransactions, newKeys);
   };
+
+  const handleDateChange = React.useCallback((newDate: string, id: string) => {
+    const prevTransactions = [...transactions];
+    const transactionIndex = prevTransactions.findIndex(
+      (transaction) => transaction.transaction_id === id
+    );
+
+    if (transactionIndex === -1) {
+      return prevTransactions;
+    }
+
+    const updatedTransactions = [...prevTransactions];
+    updatedTransactions[transactionIndex] = {
+      ...updatedTransactions[transactionIndex],
+      date: newDate,
+    };
+
+    return updateHistory(updatedTransactions, selectedKeys);
+  }, [transactions, selectedKeys, updateHistory]);
 
   const handleCreateTransaction = (transactions: TransactionWithNotes[]) => {
     const prevTransactions = [...transactions];
@@ -423,8 +445,25 @@ export default function TransactionsTable({
   const renderCell = React.useCallback(
     (transaction: TableRow, columnKey: React.Key) => {
       const cellValue = transaction[columnKey as keyof TableRow] as string;
+      const isAddedTransaction = transaction.account_id === LOCAL_ACCOUNT_ID;
 
       switch (columnKey) {
+        case "date":
+          return canEdit && isAddedTransaction ? (
+            <Input
+              type="date"
+              value={cellValue}
+              variant="bordered"
+              size="sm"
+              classNames={{
+                input: "text-small",
+                inputWrapper: "h-8 min-h-8",
+              }}
+              onChange={(e) => handleDateChange(e.target.value, transaction.key)}
+            />
+          ) : (
+            <span>{cellValue}</span>
+          );
         case "amount":
           return (
             <span>{-cellValue}</span>
@@ -479,7 +518,7 @@ export default function TransactionsTable({
           return cellValue;
       }
     },
-    [selectedKeys, transactions, selectedValues]
+    [selectedKeys, transactions, selectedValues, canEdit, handleDateChange]
   );
 
   return (

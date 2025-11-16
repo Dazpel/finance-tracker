@@ -4,9 +4,12 @@ This file provides comprehensive guidance for AI agents working with this codeba
 
 ## Project Overview
 
-The **MoneyEye Finance Tracker** is a Next.js 15 application that serves as a personal finance management platform. It enables users to connect their bank accounts via Plaid integration, track transactions, generate financial reports, manage recurring transactions, and gain insights into their spending patterns across various categories.
+The **MoneyEye Finance Tracker** is a Next.js 16 application that serves as a personal finance management platform. It enables users to connect their bank accounts via Plaid integration, track transactions, generate financial reports, manage recurring transactions, and gain insights into their spending patterns across various categories.
 
 ## Development Commands
+
+### Important
+When working with Next.js, always call the init tool from next-devtools-mcp at the start of the session to establish proper context and documentation requirements.
 
 ### Core Development
 
@@ -25,11 +28,11 @@ The **MoneyEye Finance Tracker** is a Next.js 15 application that serves as a pe
 
 ## Architecture Overview
 
-This is a **Next.js 15** application with the following key architectural components:
+This is a **Next.js 16** application with the following key architectural components:
 
 ### Framework Stack
 
-- **Next.js 15** with App Router (not Pages Router)
+- **Next.js 16** with App Router (not Pages Router)
 - **React 19** with TypeScript
 - **Prisma** for database ORM with PostgreSQL
 - **NextAuth.js** for authentication
@@ -91,7 +94,7 @@ The application uses **PostgreSQL** with **Prisma ORM** and includes the followi
 ### Authentication & Session Management
 
 - Uses **NextAuth.js v4** for authentication
-- Custom middleware for route protection in `src/middleware.ts`
+- Custom proxy (middleware) for route protection in `src/proxy.ts`
 - User authorization system with email-based access control
 - Session management with secure cookie handling
 
@@ -176,7 +179,7 @@ This application requires specific environment variables for:
 
 ### Performance Considerations
 
-- Uses Next.js 15 with App Router for optimal performance
+- Uses Next.js 16 with App Router for optimal performance
 - Implements proper caching strategies with TanStack Query
 - Server-side rendering where appropriate
 - Code splitting through Next.js App Router

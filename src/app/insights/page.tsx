@@ -1,6 +1,8 @@
 import { getAvailableYears } from "./actions";
 import InsightsPageComponent from "../../components/InsightsPage/InsightsPage";
 
+export const dynamic = 'force-dynamic';
+
 export default async function InsightsPage() {
   // Server fetch for available years only
   const years = await getAvailableYears();

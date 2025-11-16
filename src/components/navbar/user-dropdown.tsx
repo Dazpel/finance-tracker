@@ -15,9 +15,6 @@ export const UserDropdown = () => {
   const router = useRouter();
   const handleDropdownSelect = async (actionKey: Key): Promise<void> => {
     switch (actionKey) {
-      case "mappings":
-        router.push("/settings/mappings");
-        break;
       case "logout":
         await signOut();
         break;
@@ -48,9 +45,6 @@ export const UserDropdown = () => {
           <p>Signed in as</p>
           <p>{session?.data?.user?.email}</p>
         </DropdownItem>
-        <DropdownItem key="settings">My Settings</DropdownItem>
-        <DropdownItem key="configurations">Configurations</DropdownItem>
-        <DropdownItem key="mappings">My Categories</DropdownItem>
         <DropdownItem key="logout" color="danger" className="text-danger ">
           Log Out
         </DropdownItem>

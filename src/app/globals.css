@@ -16,3 +16,7 @@ body {
 .date-picker {
   border: 1px solid #aeaeae;
 }
+
+div[role="spinbutton"] {
+  outline: none;
+}

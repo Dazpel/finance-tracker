@@ -77,3 +77,26 @@ export const defaultCategorieToValueObject = {
 };
 
 export const LOCAL_ACCOUNT_ID = "new_transaction";
+
+export const fiftyThirtyTwentyCategories = {
+  needs: [
+    "bills & utilities",
+    "groceries",
+    "car",
+    "health & wellness",
+  ],
+  wants: [
+    "entertainment",
+    "food & drink",
+    "shopping",
+    "personal",
+    "others",
+    "fees & adjustments",
+  ],
+};
+
+export const fiftyThirtyTwentyTargets = {
+  needs: 50,
+  wants: 30,
+  savings: 20,
+};

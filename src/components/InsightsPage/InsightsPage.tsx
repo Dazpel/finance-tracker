@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { getTransactionsByDateRange } from "../../app/insights/actions";
 import { Transaction } from "@prisma/client";
 import DateRangePicker, { DateRange } from "../DateRangePicker/DateRangePicker";
@@ -8,6 +8,8 @@ import CategoryInsightsTable from "../CategoryInsightsTable/CategoryInsightsTabl
 import PieChart from "../PieChart/PieChart";
 import { useToast } from "../../hooks/useToast";
 import { today, getLocalTimeZone, parseDate } from "@internationalized/date";
+import FiftyThirtyTwentyCard from "./FiftyThirtyTwentyCard";
+import { calculateFiftyThirtyTwenty } from "../../utils/insights";
 
 interface InsightsPageProps {
   years: number;
@@ -19,6 +21,11 @@ export default function InsightsPage({ years }: InsightsPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentDateRange, setCurrentDateRange] = useState<DateRange | null>(null);
   const { errorToast } = useToast();
+
+  const budgetSummary = useMemo(
+    () => calculateFiftyThirtyTwenty(transactions),
+    [transactions]
+  );
 
   // Handle getting insights based on selected date range
   const handleGetInsights = async (dates: DateRange) => {
@@ -69,6 +76,14 @@ export default function InsightsPage({ years }: InsightsPageProps) {
           {/* Pie Chart */}
           <section className="mb-8">
             <PieChart transactions={transactions} />
+          </section>
+
+          {/* 50/30/20 Budget Section */}
+          <section className="mb-8">
+            <FiftyThirtyTwentyCard
+              summary={budgetSummary}
+              dateRange={currentDateRange}
+            />
           </section>
 
           {/* Category Insights Table */}

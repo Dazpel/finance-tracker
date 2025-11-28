@@ -51,6 +51,8 @@ export const calculateFiftyThirtyTwenty = (
         return acc;
       }
 
+      // Default uncategorized expenses to "wants" - this is intentional
+      // as uncategorized spending is typically discretionary
       acc.wants += amount;
       return acc;
     },
@@ -63,7 +65,8 @@ export const calculateFiftyThirtyTwenty = (
   );
 
   const savings = summary.revenue - summary.expenses;
-  const denominator = summary.revenue > 0 ? summary.revenue : 0;
+  // Revenue is always >= 0 since it's accumulated from Math.abs(transaction.amount)
+  const denominator = summary.revenue;
 
   return {
     ...summary,

@@ -37,7 +37,24 @@ const formatDateRange = (dateRange?: DateRange | null) => {
   return `${start} – ${end}`;
 };
 
-const getProgressColor = (percent: number, target: number) => {
+const getProgressColor = (percent: number, target: number, isSavings = false) => {
+  // Negative percentages always indicate danger (loss/overspending)
+  if (percent < 0) {
+    return "danger";
+  }
+
+  if (isSavings) {
+    // For savings: higher is better, so invert the logic
+    if (percent >= target) {
+      return "success";
+    }
+    if (percent >= target - 10) {
+      return "warning";
+    }
+    return "danger";
+  }
+
+  // For needs/wants: lower is better (under budget)
   if (percent <= target) {
     return "success";
   }
@@ -47,7 +64,12 @@ const getProgressColor = (percent: number, target: number) => {
   return "danger";
 };
 
-const getDifferenceCopy = (percent: number, target: number) => {
+const getDifferenceCopy = (percent: number, target: number, isSavings = false) => {
+  // Handle negative savings (loss situation) clearly
+  if (isSavings && percent < 0) {
+    return `Loss (${Math.abs(percent).toFixed(1)}% of income)`;
+  }
+
   const difference = percent - target;
   const rounded = difference.toFixed(1);
 
@@ -69,6 +91,7 @@ export default function FiftyThirtyTwentyCard({
       amount: summary.needs,
       percent: summary.needsPercent,
       target: fiftyThirtyTwentyTargets.needs,
+      isSavings: false,
     },
     {
       label: "Wants",
@@ -76,6 +99,7 @@ export default function FiftyThirtyTwentyCard({
       amount: summary.wants,
       percent: summary.wantsPercent,
       target: fiftyThirtyTwentyTargets.wants,
+      isSavings: false,
     },
     {
       label: "Savings / Profit",
@@ -83,6 +107,7 @@ export default function FiftyThirtyTwentyCard({
       amount: summary.savings,
       percent: summary.savingsPercent,
       target: fiftyThirtyTwentyTargets.savings,
+      isSavings: true,
     },
   ];
 
@@ -136,7 +161,7 @@ export default function FiftyThirtyTwentyCard({
                   <div className="text-right">
                     <p className="font-semibold">{formatCurrency(row.amount)}</p>
                     <p className="text-xs text-gray-500">
-                      {row.percent.toFixed(1)}% of income · {getDifferenceCopy(row.percent, row.target)}
+                      {row.percent.toFixed(1)}% of income · {getDifferenceCopy(row.percent, row.target, row.isSavings)}
                     </p>
                   </div>
                 </div>
@@ -144,7 +169,7 @@ export default function FiftyThirtyTwentyCard({
                   maxValue={100}
                   value={Math.min(Math.abs(row.percent), 200)}
                   aria-label={`${row.label} allocation`}
-                  color={getProgressColor(row.percent, row.target)}
+                  color={getProgressColor(row.percent, row.target, row.isSavings)}
                 />
               </div>
             ))}

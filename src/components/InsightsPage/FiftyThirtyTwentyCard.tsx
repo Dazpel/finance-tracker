@@ -167,7 +167,7 @@ export default function FiftyThirtyTwentyCard({
                 </div>
                 <Progress
                   maxValue={100}
-                  value={Math.min(Math.abs(row.percent), 200)}
+                  value={Math.min(Math.abs(row.percent), 100)}
                   aria-label={`${row.label} allocation`}
                   color={getProgressColor(row.percent, row.target, row.isSavings)}
                 />

@@ -25,7 +25,7 @@ import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 import { formatCreatedDate } from "utils/functions";
 import AnualReportCreationModal from "./AnualReportCreationModal";
 
-type RowActions = "edit" | "delete" | "view";
+type RowActions = "edit" | "delete" | "view" | "insights";
 
 type TableRow = {
   id: number;
@@ -48,6 +48,7 @@ type ReportsTableProps = {
   handleOnDelete: (index: number) => Promise<void>;
   handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>
   handleAnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>
+  handleOnInsights?: (reportId: number, reportType: string) => void;
   showCreateAnualReportHeader?: boolean;
   disableHeader?: boolean;
 };
@@ -102,6 +103,7 @@ export default function ReportsTable({
   handleOnView,
   handleMerge,
   handleAnualReport,
+  handleOnInsights,
   showCreateAnualReportHeader = false,
   disableHeader = false,
 }: ReportsTableProps) {
@@ -182,10 +184,15 @@ export default function ReportsTable({
       case "view":
         handleOnView && handleOnView(compressToEncodedURIComponent(JSON.stringify(report)));
         break;
+      case "insights":
+        if (report && handleOnInsights) {
+          handleOnInsights(report.id, report.reportType);
+        }
+        break;
       default:
         break;
     }
-  }, [handleOnEdit, handleOnView, reportData, displayDeleteModal]);
+  }, [handleOnEdit, handleOnView, handleOnInsights, reportData, displayDeleteModal]);
 
   const handleDelete = async () => {
     if (reportIndexToDelete) {
@@ -277,6 +284,7 @@ export default function ReportsTable({
                 <DropdownMenu aria-label="dropdown options">
                   <DropdownItem key="view button" onPress={() => handleActions(report.id, "view")}>View</DropdownItem>
                   {!isAnnual ? <DropdownItem key="edit button" onPress={() => handleActions(report.id, "edit")}>Edit</DropdownItem> : null}
+                  <DropdownItem key="insights button" onPress={() => handleActions(report.id, "insights")}>Insights</DropdownItem>
                   <DropdownItem key="delete button" onPress={() => handleActions(report.id, "delete")}>
                     Delete
                   </DropdownItem>

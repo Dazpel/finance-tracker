@@ -1,31 +1,78 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { getTransactionsByDateRange } from "../../app/insights/actions";
-import { Transaction } from "@prisma/client";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  getTransactionsByDateRange,
+  getTransactionsByReportId,
+} from "../../app/insights/actions";
+import { ReportType, Transaction } from "@prisma/client";
 import DateRangePicker, { DateRange } from "../DateRangePicker/DateRangePicker";
-import CategoryInsightsTable from "../CategoryInsightsTable/CategoryInsightsTable";
-import PieChart from "../PieChart/PieChart";
 import { useToast } from "../../hooks/useToast";
 import { today, getLocalTimeZone, parseDate } from "@internationalized/date";
-import FiftyThirtyTwentyCard from "./FiftyThirtyTwentyCard";
-import { calculateFiftyThirtyTwenty } from "../../utils/insights";
+import { Tabs, Tab, Chip, Button } from "@heroui/react";
+import CategoryDistributionTab from "./CategoryDistributionTab";
+import BudgetAllocationTab from "./BudgetAllocationTab";
 
 interface InsightsPageProps {
   years: number;
+  initialReportId?: number;
+  initialReportType?: ReportType;
 }
 
-export default function InsightsPage({ years }: InsightsPageProps) {
+type TabKey = "category" | "budget";
+
+export default function InsightsPage({
+  years,
+  initialReportId,
+  initialReportType,
+}: InsightsPageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [transactions, setTransactions] = useState<Array<Transaction>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentDateRange, setCurrentDateRange] = useState<DateRange | null>(null);
+  const [reportName, setReportName] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>("category");
   const { errorToast } = useToast();
+  
+  // Track if we've already fetched for this reportId to prevent infinite loops
+  const fetchedReportIdRef = useRef<number | null>(null);
+  
+  // Stable ref for errorToast to avoid dependency issues
+  const errorToastRef = useRef(errorToast);
+  errorToastRef.current = errorToast;
 
-  const budgetSummary = useMemo(
-    () => calculateFiftyThirtyTwenty(transactions),
-    [transactions]
-  );
+  // Auto-fetch if reportId is provided (only once per reportId)
+  useEffect(() => {
+    if (!initialReportId || !initialReportType) return;
+    if (fetchedReportIdRef.current === initialReportId) return;
+
+    const fetchByReportId = async () => {
+      fetchedReportIdRef.current = initialReportId;
+      setIsLoading(true);
+      
+      try {
+        const result = await getTransactionsByReportId({
+          reportId: initialReportId,
+          reportType: initialReportType,
+        });
+
+        if (result.success && result.data) {
+          setTransactions(result.data);
+          setReportName(result.reportName || null);
+          setIsLoaded(true);
+        } else {
+          errorToastRef.current(result.error || "Failed to fetch report insights");
+        }
+      } catch (error) {
+        console.error("Error fetching report insights:", error);
+        errorToastRef.current("An error occurred while fetching report insights");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchByReportId();
+  }, [initialReportId, initialReportType]);
 
   // Handle getting insights based on selected date range
   const handleGetInsights = async (dates: DateRange) => {
@@ -39,6 +86,7 @@ export default function InsightsPage({ years }: InsightsPageProps) {
       if (result.success && result.data) {
         setTransactions(result.data);
         setCurrentDateRange(dates);
+        setReportName(null); // Clear report name when using date range
         setIsLoaded(true);
       } else {
         errorToast(result.error || "Failed to fetch insights");
@@ -51,12 +99,44 @@ export default function InsightsPage({ years }: InsightsPageProps) {
     }
   };
 
+  // Clear report-based data and allow custom date selection
+  const handleClearReport = () => {
+    setTransactions([]);
+    setReportName(null);
+    setCurrentDateRange(null);
+    setIsLoaded(false);
+  };
+
+  // Derive effective date range for display
+  const effectiveDateRange = useMemo(() => {
+    if (currentDateRange) return currentDateRange;
+
+    if (transactions.length > 0) {
+      const dates = transactions.map((t) => new Date(t.date).getTime());
+      const minDate = new Date(Math.min(...dates));
+      const maxDate = new Date(Math.max(...dates));
+      return {
+        startDate: minDate.toISOString().split("T")[0],
+        endDate: maxDate.toISOString().split("T")[0],
+      };
+    }
+
+    return null;
+  }, [currentDateRange, transactions]);
+
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Insights</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Insights</h1>
+        {reportName && (
+          <Chip color="primary" variant="flat" size="lg">
+            Report: {reportName}
+          </Chip>
+        )}
+      </div>
 
-      {/* Date Range Selection and Get Insights Button */}
-      <div className="mb-6 flex flex-col align-left gap-4">
+      {/* Date Range Selection */}
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-end gap-4">
         <DateRangePicker
           className="max-w-xs"
           label="Select dates"
@@ -68,45 +148,114 @@ export default function InsightsPage({ years }: InsightsPageProps) {
           buttonText="Get Insights"
           isLoading={isLoading}
         />
+        {reportName && (
+          <Button
+            variant="flat"
+            color="default"
+            onPress={handleClearReport}
+            size="md"
+          >
+            Clear Report Data
+          </Button>
+        )}
       </div>
 
-      {/* Show insights only after user clicks "Get Insights" */}
-      {isLoaded && (
-        <>
-          {/* Pie Chart */}
-          <section className="mb-8">
-            <PieChart transactions={transactions} />
-          </section>
-
-          {/* 50/30/20 Budget Section */}
-          <section className="mb-8">
-            <FiftyThirtyTwentyCard
-              summary={budgetSummary}
-              dateRange={currentDateRange}
-            />
-          </section>
-
-          {/* Category Insights Table */}
-          <section className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Category Insights</h2>
-            <CategoryInsightsTable 
-              transactions={transactions} 
-              dateRange={{
-                startDate: currentDateRange!.startDate,
-                endDate: currentDateRange!.endDate,
-              }}
-            />
-          </section>
-        </>
+      {/* Show insights only after data is loaded */}
+      {isLoaded && transactions.length > 0 && (
+        <Tabs
+          aria-label="Insights tabs"
+          selectedKey={activeTab}
+          onSelectionChange={(key) => setActiveTab(key as TabKey)}
+          color="primary"
+          variant="underlined"
+          classNames={{
+            tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+            cursor: "w-full bg-primary",
+            tab: "max-w-fit px-0 h-12",
+            tabContent: "group-data-[selected=true]:text-primary",
+          }}
+        >
+          <Tab
+            key="category"
+            title={
+              <div className="flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                >
+                  <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                  <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                </svg>
+                <span>Category Distribution</span>
+              </div>
+            }
+          >
+            <div className="pt-6">
+              <CategoryDistributionTab
+                transactions={transactions}
+                dateRange={effectiveDateRange}
+              />
+            </div>
+          </Tab>
+          <Tab
+            key="budget"
+            title={
+              <div className="flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                >
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                <span>Budget Allocation</span>
+              </div>
+            }
+          >
+            <div className="pt-6">
+              <BudgetAllocationTab
+                transactions={transactions}
+                dateRange={effectiveDateRange}
+              />
+            </div>
+          </Tab>
+        </Tabs>
       )}
 
       {/* Initial state message */}
-      {!isLoaded && (
+      {!isLoaded && !isLoading && (
         <div className="text-center py-12 text-gray-500">
           <p>
-            Select a date range and click &quot;Get Insights&quot; to view your financial
-            data.
+            {initialReportId
+              ? "Loading report data..."
+              : 'Select a date range and click "Get Insights" to view your financial data.'}
           </p>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading && (
+        <div className="text-center py-12 text-gray-500">
+          <p>Loading insights...</p>
+        </div>
+      )}
+
+      {/* No data state */}
+      {isLoaded && transactions.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          <p>No transactions found for the selected period.</p>
         </div>
       )}
     </div>

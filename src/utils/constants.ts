@@ -3,7 +3,7 @@ export const appRoutes = {
   ACCOUNTS_PAGE: "/accounts",
   TRANSACTIONS_PAGE: "/transactions",
   REPORTS_PAGE: "/reports",
-  INSIGHTS_PAGE: "insights",
+  INSIGHTS_PAGE: "/insights",
   LOGIN_PAGE: "/login",
   LOG_OUT_PAGE: "/logout",
   RECURRING_TRANSACTIONS_PAGE: "/recurring-transactions",

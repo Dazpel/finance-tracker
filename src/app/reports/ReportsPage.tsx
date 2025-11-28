@@ -38,6 +38,11 @@ export default function ReportsPage() {
     router.push(`/reports/compare?data=${encodedURI}`);
   };
 
+  const handleOnInsights = (reportId: number, reportType: string): void => {
+    setIsLoading(true);
+    router.push(`/insights?reportId=${reportId}&reportType=${reportType}`);
+  };
+
   const handleOnDelete = async (reportId: number): Promise<void> => {
     try {
       setIsLoading(true);
@@ -127,6 +132,7 @@ export default function ReportsPage() {
             handleOnDelete={handleOnDelete}
             handleAnualReport={handleAnualReport}
             handleMerge={handleMerge}
+            handleOnInsights={handleOnInsights}
             showCreateAnualReportHeader
           />
           <h3 className="text-xl font-semibold mt-4">Anual Reports</h3>
@@ -139,6 +145,7 @@ export default function ReportsPage() {
             handleOnDelete={handleOnDelete}
             handleMerge={handleMerge}
             handleAnualReport={handleAnualReport}
+            handleOnInsights={handleOnInsights}
             disableHeader
           />
         </div>

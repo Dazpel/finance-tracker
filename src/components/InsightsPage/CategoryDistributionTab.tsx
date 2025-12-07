@@ -7,7 +7,7 @@ import { DateRange } from "../DateRangePicker/DateRangePicker";
 
 interface CategoryDistributionTabProps {
   transactions: Transaction[];
-  dateRange: DateRange | null;
+  dateRange: DateRange | null | undefined;
 }
 
 export default function CategoryDistributionTab({

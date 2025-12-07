@@ -47,7 +47,7 @@ type ReportsTableProps = {
   handleOnEdit?: (encodedURI: string) => void;
   handleOnDelete: (index: number) => Promise<void>;
   handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>
-  handleAnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>
+  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>
   handleOnInsights?: (reportId: number, reportType: string) => void;
   showCreateAnualReportHeader?: boolean;
   disableHeader?: boolean;
@@ -102,7 +102,7 @@ export default function ReportsTable({
   handleOnEdit,
   handleOnView,
   handleMerge,
-  handleAnualReport,
+  handleAnnualReport,
   handleOnInsights,
   showCreateAnualReportHeader = false,
   disableHeader = false,
@@ -240,7 +240,7 @@ export default function ReportsTable({
               className="w-fit"
               onPress={() => setIsAnualReportModalOpen(true)}
             >
-              Create Anual Report
+              Create Annual Report
             </Button>
           )}
         </div>
@@ -399,7 +399,7 @@ export default function ReportsTable({
       <AnualReportCreationModal 
         reportData={reportData}
         isOpen={isAnualReportModalOpen} 
-        handleAnualReport={handleAnualReport}
+        handleAnnualReport={handleAnnualReport}
         setIsOpen={setIsAnualReportModalOpen} />
     </>
   );

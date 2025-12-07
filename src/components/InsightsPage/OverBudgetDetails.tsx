@@ -13,18 +13,19 @@ import BudgetSectionBreakdown, {
 } from "./BudgetSectionBreakdown";
 import { Button } from "@heroui/react";
 
-interface BudgetBreakdownsProps {
+interface OverBudgetDetailsProps {
   summary: FiftyThirtyTwentySummary;
   transactions: Transaction[];
 }
 
-// Savings doesn't have predefined categories, it's calculated from revenue
+// For savings display, we show revenue transactions in the breakdown UI.
+// Note: Savings itself is calculated as revenue - expenses, not from the "revenue" category.
 const savingsCategories = ["revenue"];
 
-export default function BudgetBreakdowns({
+export default function OverBudgetDetails({
   summary,
   transactions,
-}: BudgetBreakdownsProps) {
+}: OverBudgetDetailsProps) {
   const [showAllSections, setShowAllSections] = useState(false);
 
   // Build all budget sections with their status

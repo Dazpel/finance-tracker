@@ -130,7 +130,7 @@ export default function ReportsPage() {
             handleOnView={handleOnView}
             handleOnCompare={handleOnCompare}
             handleOnDelete={handleOnDelete}
-            handleAnualReport={handleAnualReport}
+            handleAnnualReport={handleAnualReport}
             handleMerge={handleMerge}
             handleOnInsights={handleOnInsights}
             showCreateAnualReportHeader
@@ -144,7 +144,7 @@ export default function ReportsPage() {
             handleOnCompare={handleOnCompare}
             handleOnDelete={handleOnDelete}
             handleMerge={handleMerge}
-            handleAnualReport={handleAnualReport}
+            handleAnnualReport={handleAnualReport}
             handleOnInsights={handleOnInsights}
             disableHeader
           />

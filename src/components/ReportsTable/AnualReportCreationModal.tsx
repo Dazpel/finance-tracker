@@ -16,14 +16,14 @@ type AnualReportCreationModalProps = {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
   reportData: ReportDataDTO[];
-  handleAnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
+  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
 };
 
 export default function AnualReportCreationModal({
   isOpen,
   setIsOpen,
   reportData,
-  handleAnualReport,
+  handleAnnualReport,
 }: AnualReportCreationModalProps) {
   const [reportsSelected, setReportsSelected] = useState("");
   const [reportName, setReportName] = useState("");
@@ -49,7 +49,7 @@ export default function AnualReportCreationModal({
       return;
     }
 
-    await handleAnualReport(reportIds, reportName, filteredReports as ReportDataDTO[]);
+    await handleAnnualReport(reportIds, reportName, filteredReports as ReportDataDTO[]);
     setIsOpen(false);
   };
 
@@ -64,7 +64,7 @@ export default function AnualReportCreationModal({
         {(onClose) => (
           <>
             <ModalHeader className="flex flex-col gap-1 text-center">
-              Create Anual Report
+              Create Annual Report
             </ModalHeader>
             <ModalBody>
               <Input

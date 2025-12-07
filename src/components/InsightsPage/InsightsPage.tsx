@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getTransactionsByDateRange,
   getTransactionsByReportId,
@@ -32,14 +32,18 @@ export default function InsightsPage({
   const [currentDateRange, setCurrentDateRange] = useState<DateRange | null>(null);
   const [reportName, setReportName] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("category");
-  const { errorToast } = useToast();
+  const { errorToast: errorToastFn } = useToast();
   
   // Track if we've already fetched for this reportId to prevent infinite loops
   const fetchedReportIdRef = useRef<number | null>(null);
   
-  // Stable ref for errorToast to avoid dependency issues
-  const errorToastRef = useRef(errorToast);
-  errorToastRef.current = errorToast;
+  // Stable errorToast callback to avoid dependency issues
+  const errorToast = useCallback(
+    (message: string, title?: string) => {
+      errorToastFn(message, title);
+    },
+    [errorToastFn]
+  );
 
   // Auto-fetch if reportId is provided (only once per reportId)
   useEffect(() => {
@@ -61,18 +65,18 @@ export default function InsightsPage({
           setReportName(result.reportName || null);
           setIsLoaded(true);
         } else {
-          errorToastRef.current(result.error || "Failed to fetch report insights");
+          errorToast(result.error || "Failed to fetch report insights");
         }
       } catch (error) {
         console.error("Error fetching report insights:", error);
-        errorToastRef.current("An error occurred while fetching report insights");
+        errorToast("An error occurred while fetching report insights");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchByReportId();
-  }, [initialReportId, initialReportType]);
+  }, [initialReportId, initialReportType, errorToast]);
 
   // Handle getting insights based on selected date range
   const handleGetInsights = async (dates: DateRange) => {

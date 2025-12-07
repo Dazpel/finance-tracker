@@ -14,6 +14,8 @@ import {
   TableRow,
   TableCell,
   Chip,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import { Transaction } from "@prisma/client";
 
@@ -87,12 +89,30 @@ const getBorderColor = (status: BudgetStatus, isSavings: boolean) => {
   return "border-l-default";
 };
 
+type SortOption = "date-desc" | "date-asc" | "price-desc" | "price-asc";
+
 export default function BudgetSectionBreakdown({
   section,
   transactions,
   defaultExpanded = false,
 }: BudgetSectionBreakdownProps) {
   const isSavings = section.type === "savings";
+  // Track sort option per category
+  const [sortOptions, setSortOptions] = useState<Map<string, SortOption>>(
+    new Map()
+  );
+  
+  const getSortOption = (category: string): SortOption => {
+    return sortOptions.get(category) || "date-desc";
+  };
+  
+  const setSortOption = (category: string, option: SortOption) => {
+    setSortOptions((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(category, option);
+      return newMap;
+    });
+  };
 
   // Group transactions by category
   const categoryBreakdown = useMemo(() => {
@@ -143,9 +163,7 @@ export default function BudgetSectionBreakdown({
       .map(([category, data]) => ({
         category,
         amount: data.amount,
-        transactions: data.transactions.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        ),
+        transactions: data.transactions,
         percentage: (data.amount / totalForPercentage) * 100,
       }))
       .filter((item) => item.amount > 0)
@@ -153,6 +171,33 @@ export default function BudgetSectionBreakdown({
 
     return breakdown;
   }, [section, transactions, isSavings]);
+
+  // Sort transactions based on selected option
+  const sortTransactions = (transactions: Transaction[], category: string): Transaction[] => {
+    const sorted = [...transactions];
+    const sortOption = getSortOption(category);
+    
+    switch (sortOption) {
+      case "date-desc":
+        return sorted.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+      case "date-asc":
+        return sorted.sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+      case "price-desc":
+        return sorted.sort(
+          (a, b) => Math.abs(b.amount) - Math.abs(a.amount)
+        );
+      case "price-asc":
+        return sorted.sort(
+          (a, b) => Math.abs(a.amount) - Math.abs(b.amount)
+        );
+      default:
+        return sorted;
+    }
+  };
 
   // Track if we've initialized the expanded state
   const hasInitializedRef = useRef(false);
@@ -305,33 +350,64 @@ export default function BudgetSectionBreakdown({
                 content: "pt-0",
               }}
             >
-              <Table
-                aria-label={`${category} transactions`}
-                isCompact
-                removeWrapper
-                classNames={{
-                  base: "max-h-[300px] overflow-auto",
-                }}
-              >
-                <TableHeader>
-                  <TableColumn>DATE</TableColumn>
-                  <TableColumn>DESCRIPTION</TableColumn>
-                  <TableColumn className="text-right">AMOUNT</TableColumn>
-                </TableHeader>
-                <TableBody emptyContent="No transactions found">
-                  {catTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell className="whitespace-nowrap">
-                        {transaction.date}
-                      </TableCell>
-                      <TableCell>{transaction.name}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        {formatCurrency(Math.abs(transaction.amount))}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-end">
+                  <Select
+                    label="Sort by"
+                    placeholder="Sort transactions"
+                    selectedKeys={[getSortOption(category)]}
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys)[0] as SortOption;
+                      setSortOption(category, selected);
+                    }}
+                    size="sm"
+                    className="max-w-[200px]"
+                    classNames={{
+                      trigger: "h-8 min-h-8",
+                    }}
+                  >
+                    <SelectItem key="date-desc">
+                      Date (Newest First)
+                    </SelectItem>
+                    <SelectItem key="date-asc">
+                      Date (Oldest First)
+                    </SelectItem>
+                    <SelectItem key="price-desc">
+                      Price (High to Low)
+                    </SelectItem>
+                    <SelectItem key="price-asc">
+                      Price (Low to High)
+                    </SelectItem>
+                  </Select>
+                </div>
+                <Table
+                  aria-label={`${category} transactions`}
+                  isCompact
+                  removeWrapper
+                  classNames={{
+                    base: "max-h-[300px] overflow-auto",
+                  }}
+                >
+                  <TableHeader>
+                    <TableColumn>DATE</TableColumn>
+                    <TableColumn>DESCRIPTION</TableColumn>
+                    <TableColumn className="text-right">AMOUNT</TableColumn>
+                  </TableHeader>
+                  <TableBody emptyContent="No transactions found">
+                    {sortTransactions(catTransactions, category).map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell className="whitespace-nowrap">
+                          {transaction.date}
+                        </TableCell>
+                        <TableCell>{transaction.name}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {formatCurrency(Math.abs(transaction.amount))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </AccordionItem>
           ))}
         </Accordion>

@@ -149,30 +149,38 @@ export default function FiftyThirtyTwentyCard({
           </p>
         ) : (
           <div className="space-y-4">
-            {rows.map((row) => (
-              <div key={row.key} className="space-y-2">
-                <div className="flex items-start justify-between gap-4 text-sm">
-                  <div>
-                    <p className="font-medium">{row.label}</p>
-                    <p className="text-xs text-gray-500">
-                      Target {row.target}% of income
-                    </p>
+            {rows.map((row) => {
+              // Calculate progress relative to target percentage
+              // e.g., 48.2% of 50% target = 96.4% filled
+              const progressValue = row.target > 0 
+                ? Math.min((Math.abs(row.percent) / row.target) * 100, 100)
+                : 0;
+
+              return (
+                <div key={row.key} className="space-y-2">
+                  <div className="flex items-start justify-between gap-4 text-sm">
+                    <div>
+                      <p className="font-medium">{row.label}</p>
+                      <p className="text-xs text-gray-500">
+                        Target {row.target}% of income
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{formatCurrency(row.amount)}</p>
+                      <p className="text-xs text-gray-500">
+                        {row.percent.toFixed(1)}% of income · {getDifferenceCopy(row.percent, row.target, row.isSavings)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{formatCurrency(row.amount)}</p>
-                    <p className="text-xs text-gray-500">
-                      {row.percent.toFixed(1)}% of income · {getDifferenceCopy(row.percent, row.target, row.isSavings)}
-                    </p>
-                  </div>
+                  <Progress
+                    maxValue={100}
+                    value={progressValue}
+                    aria-label={`${row.label} allocation`}
+                    color={getProgressColor(row.percent, row.target, row.isSavings)}
+                  />
                 </div>
-                <Progress
-                  maxValue={100}
-                  value={Math.min(Math.abs(row.percent), 100)}
-                  aria-label={`${row.label} allocation`}
-                  color={getProgressColor(row.percent, row.target, row.isSavings)}
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardBody>

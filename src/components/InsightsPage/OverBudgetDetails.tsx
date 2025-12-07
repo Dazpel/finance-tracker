@@ -18,10 +18,6 @@ interface OverBudgetDetailsProps {
   transactions: Transaction[];
 }
 
-// For savings display, we show revenue transactions in the breakdown UI.
-// Note: Savings itself is calculated as revenue - expenses, not from the "revenue" category.
-const savingsCategories = ["revenue"];
-
 export default function OverBudgetDetails({
   summary,
   transactions,
@@ -68,25 +64,6 @@ export default function OverBudgetDetails({
       categories: fiftyThirtyTwentyCategories.wants,
     });
 
-    // Savings section
-    const savingsTargetAmount = (summary.revenue * fiftyThirtyTwentyTargets.savings) / 100;
-    const savingsDifference = summary.savings - savingsTargetAmount;
-    // For savings, being over target is good
-    const savingsStatus: BudgetStatus =
-      savingsDifference > 0 ? "over" : savingsDifference < 0 ? "under" : "on-target";
-
-    sections.push({
-      type: "savings",
-      label: "Savings / Profit",
-      amount: summary.savings,
-      percent: summary.savingsPercent,
-      target: fiftyThirtyTwentyTargets.savings,
-      targetAmount: savingsTargetAmount,
-      difference: savingsDifference,
-      status: savingsStatus,
-      categories: savingsCategories,
-    });
-
     return sections;
   }, [summary]);
 
@@ -96,19 +73,11 @@ export default function OverBudgetDetails({
     const others: BudgetSectionData[] = [];
 
     allSections.forEach((section) => {
-      // Needs/Wants over budget OR Savings under target are priority
-      if (section.type === "savings") {
-        if (section.status === "under") {
-          priority.push(section);
-        } else {
-          others.push(section);
-        }
+      // Needs/Wants over budget are priority
+      if (section.status === "over") {
+        priority.push(section);
       } else {
-        if (section.status === "over") {
-          priority.push(section);
-        } else {
-          others.push(section);
-        }
+        others.push(section);
       }
     });
 

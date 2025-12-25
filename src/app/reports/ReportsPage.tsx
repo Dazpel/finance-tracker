@@ -133,9 +133,9 @@ export default function ReportsPage() {
             handleAnnualReport={handleAnualReport}
             handleMerge={handleMerge}
             handleOnInsights={handleOnInsights}
-            showCreateAnualReportHeader
+            showCreateAnnualReportHeader
           />
-          <h3 className="text-xl font-semibold mt-4">Anual Reports</h3>
+          <h3 className="text-xl font-semibold mt-4">Annual Reports</h3>
           <ReportsTable
             reportType="anual"
             reportData={filterAnualReports(data).reverse() || []}

@@ -23,7 +23,7 @@ import { ReportDataDTO } from "utils/types";
 import { compressToEncodedURIComponent } from "lz-string";
 import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 import { formatCreatedDate } from "utils/functions";
-import AnualReportCreationModal from "./AnualReportCreationModal";
+import AnnualReportCreationModal from "./AnnualReportCreationModal";
 
 type RowActions = "edit" | "delete" | "view" | "insights";
 
@@ -49,7 +49,7 @@ type ReportsTableProps = {
   handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>
   handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>
   handleOnInsights?: (reportId: number, reportType: string) => void;
-  showCreateAnualReportHeader?: boolean;
+  showCreateAnnualReportHeader?: boolean;
   disableHeader?: boolean;
 };
 
@@ -104,7 +104,7 @@ export default function ReportsTable({
   handleMerge,
   handleAnnualReport,
   handleOnInsights,
-  showCreateAnualReportHeader = false,
+  showCreateAnnualReportHeader = false,
   disableHeader = false,
 }: ReportsTableProps) {
   const isAnnual = reportType === "anual";
@@ -113,7 +113,7 @@ export default function ReportsTable({
   const [reportsToCompare, setReportsToCompare] = useState<Key[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
-  const [isAnualReportModalOpen, setIsAnualReportModalOpen] = useState(false);
+  const [isAnnualReportModalOpen, setIsAnnualReportModalOpen] = useState(false);
   const [reportIndexToDelete, setReportIndexToDelete] = useState<number | null>(
     null
   );
@@ -233,12 +233,12 @@ export default function ReportsTable({
             </Button>
           </div>
         )}
-          {showCreateAnualReportHeader && (
+          {showCreateAnnualReportHeader && (
             <Button
               color="primary"
               variant="flat"
               className="w-fit"
-              onPress={() => setIsAnualReportModalOpen(true)}
+              onPress={() => setIsAnnualReportModalOpen(true)}
             >
               Create Annual Report
             </Button>
@@ -251,7 +251,7 @@ export default function ReportsTable({
         )}
       </div>
     );
-  }, [canCompareReports, maxRowExceeded, reportsToCompare, showCreateAnualReportHeader, handleCompare]);
+  }, [canCompareReports, maxRowExceeded, reportsToCompare, showCreateAnnualReportHeader, handleCompare]);
 
   const bottomContent = useMemo(() => {
     return (
@@ -396,11 +396,11 @@ export default function ReportsTable({
           )}
         </ModalContent>
       </Modal>
-      <AnualReportCreationModal 
+      <AnnualReportCreationModal 
         reportData={reportData}
-        isOpen={isAnualReportModalOpen} 
+        isOpen={isAnnualReportModalOpen} 
         handleAnnualReport={handleAnnualReport}
-        setIsOpen={setIsAnualReportModalOpen} />
+        setIsOpen={setIsAnnualReportModalOpen} />
     </>
   );
 }

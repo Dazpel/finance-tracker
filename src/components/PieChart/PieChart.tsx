@@ -146,13 +146,14 @@ export default function PieChart({ transactions }: PieChartProps) {
                   </Pie>
                   <Tooltip
                     formatter={(value: number, name: string) => {
-                      // For revenue, show percentage relative to revenue (100%)
-                      // For expenses, show percentage relative to expenses total
-                      const percent = name === "revenue"
-                        ? "100.0"
-                        : totalAmount > 0 
-                          ? ((value / totalAmount) * 100).toFixed(1)
-                          : "0.0";
+                      // Use pre-calculated percentage from categoryData to keep
+                      // tooltip aligned with the legend and avoid duplicate logic.
+                      const category = categoryData.find(
+                        (data) => data.category === name
+                      );
+                      const percent = category
+                        ? category.percentage.toFixed(1)
+                        : "0.0";
                       return [`$${value.toFixed(2)} (${percent}%)`, name];
                     }}
                     contentStyle={{

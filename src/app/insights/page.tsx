@@ -18,7 +18,7 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
   const years = await getAvailableYears();
 
   if (!years?.success || !years?.data) {
-    return <div>Oops! there is not data to show</div>;
+    return <div>Oops! there is no data to show</div>;
   }
 
   // Parse URL params for report-based insights

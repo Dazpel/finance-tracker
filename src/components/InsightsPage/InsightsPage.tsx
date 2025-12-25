@@ -242,9 +242,7 @@ export default function InsightsPage({
       {!isLoaded && !isLoading && (
         <div className="text-center py-12 text-gray-500">
           <p>
-            {initialReportId
-              ? "Loading report data..."
-              : 'Select a date range and click "Get Insights" to view your financial data.'}
+            Select a date range and click "Get Insights" to view your financial data.
           </p>
         </div>
       )}

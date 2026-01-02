@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@lib/prisma/prismaClient';
 import { incrementalSyncForAccount } from '@lib/plaid/syncTransactions';
 
-export const maxDuration = 300; // 5 minutes for processing multiple accounts
+export const maxDuration = 60; // 1 minute for processing multiple accounts
 
 export async function POST(request: Request) {
   const initTimer = Date.now();

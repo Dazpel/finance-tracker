@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { options } from '@api/auth/[...nextauth]/options';
 import { plaidClient } from '@lib/plaid';
 import prisma from '@lib/prisma/prismaClient';
+import { initialSyncForAccount } from '@lib/plaid/syncTransactions';
 
 /**
  * Update webhook URL for a Plaid Item
@@ -17,6 +18,11 @@ import prisma from '@lib/prisma/prismaClient';
  * This endpoint uses Plaid's /item/webhook/update API to update the webhook URL
  * associated with a specific Item. The webhook URL can be set to a new URL or
  * set to null to remove the webhook.
+ * 
+ * After successfully updating the webhook URL, an initial sync is triggered
+ * in the background to initialize the item. This is required because Plaid's
+ * SYNC_UPDATES_AVAILABLE webhooks won't fire until /transactions/sync has
+ * been called at least once for the Item.
  */
 export async function POST(request: Request) {
   try {
@@ -66,12 +72,19 @@ export async function POST(request: Request) {
       }
     }
 
-    // Verify the item_id belongs to the authenticated user
+    // Verify the item_id belongs to the authenticated user and get user info
     const plaidAccount = await prisma.plaidAccount.findFirst({
       where: {
         itemId: item_id,
         user: {
           email: session.user.email,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+          },
         },
       },
     });
@@ -95,16 +108,58 @@ export async function POST(request: Request) {
       webhook: webhook_url || null,
     });
 
+    // Verify the response indicates success
+    if (!response?.data?.item || !response?.data?.request_id) {
+      console.error('Invalid response from Plaid webhook update:', response);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid response from Plaid API',
+        },
+        { status: 500 }
+      );
+    }
+
     console.log('Webhook updated successfully');
     console.log('Request ID:', response.data.request_id);
     console.log('Item ID from response:', response.data.item.item_id);
 
+    // If webhook URL was set (not removed), trigger initial sync to initialize the item
+    // This is required because SYNC_UPDATES_AVAILABLE webhooks won't fire until
+    // /transactions/sync has been called at least once for the Item
+    // Only trigger sync if webhook update was successful
+    if (webhook_url && response.data.item) {
+      console.log(`Triggering initial sync for account ${plaidAccount.id} to initialize webhook support`);
+      
+      // Run initial sync in the background (don't wait for it to complete)
+      // This allows the user to get immediate feedback while sync happens async
+      initialSyncForAccount(
+        plaidAccount.accessToken,
+        plaidAccount.id,
+        plaidAccount.user.id
+      )
+        .then((syncResult) => {
+          if (syncResult.success) {
+            console.log(`Initial sync completed for account ${plaidAccount.id} after webhook update`);
+            console.log(`Sync results: ${syncResult.addedCount || 0} added, ${syncResult.modifiedCount || 0} modified, ${syncResult.removedCount || 0} removed`);
+          } else {
+            console.error(`Initial sync failed for account ${plaidAccount.id} after webhook update:`, syncResult.error);
+          }
+        })
+        .catch((error) => {
+          console.error(`Error in initial sync for account ${plaidAccount.id} after webhook update:`, error);
+        });
+    }
+
     return NextResponse.json({
       success: true,
-      message: webhook_url ? 'Webhook URL updated successfully' : 'Webhook removed successfully',
+      message: webhook_url 
+        ? 'Webhook URL updated successfully. Initial sync initiated in background.' 
+        : 'Webhook removed successfully',
       request_id: response.data.request_id,
       item_id: response.data.item.item_id,
       webhook_url: response.data.item.webhook || null,
+      sync_initiated: webhook_url ? true : false,
     });
   } catch (error: any) {
     console.error('Error updating webhook:', error);

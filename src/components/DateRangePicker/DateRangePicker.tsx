@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { DateRangePicker as HeroUIDateRangePicker, Button, RangeValue } from "@heroui/react";
+import { useState } from "react";
+import { DateRangePicker as HeroUIDateRangePicker, Button, CalendarDate } from "@heroui/react";
 import { getLocalTimeZone, today, DateValue } from "@internationalized/date";
 import { formatDate } from "../../app/insights/utils";
 
@@ -51,8 +51,8 @@ export default function DateRangePicker({
         label={label}
         labelPlacement={labelPlacement}
         showMonthAndYearPickers={showMonthAndYearPickers}
-        maxValue={maxValue}
-        minValue={minValue}
+        maxValue={maxValue as unknown as CalendarDate}
+        minValue={minValue as unknown as CalendarDate}
         onChange={(value) => value && setSelectedDates(value)}
       />
       

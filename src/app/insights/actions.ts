@@ -3,11 +3,16 @@
 import { getServerSession } from "next-auth";
 import { options } from "../api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
-import { Transaction } from "@prisma/client";
+import { Transaction, ReportType } from "@prisma/client";
 
 interface DateRange {
   start: string;
   end: string;
+}
+
+interface ReportParams {
+  reportId: number;
+  reportType: ReportType;
 }
 
 export const getTransactionsByDateRange = async ({
@@ -140,6 +145,111 @@ export const getAvailableYears = async (): Promise<{
     return {
       success: false,
       error: "Failed to fetch earliest year",
+    };
+  }
+};
+
+export const getTransactionsByReportId = async ({
+  reportId,
+  reportType,
+}: ReportParams): Promise<{
+  success: boolean;
+  data?: Array<Transaction>;
+  reportName?: string;
+  error?: string;
+}> => {
+  try {
+    const session = await getServerSession(options);
+
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        error: "User not authenticated",
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: session.user.email,
+      },
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        error: "User not found",
+      };
+    }
+
+    // For ANNUAL reports, fetch transactions from child reports
+    if (reportType === ReportType.ANNUAL) {
+      const report = await prisma.report.findUnique({
+        where: {
+          id: reportId,
+          userId: user.id,
+        },
+        select: {
+          reportName: true,
+          childReports: {
+            select: {
+              transactions: true,
+            },
+          },
+        },
+      });
+
+      if (!report) {
+        return {
+          success: false,
+          error: "Report not found",
+        };
+      }
+
+      // Flatten transactions from all child reports
+      const transactions = report.childReports.flatMap(
+        (childReport) => childReport.transactions
+      );
+
+      return {
+        success: true,
+        data: transactions.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        ),
+        reportName: report.reportName,
+      };
+    }
+
+    // For MONTHLY reports, fetch transactions directly
+    const report = await prisma.report.findUnique({
+      where: {
+        id: reportId,
+        userId: user.id,
+      },
+      select: {
+        reportName: true,
+        transactions: true,
+      },
+    });
+
+    if (!report) {
+      return {
+        success: false,
+        error: "Report not found",
+      };
+    }
+
+    return {
+      success: true,
+      data: report.transactions.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      ),
+      reportName: report.reportName,
+    };
+  } catch (error) {
+    console.error("Error fetching transactions by report ID:", error);
+    return {
+      success: false,
+      error: "Failed to fetch transactions",
     };
   }
 };

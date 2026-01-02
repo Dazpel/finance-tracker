@@ -12,19 +12,19 @@ import {
 } from "@heroui/react";
 import { ReportDataDTO } from "utils/types";
 
-type AnualReportCreationModalProps = {
+type AnnualReportCreationModalProps = {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
   reportData: ReportDataDTO[];
-  handleAnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
+  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
 };
 
-export default function AnualReportCreationModal({
+export default function AnnualReportCreationModal({
   isOpen,
   setIsOpen,
   reportData,
-  handleAnualReport,
-}: AnualReportCreationModalProps) {
+  handleAnnualReport,
+}: AnnualReportCreationModalProps) {
   const [reportsSelected, setReportsSelected] = useState("");
   const [reportName, setReportName] = useState("");
   const [isReportNameValid, setIsReportNameValid] = useState(true);
@@ -41,7 +41,7 @@ export default function AnualReportCreationModal({
     setReportName(reportName);
   };
 
-  const createAnualReport = async () => {
+  const createAnnualReport = async () => {
     const reportIds = reportsSelected.split(",").map((id) => parseInt(id));
     const filteredReports = reportIds.map((id) => reportData.find((r) => r.id === id));
 
@@ -49,7 +49,7 @@ export default function AnualReportCreationModal({
       return;
     }
 
-    await handleAnualReport(reportIds, reportName, filteredReports as ReportDataDTO[]);
+    await handleAnnualReport(reportIds, reportName, filteredReports as ReportDataDTO[]);
     setIsOpen(false);
   };
 
@@ -64,7 +64,7 @@ export default function AnualReportCreationModal({
         {(onClose) => (
           <>
             <ModalHeader className="flex flex-col gap-1 text-center">
-              Create Anual Report
+              Create Annual Report
             </ModalHeader>
             <ModalBody>
               <Input
@@ -100,7 +100,7 @@ export default function AnualReportCreationModal({
                 color="primary"
                 variant="light"
                 isDisabled={!reportsSelected || !isReportNameValid}
-                onPress={createAnualReport}
+                onPress={createAnnualReport}
               >
                 Create
               </Button>

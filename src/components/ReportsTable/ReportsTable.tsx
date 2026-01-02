@@ -23,9 +23,9 @@ import { ReportDataDTO } from "utils/types";
 import { compressToEncodedURIComponent } from "lz-string";
 import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 import { formatCreatedDate } from "utils/functions";
-import AnualReportCreationModal from "./AnualReportCreationModal";
+import AnnualReportCreationModal from "./AnnualReportCreationModal";
 
-type RowActions = "edit" | "delete" | "view";
+type RowActions = "edit" | "delete" | "view" | "insights";
 
 type TableRow = {
   id: number;
@@ -47,8 +47,9 @@ type ReportsTableProps = {
   handleOnEdit?: (encodedURI: string) => void;
   handleOnDelete: (index: number) => Promise<void>;
   handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>
-  handleAnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>
-  showCreateAnualReportHeader?: boolean;
+  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>
+  handleOnInsights?: (reportId: number, reportType: string) => void;
+  showCreateAnnualReportHeader?: boolean;
   disableHeader?: boolean;
 };
 
@@ -101,8 +102,9 @@ export default function ReportsTable({
   handleOnEdit,
   handleOnView,
   handleMerge,
-  handleAnualReport,
-  showCreateAnualReportHeader = false,
+  handleAnnualReport,
+  handleOnInsights,
+  showCreateAnnualReportHeader = false,
   disableHeader = false,
 }: ReportsTableProps) {
   const isAnnual = reportType === "anual";
@@ -111,7 +113,7 @@ export default function ReportsTable({
   const [reportsToCompare, setReportsToCompare] = useState<Key[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
-  const [isAnualReportModalOpen, setIsAnualReportModalOpen] = useState(false);
+  const [isAnnualReportModalOpen, setIsAnnualReportModalOpen] = useState(false);
   const [reportIndexToDelete, setReportIndexToDelete] = useState<number | null>(
     null
   );
@@ -182,10 +184,15 @@ export default function ReportsTable({
       case "view":
         handleOnView && handleOnView(compressToEncodedURIComponent(JSON.stringify(report)));
         break;
+      case "insights":
+        if (report && handleOnInsights) {
+          handleOnInsights(report.id, report.reportType);
+        }
+        break;
       default:
         break;
     }
-  }, [handleOnEdit, handleOnView, reportData, displayDeleteModal]);
+  }, [handleOnEdit, handleOnView, handleOnInsights, reportData, displayDeleteModal]);
 
   const handleDelete = async () => {
     if (reportIndexToDelete) {
@@ -226,14 +233,14 @@ export default function ReportsTable({
             </Button>
           </div>
         )}
-          {showCreateAnualReportHeader && (
+          {showCreateAnnualReportHeader && (
             <Button
               color="primary"
               variant="flat"
               className="w-fit"
-              onPress={() => setIsAnualReportModalOpen(true)}
+              onPress={() => setIsAnnualReportModalOpen(true)}
             >
-              Create Anual Report
+              Create Annual Report
             </Button>
           )}
         </div>
@@ -244,7 +251,7 @@ export default function ReportsTable({
         )}
       </div>
     );
-  }, [canCompareReports, maxRowExceeded, reportsToCompare, showCreateAnualReportHeader, handleCompare]);
+  }, [canCompareReports, maxRowExceeded, reportsToCompare, showCreateAnnualReportHeader, handleCompare]);
 
   const bottomContent = useMemo(() => {
     return (
@@ -277,6 +284,7 @@ export default function ReportsTable({
                 <DropdownMenu aria-label="dropdown options">
                   <DropdownItem key="view button" onPress={() => handleActions(report.id, "view")}>View</DropdownItem>
                   {!isAnnual ? <DropdownItem key="edit button" onPress={() => handleActions(report.id, "edit")}>Edit</DropdownItem> : null}
+                  <DropdownItem key="insights button" onPress={() => handleActions(report.id, "insights")}>Insights</DropdownItem>
                   <DropdownItem key="delete button" onPress={() => handleActions(report.id, "delete")}>
                     Delete
                   </DropdownItem>
@@ -388,11 +396,11 @@ export default function ReportsTable({
           )}
         </ModalContent>
       </Modal>
-      <AnualReportCreationModal 
+      <AnnualReportCreationModal 
         reportData={reportData}
-        isOpen={isAnualReportModalOpen} 
-        handleAnualReport={handleAnualReport}
-        setIsOpen={setIsAnualReportModalOpen} />
+        isOpen={isAnnualReportModalOpen} 
+        handleAnnualReport={handleAnnualReport}
+        setIsOpen={setIsAnnualReportModalOpen} />
     </>
   );
 }

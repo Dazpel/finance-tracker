@@ -58,20 +58,33 @@ export default function PieChart({ transactions }: PieChartProps) {
     });
   });
 
-  const totalAmount = Array.from(categoryMap.values()).reduce(
-    (sum, amount) => sum + amount,
-    0
-  );
+  // Calculate revenue and expenses separately
+  const revenueAmount = categoryMap.get("revenue") || 0;
+  const expensesAmount = Array.from(categoryMap.entries())
+    .filter(([category]) => category !== "revenue")
+    .reduce((sum, [, amount]) => sum + amount, 0);
+  
+  // Total for percentage calculations (expenses only, excluding revenue)
+  const totalAmount = expensesAmount;
 
   const categoryData: Array<CategoryData> = Array.from(categoryMap.entries())
     .map(([category, amount], index) => ({
       category,
       amount,
-      percentage: totalAmount > 0 ? (amount / totalAmount) * 100 : 0,
+      // For revenue, calculate percentage based on revenue itself (100%)
+      // For expenses, calculate percentage based on expenses total
+      percentage: category === "revenue" 
+        ? (revenueAmount > 0 ? 100 : 0)
+        : (totalAmount > 0 ? (amount / totalAmount) * 100 : 0),
       color: categoryColors[index % categoryColors.length],
     }))
     .filter((data) => data.amount > 0)
-    .sort((a, b) => b.amount - a.amount);
+    .sort((a, b) => {
+      // Sort revenue first, then by amount descending
+      if (a.category === "revenue") return -1;
+      if (b.category === "revenue") return 1;
+      return b.amount - a.amount;
+    });
 
   const chartData = categoryData.map((d) => ({
     name: d.category,
@@ -98,9 +111,16 @@ export default function PieChart({ transactions }: PieChartProps) {
     <Card className="w-full">
       <CardHeader className="flex flex-col gap-2 justify-start items-start">
         <h3 className="text-lg font-semibold">Category Distribution</h3>
-        <p className="text-sm text-gray-600">
-          Total: ${totalAmount.toFixed(2)}
-        </p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <p className="text-xs uppercase text-gray-500">Revenue</p>
+            <p className="text-xl font-semibold">${revenueAmount.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase text-gray-500">Expenses</p>
+            <p className="text-xl font-semibold">${expensesAmount.toFixed(2)}</p>
+          </div>
+        </div>
       </CardHeader>
       <CardBody>
         <div className="flex flex-col lg:flex-row gap-6">
@@ -126,7 +146,14 @@ export default function PieChart({ transactions }: PieChartProps) {
                   </Pie>
                   <Tooltip
                     formatter={(value: number, name: string) => {
-                      const percent = ((value / totalAmount) * 100).toFixed(1);
+                      // Use pre-calculated percentage from categoryData to keep
+                      // tooltip aligned with the legend and avoid duplicate logic.
+                      const category = categoryData.find(
+                        (data) => data.category === name
+                      );
+                      const percent = category
+                        ? category.percentage.toFixed(1)
+                        : "0.0";
                       return [`$${value.toFixed(2)} (${percent}%)`, name];
                     }}
                     contentStyle={{

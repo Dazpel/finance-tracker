@@ -38,6 +38,11 @@ export default function ReportsPage() {
     router.push(`/reports/compare?data=${encodedURI}`);
   };
 
+  const handleOnInsights = (reportId: number, reportType: string): void => {
+    setIsLoading(true);
+    router.push(`/insights?reportId=${reportId}&reportType=${reportType}`);
+  };
+
   const handleOnDelete = async (reportId: number): Promise<void> => {
     try {
       setIsLoading(true);
@@ -125,11 +130,12 @@ export default function ReportsPage() {
             handleOnView={handleOnView}
             handleOnCompare={handleOnCompare}
             handleOnDelete={handleOnDelete}
-            handleAnualReport={handleAnualReport}
+            handleAnnualReport={handleAnualReport}
             handleMerge={handleMerge}
-            showCreateAnualReportHeader
+            handleOnInsights={handleOnInsights}
+            showCreateAnnualReportHeader
           />
-          <h3 className="text-xl font-semibold mt-4">Anual Reports</h3>
+          <h3 className="text-xl font-semibold mt-4">Annual Reports</h3>
           <ReportsTable
             reportType="anual"
             reportData={filterAnualReports(data).reverse() || []}
@@ -138,7 +144,8 @@ export default function ReportsPage() {
             handleOnCompare={handleOnCompare}
             handleOnDelete={handleOnDelete}
             handleMerge={handleMerge}
-            handleAnualReport={handleAnualReport}
+            handleAnnualReport={handleAnualReport}
+            handleOnInsights={handleOnInsights}
             disableHeader
           />
         </div>

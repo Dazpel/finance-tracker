@@ -17,12 +17,18 @@ export async function POST(request: Request) {
 
     const { updateMode, accessToken } = await request.json();
 
-    const createTokenRequest = {
+    const createTokenRequest: any = {
       user: { client_user_id: process.env.PLAID_CLIENT_ID as string },
       client_name: "Finance-tracker",
       language: "en",
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
+    }
+
+    // Add webhook URL if configured
+    const webhookUrl = process.env.PLAID_WEBHOOK_URL;
+    if (webhookUrl) {
+      createTokenRequest.webhook = webhookUrl;
     }
 
     const requestVariables = updateMode 

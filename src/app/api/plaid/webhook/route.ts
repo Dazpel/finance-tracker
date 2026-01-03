@@ -6,10 +6,14 @@ import crypto from 'crypto';
 export const maxDuration = 60; // Webhooks may take time to process
 
 /**
- * Verify Plaid webhook signature
+ * Verify Plaid webhook signature using HMAC-SHA256
  * @param body - Raw request body
- * @param signature - Signature from X-Plaid-Signature header
+ * @param signature - Signature from X-Plaid-Signature header (format: version,timestamp,body_hash)
  * @returns boolean indicating if signature is valid
+ * 
+ * Plaid webhook signature format: version,timestamp,body_hash
+ * The body_hash is computed as: HMAC-SHA256(version + timestamp + body, PLAID_SECRET)
+ * Reference: https://plaid.com/docs/webhooks/webhook-verification/
  */
 function verifyWebhookSignature(body: string, signature: string): boolean {
   const PLAID_SECRET = process.env.PLAID_SECRET;
@@ -19,18 +23,43 @@ function verifyWebhookSignature(body: string, signature: string): boolean {
     return false;
   }
 
+  if (!signature || signature.length === 0) {
+    return false;
+  }
+
   try {
-    // Plaid webhook signature format: version,timestamp,body_hash
-    // For now, we'll verify the signature exists
-    // In production, you should verify the full signature according to Plaid's documentation
-    // https://plaid.com/docs/webhooks/webhook-verification/
-    if (!signature || signature.length === 0) {
+    // Parse signature: version,timestamp,body_hash
+    const parts = signature.split(',');
+    if (parts.length !== 3) {
+      console.error('Invalid signature format. Expected: version,timestamp,body_hash');
       return false;
     }
 
-    // For development, we can skip full verification
-    // In production, implement full signature verification per Plaid docs
-    // This is a simplified check - implement full verification for production
+    const [version, timestamp, providedHash] = parts;
+
+    if (!version || !timestamp || !providedHash) {
+      console.error('Missing signature components');
+      return false;
+    }
+
+    // Compute expected hash: HMAC-SHA256(version + timestamp + body, PLAID_SECRET)
+    const payload = version + timestamp + body;
+    const expectedHash = crypto
+      .createHmac('sha256', PLAID_SECRET)
+      .update(payload)
+      .digest('hex');
+
+    // Compare hashes using constant-time comparison to prevent timing attacks
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(expectedHash, 'hex'),
+      Buffer.from(providedHash, 'hex')
+    );
+
+    if (!isValid) {
+      console.error('Webhook signature verification failed');
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error('Error verifying webhook signature:', error);
@@ -141,7 +170,7 @@ export async function POST(request: Request) {
         console.error('--------Sync Failed--------');
         console.error('Error:', JSON.stringify(syncResult.error, null, 2));
         return NextResponse.json(
-          { error: 'Sync failed', details: syncResult.error },
+          { error: 'Sync failed' },
           { status: 500 }
         );
       }
@@ -157,7 +186,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error processing webhook:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

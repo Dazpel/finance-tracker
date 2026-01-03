@@ -35,9 +35,10 @@ export async function POST(request: Request) {
 
     return Response.json({ success: true });
   } catch (error) {
+    console.error("Error creating annual report:", error);
     return Response.json({
       success: false,
-      error: error,
+      error: "Failed to create annual report",
     });
   }
 }

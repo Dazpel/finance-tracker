@@ -3,6 +3,22 @@ import prisma from '@lib/prisma/prismaClient';
 import { Transaction } from 'plaid';
 import { formatPlaidTransactions, mapDefaultCategoryToCustomCategory, mapPlaidCategoryToDefaultCategory } from 'utils/functions';
 
+/**
+ * Maps a Plaid transaction category to the final custom category
+ * @param transaction - Formatted Plaid transaction with category and description
+ * @returns The final mapped category string
+ */
+function mapTransactionCategory(transaction: {
+  category?: string[];
+  original_description?: string | null;
+  name?: string;
+}): string {
+  const category = transaction.category ? transaction.category[0].replace('and', '&') : 'Others';
+  const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
+  const description = transaction.original_description || transaction.name || '';
+  return mapDefaultCategoryToCustomCategory(description, mappedCategory);
+}
+
 export type SyncResponse = {
   added: Transaction[];
   modified: Transaction[];
@@ -97,10 +113,7 @@ export async function processSyncedTransactions(
       if (formattedAdded.length > 0) {
         await tx.syncedTransaction.createMany({
           data: formattedAdded.map((transaction) => {
-            const category = transaction.category ? transaction.category[0].replace('and', '&') : 'Others';
-            const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
-            const description = transaction.original_description || transaction.name || '';
-            const finalCategory = mapDefaultCategoryToCustomCategory(description, mappedCategory);
+            const finalCategory = mapTransactionCategory(transaction);
 
             return {
               userId,
@@ -120,31 +133,30 @@ export async function processSyncedTransactions(
         });
       }
 
-      // Update modified transactions
+      // Update modified transactions in parallel for better performance
       if (formattedModified.length > 0) {
-        for (const transaction of formattedModified) {
-          const category = transaction.category ? transaction.category[0].replace('and', '&') : 'Others';
-          const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
-          const description = transaction.original_description || transaction.name || '';
-          const finalCategory = mapDefaultCategoryToCustomCategory(description, mappedCategory);
+        await Promise.all(
+          formattedModified.map((transaction) => {
+            const finalCategory = mapTransactionCategory(transaction);
 
-          await tx.syncedTransaction.updateMany({
-            where: {
-              transaction_id: transaction.transaction_id,
-              plaidAccountId,
-            },
-            data: {
-              account_id: transaction.account_id,
-              name: transaction.name || transaction.original_description || 'No name',
-              amount: transaction.amount,
-              date: transaction.date,
-              category: [finalCategory],
-              original_description: transaction.original_description || null,
-              merchant_name: transaction.merchant_name || null,
-              updatedAt: new Date(),
-            },
-          });
-        }
+            return tx.syncedTransaction.updateMany({
+              where: {
+                transaction_id: transaction.transaction_id,
+                plaidAccountId,
+              },
+              data: {
+                account_id: transaction.account_id,
+                name: transaction.name || transaction.original_description || 'No name',
+                amount: transaction.amount,
+                date: transaction.date,
+                category: [finalCategory],
+                original_description: transaction.original_description || null,
+                merchant_name: transaction.merchant_name || null,
+                updatedAt: new Date(),
+              },
+            });
+          })
+        );
       }
 
       // Remove deleted transactions

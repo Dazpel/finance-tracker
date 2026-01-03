@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default function Page() {
   return (
-    <div className="flex flex-col gap 4">
+    <div className="flex flex-col gap-4">
       <h3 className="text-xl font-semibold mb-4">Synced Reports</h3>
       <Suspense fallback={<PageLoader />}>
         <SyncedReportsPage />

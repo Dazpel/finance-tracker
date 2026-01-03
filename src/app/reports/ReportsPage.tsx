@@ -91,18 +91,18 @@ export default function ReportsPage() {
     return reports.filter((report) => report.reportType === ReportType.MONTHLY);
   };
 
-  const filterAnualReports = (reports: ReportDataDTO[]) => {
+  const filterAnnualReports = (reports: ReportDataDTO[]) => {
     return reports.filter((report) => report.reportType === ReportType.ANNUAL);
   };
 
-  const handleAnualReport = async (
+  const handleAnnualReport = async (
     reportIds: number[],
     reportName: string,
     reports: ReportDataDTO[]
   ) => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/prisma/reports/create-anual", {
+      const response = await fetch("/api/prisma/reports/create-annual", {
         method: "POST",
         body: JSON.stringify({ reportIds, reportName, reports }),
       });
@@ -130,21 +130,21 @@ export default function ReportsPage() {
             handleOnView={handleOnView}
             handleOnCompare={handleOnCompare}
             handleOnDelete={handleOnDelete}
-            handleAnnualReport={handleAnualReport}
+            handleAnnualReport={handleAnnualReport}
             handleMerge={handleMerge}
             handleOnInsights={handleOnInsights}
             showCreateAnnualReportHeader
           />
           <h3 className="text-xl font-semibold mt-4">Annual Reports</h3>
           <ReportsTable
-            reportType="anual"
-            reportData={filterAnualReports(data).reverse() || []}
+            reportType="annual"
+            reportData={filterAnnualReports(data).reverse() || []}
             handleOnEdit={handleOnEdit}
             handleOnView={handleOnView}
             handleOnCompare={handleOnCompare}
             handleOnDelete={handleOnDelete}
             handleMerge={handleMerge}
-            handleAnnualReport={handleAnualReport}
+            handleAnnualReport={handleAnnualReport}
             handleOnInsights={handleOnInsights}
             disableHeader
           />

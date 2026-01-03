@@ -133,11 +133,13 @@ export async function POST(request: Request) {
       
       // Run initial sync in the background (don't wait for it to complete)
       // This allows the user to get immediate feedback while sync happens async
-      initialSyncForAccount(
-        plaidAccount.accessToken,
-        plaidAccount.id,
-        plaidAccount.user.id
-      )
+      // Wrap in Promise.resolve().then() to ensure errors don't crash the request handler
+      Promise.resolve()
+        .then(() => initialSyncForAccount(
+          plaidAccount.accessToken,
+          plaidAccount.id,
+          plaidAccount.user.id
+        ))
         .then((syncResult) => {
           if (syncResult.success) {
             console.log(`Initial sync completed for account ${plaidAccount.id} after webhook update`);

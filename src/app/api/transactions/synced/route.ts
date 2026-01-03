@@ -56,6 +56,7 @@ export async function GET(req: Request) {
     });
 
     // Format transactions to match the format from /api/plaid/getTransactions
+    // Note: Transactions are already sorted by date DESC from the Prisma query
     const formattedTransactions = syncedTransactions.map((transaction) => ({
       transaction_id: transaction.transaction_id,
       account_id: transaction.account_id,
@@ -68,11 +69,6 @@ export async function GET(req: Request) {
       notes: transaction.notes,
     }));
 
-    // Sort by date descending (most recent first)
-    formattedTransactions.sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-
     return Response.json({ 
       success: true, 
       transactions: formattedTransactions 
@@ -81,7 +77,7 @@ export async function GET(req: Request) {
     console.error("Error fetching synced transactions:", error);
     return Response.json({
       success: false,
-      error: error,
+      error: "Failed to fetch synced transactions",
     });
   }
 }

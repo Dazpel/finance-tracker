@@ -99,7 +99,6 @@ export async function POST(request: Request) {
       { 
         status: 500,
         error: 'Internal server error',
-        details: error,
       },
       { status: 500 }
     );

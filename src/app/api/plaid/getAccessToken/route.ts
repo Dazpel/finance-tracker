@@ -7,6 +7,14 @@ import { initialSyncForAccount } from "@lib/plaid/syncTransactions";
 
 export async function POST(request: Request) {
   const session = await getServerSession(options);
+  
+  if (!session?.user?.email) {
+    return NextResponse.json({
+      success: false,
+      error: "Unauthorized",
+    }, { status: 401 });
+  }
+
   const res = await request.json();
   const publicToken: string = res.publicToken;
   const institutionName: string = res.institutionName;
@@ -70,7 +78,10 @@ export async function POST(request: Request) {
 
     // Trigger initial sync in the background (don't wait for it to complete)
     // This allows the user to get immediate feedback while sync happens async
-    initialSyncForAccount(accessToken, createdAccount.id, user.id)
+    // Note: Errors in background sync won't be reported to the user in the response.
+    // Consider implementing a status tracking mechanism for better UX if needed.
+    Promise.resolve()
+      .then(() => initialSyncForAccount(accessToken, createdAccount.id, user.id))
       .then((result) => {
         if (result.success) {
           console.log(`Initial sync completed for account ${createdAccount.id}`);
@@ -84,12 +95,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      error: "Accounts linked successfully",
+      message: "Accounts linked successfully",
     });
   } catch (error) {
+    console.error("Error in getAccessToken:", error);
     return NextResponse.json({
       success: false,
-      error: error,
+      error: "Failed to link account",
     });
   }
 }

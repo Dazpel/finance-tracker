@@ -39,7 +39,7 @@ type TableRow = {
 
 type ReportsTableProps = {
   reportData: ReportDataDTO[];
-  reportType?: "monthly" | "anual";
+  reportType?: "monthly" | "annual";
   showFooter?: boolean;
   showReportButton?: boolean;
   handleOnCompare: (encodedURI: string) => void;
@@ -107,7 +107,7 @@ export default function ReportsTable({
   showCreateAnnualReportHeader = false,
   disableHeader = false,
 }: ReportsTableProps) {
-  const isAnnual = reportType === "anual";
+  const isAnnual = reportType === "annual";
   const [canCompareReports, setCanCompareReports] = useState(false);
   const [maxRowExceeded, setMaxRowExceeded] = useState(false);
   const [reportsToCompare, setReportsToCompare] = useState<Key[]>([]);

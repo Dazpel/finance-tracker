@@ -5,6 +5,8 @@ import { plaidClient } from '@lib/plaid';
 import prisma from '@lib/prisma/prismaClient';
 import { initialSyncForAccount } from '@lib/plaid/syncTransactions';
 
+export const maxDuration = 60; // Allow up to 60 seconds for initial sync operations
+
 /**
  * Update webhook URL for a Plaid Item
  * POST /api/plaid/update-webhook
@@ -20,9 +22,13 @@ import { initialSyncForAccount } from '@lib/plaid/syncTransactions';
  * set to null to remove the webhook.
  * 
  * After successfully updating the webhook URL, an initial sync is triggered
- * in the background to initialize the item. This is required because Plaid's
+ * synchronously to initialize the item. This is required because Plaid's
  * SYNC_UPDATES_AVAILABLE webhooks won't fire until /transactions/sync has
  * been called at least once for the Item.
+ * 
+ * The sync is awaited to ensure it completes before the function terminates,
+ * preventing race conditions in serverless environments where background
+ * promises may be killed when the response is sent.
  */
 export async function POST(request: Request) {
   try {
@@ -128,40 +134,54 @@ export async function POST(request: Request) {
     // This is required because SYNC_UPDATES_AVAILABLE webhooks won't fire until
     // /transactions/sync has been called at least once for the Item
     // Only trigger sync if webhook update was successful
+    let syncResult = null;
     if (webhook_url && response.data.item) {
       console.log(`Triggering initial sync for account ${plaidAccount.id} to initialize webhook support`);
       
-      // Run initial sync in the background (don't wait for it to complete)
-      // This allows the user to get immediate feedback while sync happens async
-      // Wrap in Promise.resolve().then() to ensure errors don't crash the request handler
-      Promise.resolve()
-        .then(() => initialSyncForAccount(
+      // Await the sync to ensure it completes before the function terminates
+      // This prevents race conditions in serverless environments where background
+      // promises may be killed when the response is sent
+      try {
+        syncResult = await initialSyncForAccount(
           plaidAccount.accessToken,
           plaidAccount.id,
           plaidAccount.user.id
-        ))
-        .then((syncResult) => {
-          if (syncResult.success) {
-            console.log(`Initial sync completed for account ${plaidAccount.id} after webhook update`);
-            console.log(`Sync results: ${syncResult.addedCount || 0} added, ${syncResult.modifiedCount || 0} modified, ${syncResult.removedCount || 0} removed`);
-          } else {
-            console.error(`Initial sync failed for account ${plaidAccount.id} after webhook update:`, syncResult.error);
-          }
-        })
-        .catch((error) => {
-          console.error(`Error in initial sync for account ${plaidAccount.id} after webhook update:`, error);
-        });
+        );
+        
+        if (syncResult.success) {
+          console.log(`Initial sync completed for account ${plaidAccount.id} after webhook update`);
+          console.log(`Sync results: ${syncResult.addedCount || 0} added, ${syncResult.modifiedCount || 0} modified, ${syncResult.removedCount || 0} removed`);
+        } else {
+          console.error(`Initial sync failed for account ${plaidAccount.id} after webhook update:`, syncResult.error);
+        }
+      } catch (error) {
+        console.error(`Error in initial sync for account ${plaidAccount.id} after webhook update:`, error);
+        syncResult = {
+          success: false,
+          error,
+        };
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: webhook_url 
-        ? 'Webhook URL updated successfully. Initial sync initiated in background.' 
+        ? (syncResult?.success 
+            ? `Webhook URL updated successfully. Initial sync completed: ${syncResult.addedCount || 0} added, ${syncResult.modifiedCount || 0} modified, ${syncResult.removedCount || 0} removed.`
+            : 'Webhook URL updated successfully. Initial sync failed - see sync_error for details.')
         : 'Webhook removed successfully',
       request_id: response.data.request_id,
       item_id: response.data.item.item_id,
       webhook_url: response.data.item.webhook || null,
       sync_initiated: webhook_url ? true : false,
+      sync_result: syncResult ? {
+        success: syncResult.success,
+        added_count: syncResult.addedCount || 0,
+        modified_count: syncResult.modifiedCount || 0,
+        removed_count: syncResult.removedCount || 0,
+        next_cursor: syncResult.nextCursor || null,
+        error: syncResult.error ? (typeof syncResult.error === 'string' ? syncResult.error : syncResult.error.message || 'Unknown error') : undefined,
+      } : null,
     });
   } catch (error: any) {
     console.error('Error updating webhook:', error);

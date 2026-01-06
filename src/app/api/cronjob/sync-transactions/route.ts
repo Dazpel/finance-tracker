@@ -67,13 +67,41 @@ export async function POST(request: Request) {
           );
         } else {
           errorCount++;
-          console.error(`Account ${account.id} sync failed:`, syncResult.error);
+          // syncResult.error is now sanitized with format: { code?: string; message: string; type?: string; }
+          const errorCode = syncResult.error?.code;
+          const errorMessage = syncResult.error?.message || 'Unknown error';
+          const errorType = syncResult.error?.type || 'Unknown';
           
-          // Check if it's an ITEM_LOGIN_REQUIRED error
-          const errorCode = syncResult.error?.response?.data?.error_code;
-          if (errorCode === 'ITEM_LOGIN_REQUIRED') {
-            console.error(`Account ${account.id} requires re-authentication`);
-            // Could send email notification here
+          console.error(`Account ${account.id} sync failed:`, {
+            errorCode,
+            errorMessage,
+            errorType,
+          });
+          
+          // Handle specific Plaid error codes
+          switch (errorCode) {
+            case 'ITEM_LOGIN_REQUIRED':
+              console.error(`Account ${account.id} (${account.institutionName}) requires re-authentication`);
+              // TODO: Send email notification to user about re-authentication requirement
+              break;
+            case 'INVALID_ACCESS_TOKEN':
+              console.error(`Account ${account.id} (${account.institutionName}) has invalid access token`);
+              // TODO: Mark account as invalid or trigger re-link flow
+              break;
+            case 'ITEM_NOT_FOUND':
+              console.error(`Account ${account.id} (${account.institutionName}) item not found in Plaid`);
+              // TODO: Mark account as deleted or trigger cleanup
+              break;
+            case 'RATE_LIMIT_EXCEEDED':
+              console.error(`Account ${account.id} sync rate limited - will retry on next cron run`);
+              // Rate limit is temporary, will retry automatically
+              break;
+            case 'INSTITUTION_DOWN':
+              console.error(`Account ${account.id} (${account.institutionName}) institution is temporarily unavailable`);
+              // Temporary issue, will retry automatically
+              break;
+            default:
+              console.error(`Account ${account.id} sync failed with error code: ${errorCode || 'UNKNOWN'}`);
           }
         }
       } catch (error) {

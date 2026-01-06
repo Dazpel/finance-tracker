@@ -42,6 +42,13 @@ function verifyWebhookSignature(body: string, signature: string): boolean {
       return false;
     }
 
+    // Validate providedHash is a valid hex string of expected length (64 chars for SHA256)
+    const hexRegex = /^[0-9a-f]{64}$/i;
+    if (!hexRegex.test(providedHash)) {
+      console.error('Invalid hash format. Expected 64-character hex string.');
+      return false;
+    }
+
     // Compute expected hash: HMAC-SHA256(version + timestamp + body, PLAID_SECRET)
     const payload = version + timestamp + body;
     const expectedHash = crypto
@@ -49,11 +56,18 @@ function verifyWebhookSignature(body: string, signature: string): boolean {
       .update(payload)
       .digest('hex');
 
+    // Ensure both buffers have the same length before timing-safe comparison
+    // This prevents timing attacks and avoids errors from mismatched lengths
+    const expectedBuffer = Buffer.from(expectedHash, 'hex');
+    const providedBuffer = Buffer.from(providedHash, 'hex');
+    
+    if (expectedBuffer.length !== providedBuffer.length) {
+      console.error('Hash length mismatch');
+      return false;
+    }
+
     // Compare hashes using constant-time comparison to prevent timing attacks
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(expectedHash, 'hex'),
-      Buffer.from(providedHash, 'hex')
-    );
+    const isValid = crypto.timingSafeEqual(expectedBuffer, providedBuffer);
 
     if (!isValid) {
       console.error('Webhook signature verification failed');

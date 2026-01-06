@@ -246,7 +246,7 @@ The sandbox API supports different webhook codes for testing:
 
 ## Security Considerations
 
-1. **Webhook Signature Verification**: Currently simplified for development. Implement full signature verification for production per [Plaid's documentation](https://plaid.com/docs/webhooks/webhook-verification/).
+1. **Webhook Signature Verification**: Full HMAC-SHA256 signature verification is implemented with timing-safe comparison to prevent timing attacks. The implementation follows [Plaid's webhook verification documentation](https://plaid.com/docs/webhooks/webhook-verification/).
 
 2. **Endpoint Security**: The fire-webhook endpoint:
    - Requires authentication (NextAuth session)

@@ -27,9 +27,21 @@ export type SyncResponse = {
   hasMore: boolean;
 };
 
+export type PlaidError = {
+  error_code?: string;
+  error_message?: string;
+  error_type?: string;
+  display_message?: string;
+  request_id?: string;
+};
+
 export type SyncResult = {
   success: boolean;
-  error?: any;
+  error?: {
+    code?: string;
+    message: string;
+    type?: string;
+  };
   addedCount?: number;
   modifiedCount?: number;
   removedCount?: number;
@@ -199,9 +211,17 @@ export async function processSyncedTransactions(
     };
   } catch (error) {
     console.error('Error processing synced transactions:', error);
+    
+    // Sanitize error to avoid exposing sensitive information
+    const sanitizedError = {
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      code: (error as any)?.code || 'PROCESSING_ERROR',
+      type: (error as any)?.name || 'Error',
+    };
+    
     return {
       success: false,
-      error,
+      error: sanitizedError,
     };
   }
 }
@@ -235,17 +255,27 @@ export async function initialSyncForAccount(
     }
     
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in initial sync:', error);
-    const errorCode = error?.response?.data?.error_code;
+    
+    // Extract Plaid error information
+    const plaidError = (error as { response?: { data?: PlaidError } })?.response?.data;
+    const errorCode = plaidError?.error_code;
+    const errorMessage = plaidError?.error_message || (error instanceof Error ? error.message : 'Unknown error');
+    const errorType = plaidError?.error_type || (error instanceof Error ? error.name : 'Error');
     
     if (errorCode === 'ITEM_LOGIN_REQUIRED') {
       console.error('Item login required for account', plaidAccountId);
     }
     
+    // Sanitize error to avoid exposing sensitive information
     return {
       success: false,
-      error,
+      error: {
+        code: errorCode || 'SYNC_ERROR',
+        message: errorMessage,
+        type: errorType,
+      },
     };
   }
 }
@@ -287,17 +317,27 @@ export async function incrementalSyncForAccount(
     }
     
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in incremental sync:', error);
-    const errorCode = error?.response?.data?.error_code;
+    
+    // Extract Plaid error information
+    const plaidError = (error as { response?: { data?: PlaidError } })?.response?.data;
+    const errorCode = plaidError?.error_code;
+    const errorMessage = plaidError?.error_message || (error instanceof Error ? error.message : 'Unknown error');
+    const errorType = plaidError?.error_type || (error instanceof Error ? error.name : 'Error');
     
     if (errorCode === 'ITEM_LOGIN_REQUIRED') {
       console.error('Item login required for account', plaidAccountId);
     }
     
+    // Sanitize error to avoid exposing sensitive information
     return {
       success: false,
-      error,
+      error: {
+        code: errorCode || 'SYNC_ERROR',
+        message: errorMessage,
+        type: errorType,
+      },
     };
   }
 }

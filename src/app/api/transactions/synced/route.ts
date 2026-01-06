@@ -44,7 +44,14 @@ export async function GET(req: Request) {
 
     // Optionally filter by plaidAccountId
     if (plaidAccountId) {
-      where.plaidAccountId = parseInt(plaidAccountId, 10);
+      const parsedId = parseInt(plaidAccountId, 10);
+      if (isNaN(parsedId)) {
+        return Response.json({ 
+          success: false, 
+          error: "Invalid plaidAccountId parameter. Must be a valid integer." 
+        }, { status: 400 });
+      }
+      where.plaidAccountId = parsedId;
     }
 
     // Query synced transactions

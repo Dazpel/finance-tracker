@@ -2,75 +2,111 @@ import { NextResponse } from 'next/server';
 import prisma from '@lib/prisma/prismaClient';
 import { incrementalSyncForAccount } from '@lib/plaid/syncTransactions';
 import crypto from 'crypto';
+import { jwtVerify, decodeProtectedHeader, importJWK } from 'jose';
+import { plaidClient } from '@lib/plaid';
 
 export const maxDuration = 60; // Webhooks may take time to process
 
 /**
- * Verify Plaid webhook signature using HMAC-SHA256
+ * Verify Plaid webhook signature using JWT verification
  * @param body - Raw request body
- * @param signature - Signature from X-Plaid-Signature header (format: version,timestamp,body_hash)
+ * @param verificationHeader - JWT token from Plaid-Verification header
  * @returns boolean indicating if signature is valid
  * 
- * Plaid webhook signature format: version,timestamp,body_hash
- * The body_hash is computed as: HMAC-SHA256(version + timestamp + body, PLAID_SECRET)
- * Reference: https://plaid.com/docs/webhooks/webhook-verification/
+ * Plaid webhook verification uses a JWT token in the Plaid-Verification header.
+ * The JWT must be verified using a JWK fetched from Plaid's servers.
+ * 
+ * Implementation follows Plaid's official documentation:
+ * 1. Decode JWT header and validate algorithm is ES256
+ * 2. Fetch JWK using the kid from JWT header via webhookVerificationKeyGet
+ * 3. Verify JWT signature using the JWK
+ * 4. Validate iat (issued at) is not older than 5 minutes
+ * 5. Compare request body SHA-256 hash using constant-time comparison
+ * 
+ * Reference: https://plaid.com/docs/api/webhooks/webhook-verification/
  */
-function verifyWebhookSignature(body: string, signature: string): boolean {
-  const PLAID_SECRET = process.env.PLAID_SECRET;
-  
-  if (!PLAID_SECRET) {
-    console.error('PLAID_SECRET not configured');
-    return false;
-  }
-
-  if (!signature || signature.length === 0) {
+async function verifyWebhookSignature(body: string, verificationHeader: string): Promise<boolean> {
+  if (!verificationHeader || verificationHeader.length === 0) {
+    console.error('Plaid-Verification header is missing');
     return false;
   }
 
   try {
-    // Parse signature: version,timestamp,body_hash
-    const parts = signature.split(',');
-    if (parts.length !== 3) {
-      console.error('Invalid signature format. Expected: version,timestamp,body_hash');
-      return false;
-    }
-
-    const [version, timestamp, providedHash] = parts;
-
-    if (!version || !timestamp || !providedHash) {
-      console.error('Missing signature components');
-      return false;
-    }
-
-    // Validate providedHash is a valid hex string of expected length (64 chars for SHA256)
-    const hexRegex = /^[0-9a-f]{64}$/i;
-    if (!hexRegex.test(providedHash)) {
-      console.error('Invalid hash format. Expected 64-character hex string.');
-      return false;
-    }
-
-    // Compute expected hash: HMAC-SHA256(version + timestamp + body, PLAID_SECRET)
-    const payload = version + timestamp + body;
-    const expectedHash = crypto
-      .createHmac('sha256', PLAID_SECRET)
-      .update(payload)
-      .digest('hex');
-
-    // Ensure both buffers have the same length before timing-safe comparison
-    // This prevents timing attacks and avoids errors from mismatched lengths
-    const expectedBuffer = Buffer.from(expectedHash, 'hex');
-    const providedBuffer = Buffer.from(providedHash, 'hex');
+    // Decode the JWT header to get the algorithm and key ID (kid)
+    const header = decodeProtectedHeader(verificationHeader);
     
-    if (expectedBuffer.length !== providedBuffer.length) {
-      console.error('Hash length mismatch');
+    // Ensure that the value of the alg (algorithm) field in the header is "ES256"
+    // Reject the webhook if this is not the case (per Plaid documentation)
+    if (header.alg !== 'ES256') {
+      console.error(`Invalid algorithm in JWT header. Expected ES256, got ${header.alg}`);
       return false;
     }
 
-    // Compare hashes using constant-time comparison to prevent timing attacks
-    const isValid = crypto.timingSafeEqual(expectedBuffer, providedBuffer);
+    const kid = header.kid;
+    if (!kid) {
+      console.error('JWT header missing kid (key ID)');
+      return false;
+    }
 
-    if (!isValid) {
-      console.error('Webhook signature verification failed');
+    // Fetch the JWK from Plaid's webhook verification key endpoint
+    const jwkResponse = await plaidClient.webhookVerificationKeyGet({
+      key_id: kid,
+    });
+
+    if (!jwkResponse?.data?.key) {
+      console.error('Failed to fetch JWK from Plaid');
+      return false;
+    }
+
+    const jwk = jwkResponse.data.key;
+
+    // Convert Plaid JWKPublicKey to standard JWK format for jose library
+    // Plaid uses EC (Elliptic Curve) keys with x, y coordinates
+    const jwkForJose = {
+      kty: jwk.kty,
+      use: jwk.use,
+      kid: jwk.kid,
+      alg: jwk.alg,
+      x: jwk.x,
+      y: jwk.y,
+      crv: jwk.crv,
+    };
+
+    // Import the JWK for verification using jose library
+    const publicKey = await importJWK(jwkForJose, jwk.alg);
+
+    // Verify the JWT signature and validate iat (issued at) is not older than 5 minutes
+    // The maxTokenAge option handles the iat validation automatically
+    const { payload } = await jwtVerify(verificationHeader, publicKey, {
+      algorithms: ['ES256'],
+      maxTokenAge: '5 min',
+    });
+
+    // Verify the request_body_sha256 claim matches the SHA-256 hash of the body
+    const bodyHash = crypto.createHash('sha256').update(body).digest('hex');
+    const expectedBodyHash = payload.request_body_sha256 as string;
+
+    if (!expectedBodyHash) {
+      console.error('JWT payload missing request_body_sha256 claim');
+      return false;
+    }
+
+    // Use constant-time comparison to prevent timing attacks
+    const bodyHashLower = bodyHash.toLowerCase();
+    const expectedBodyHashLower = expectedBodyHash.toLowerCase();
+
+    // Validate hash lengths (SHA-256 = 64 hex characters)
+    if (bodyHashLower.length !== 64 || expectedBodyHashLower.length !== 64) {
+      console.error('Invalid hash length');
+      return false;
+    }
+
+    const bodyHashBuffer = Buffer.from(bodyHashLower, 'hex');
+    const expectedBodyHashBuffer = Buffer.from(expectedBodyHashLower, 'hex');
+
+    const hashMatches = crypto.timingSafeEqual(bodyHashBuffer, expectedBodyHashBuffer);
+    if (!hashMatches) {
+      console.error('Request body hash mismatch');
       return false;
     }
 
@@ -85,7 +121,7 @@ export async function POST(request: Request) {
   try {
     // Get raw body for signature verification
     const body = await request.text();
-    const signature = request.headers.get('X-Plaid-Signature') || '';
+    const verificationHeader = request.headers.get('Plaid-Verification') || '';
 
     // Log request headers for debugging
     const headers: Record<string, string> = {};
@@ -94,10 +130,11 @@ export async function POST(request: Request) {
     });
     console.log('--------Plaid Webhook Received--------');
     console.log('Request Headers:', JSON.stringify(headers, null, 2));
-    console.log('X-Plaid-Signature:', signature);
+    console.log('Plaid-Verification:', verificationHeader ? 'Present' : 'Missing');
 
-    // Verify webhook signature
-    if (!verifyWebhookSignature(body, signature)) {
+    // Verify webhook signature using JWT verification per Plaid docs
+    const isValid = await verifyWebhookSignature(body, verificationHeader);
+    if (!isValid) {
       console.error('Invalid webhook signature');
       return NextResponse.json(
         { error: 'Invalid signature' },

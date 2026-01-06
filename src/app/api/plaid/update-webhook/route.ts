@@ -14,7 +14,7 @@ export const maxDuration = 60; // Allow up to 60 seconds for initial sync operat
  * Request body:
  * {
  *   "item_id": "string",      // Required: Plaid item_id
- *   "webhook_url": "string"    // Required: New webhook URL (or null to remove)
+ *   "webhook_url": "string"   // Required: New webhook URL (must be provided, can be null to remove)
  * }
  * 
  * This endpoint uses Plaid's /item/webhook/update API to update the webhook URL
@@ -52,8 +52,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate webhook_url is provided (required field)
+    if (webhook_url === undefined) {
+      return NextResponse.json(
+        { error: 'webhook_url is required' },
+        { status: 400 }
+      );
+    }
+
     // Validate webhook_url format if provided (must be valid HTTPS URL or null)
-    if (webhook_url !== null && webhook_url !== undefined) {
+    if (webhook_url !== null) {
       // Trim whitespace before validation
       const trimmedUrl = typeof webhook_url === 'string' ? webhook_url.trim() : webhook_url;
       

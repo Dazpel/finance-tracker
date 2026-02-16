@@ -1,5 +1,6 @@
 import { options } from "@api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
+import { Prisma } from "@prisma/client";
 import prisma from "@lib/prisma/prismaClient";
 
 export async function GET(req: Request) {
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
     }
 
     // Build query conditions
-    const where: any = {
+    const where: Prisma.SyncedTransactionWhereInput = {
       userId: user.id,
       date: {
         gte: startDate,

@@ -129,7 +129,6 @@ export async function POST(request: Request) {
       headers[key] = value;
     });
     console.log('--------Plaid Webhook Received--------');
-    console.log('Request Headers:', JSON.stringify(headers, null, 2));
     console.log('Plaid-Verification:', verificationHeader ? 'Present' : 'Missing');
 
     // Verify webhook signature using JWT verification per Plaid docs

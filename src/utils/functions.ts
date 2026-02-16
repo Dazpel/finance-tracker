@@ -172,7 +172,9 @@ export const formatPlaidTransactions = (transactions: any[], recurring: boolean)
   let response = [];
   
     response = transactions.map((transaction) => {
-    const category = transaction.category ? transaction.category[0].replace("and", "&") : "Others";
+    const category = transaction.category && transaction.category.length > 0
+      ? transaction.category[0].replace("and", "&")
+      : "Others";
     const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
     const description = transaction[descriptionToUse] || transaction.name;
     const defaultResponse = {

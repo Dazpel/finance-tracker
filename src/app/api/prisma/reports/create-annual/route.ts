@@ -5,6 +5,17 @@ import prisma from "@lib/prisma/prismaClient";
 
 export async function POST(request: Request) {
   const session = await getServerSession(options);
+
+  if (!session?.user?.email) {
+    return Response.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+
   const res = await request.json();
   const reportIds = res.reportIds;
   const reportName = res.reportName;

@@ -1,23 +1,7 @@
 import { plaidClient } from '@lib/plaid';
 import prisma from '@lib/prisma/prismaClient';
 import { Transaction } from 'plaid';
-import { formatPlaidTransactions, mapDefaultCategoryToCustomCategory, mapPlaidCategoryToDefaultCategory } from 'utils/functions';
-
-/**
- * Maps a Plaid transaction category to the final custom category
- * @param transaction - Formatted Plaid transaction with category and description
- * @returns The final mapped category string
- */
-function mapTransactionCategory(transaction: {
-  category?: string[];
-  original_description?: string | null;
-  name?: string;
-}): string {
-  const category = transaction.category ? transaction.category[0].replace('and', '&') : 'Others';
-  const mappedCategory = mapPlaidCategoryToDefaultCategory(category);
-  const description = transaction.original_description || transaction.name || '';
-  return mapDefaultCategoryToCustomCategory(description, mappedCategory);
-}
+import { formatPlaidTransactions } from 'utils/functions';
 
 export type SyncResponse = {
   added: Transaction[];
@@ -125,7 +109,7 @@ export async function processSyncedTransactions(
       if (formattedAdded.length > 0) {
         await tx.syncedTransaction.createMany({
           data: formattedAdded.map((transaction) => {
-            const finalCategory = mapTransactionCategory(transaction);
+            const finalCategory = transaction.category?.[0] || 'Others';
 
             return {
               userId,
@@ -149,7 +133,7 @@ export async function processSyncedTransactions(
       if (formattedModified.length > 0) {
         await Promise.all(
           formattedModified.map((transaction) => {
-            const finalCategory = mapTransactionCategory(transaction);
+            const finalCategory = transaction.category?.[0] || 'Others';
 
             return tx.syncedTransaction.updateMany({
               where: {
@@ -211,14 +195,14 @@ export async function processSyncedTransactions(
     };
   } catch (error) {
     console.error('Error processing synced transactions:', error);
-    
-    // Sanitize error to avoid exposing sensitive information
+
+    const errorObj = error instanceof Error ? error : null;
     const sanitizedError = {
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
-      code: (error as any)?.code || 'PROCESSING_ERROR',
-      type: (error as any)?.name || 'Error',
+      message: errorObj?.message || 'Unknown error occurred',
+      code: (errorObj as { code?: string } | null)?.code || 'PROCESSING_ERROR',
+      type: errorObj?.name || 'Error',
     };
-    
+
     return {
       success: false,
       error: sanitizedError,

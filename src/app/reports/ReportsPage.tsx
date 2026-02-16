@@ -81,7 +81,7 @@ export default function ReportsPage() {
       reportName: string;
       reports: ReportDataDTO[];
     }) => {
-      const response = await fetch("/api/prisma/reports/create-anual", {
+      const response = await fetch("/api/prisma/reports/create-annual", {
         method: "POST",
         body: JSON.stringify({ reportIds, reportName, reports }),
       });
@@ -152,17 +152,10 @@ export default function ReportsPage() {
     reports: ReportDataDTO[]
   ): Promise<void> => {
     try {
-<<<<<<< feat/enable-transaction-sync
-      setIsLoading(true);
-      const response = await fetch("/api/prisma/reports/create-annual", {
-        method: "POST",
-        body: JSON.stringify({ reportIds, reportName, reports }),
-=======
       await createAnnualMutation.mutateAsync({
         reportIds,
         reportName,
         reports,
->>>>>>> main
       });
     } catch {
       // Error handled in onError

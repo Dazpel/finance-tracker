@@ -170,7 +170,11 @@ export async function POST(request: Request) {
         console.error(`Error in initial sync for account ${plaidAccount.id} after webhook update:`, error);
         syncResult = {
           success: false,
-          error,
+          error: {
+            code: 'SYNC_ERROR',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            type: error instanceof Error ? error.name : 'Error',
+          },
         };
       }
     }
@@ -180,24 +184,23 @@ export async function POST(request: Request) {
       message: trimmedUrl 
         ? (syncResult?.success 
             ? `Webhook URL updated successfully. Initial sync completed: ${syncResult.addedCount || 0} added, ${syncResult.modifiedCount || 0} modified, ${syncResult.removedCount || 0} removed.`
-            : 'Webhook URL updated successfully. Initial sync failed - see sync_error for details.')
+            : 'Webhook URL updated successfully. Initial sync failed - see sync_result for details.')
         : 'Webhook removed successfully',
       request_id: response.data.request_id,
       item_id: response.data.item.item_id,
       webhook_url: response.data.item.webhook || null,
       sync_initiated: trimmedUrl ? true : false,
-      sync_result: syncResult ? {
-        success: syncResult.success,
-        added_count: syncResult.addedCount || 0,
-        modified_count: syncResult.modifiedCount || 0,
-        removed_count: syncResult.removedCount || 0,
-        next_cursor: syncResult.nextCursor || null,
-        error: syncResult.error ? {
-          code: (syncResult.error as { code?: string; message: string; type?: string }).code,
-          message: (syncResult.error as { code?: string; message: string; type?: string }).message,
-          type: (syncResult.error as { code?: string; message: string; type?: string }).type,
-        } : undefined,
-      } : null,
+      sync_result: syncResult ? (() => {
+        const err = syncResult.error as { code?: string; message: string; type?: string } | undefined;
+        return {
+          success: syncResult.success,
+          added_count: syncResult.addedCount || 0,
+          modified_count: syncResult.modifiedCount || 0,
+          removed_count: syncResult.removedCount || 0,
+          next_cursor: syncResult.nextCursor || null,
+          error: err ? { code: err.code, message: err.message, type: err.type } : undefined,
+        };
+      })() : null,
     });
   } catch (error: any) {
     console.error('Error updating webhook:', error);

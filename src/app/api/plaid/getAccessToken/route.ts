@@ -1,5 +1,5 @@
 import { plaidClient } from "@lib/plaid";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { options } from "@api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
@@ -76,22 +76,19 @@ export async function POST(request: Request) {
 
     const createdAccount = plaidAccount.accounts[0];
 
-    // Trigger initial sync in the background (don't wait for it to complete)
-    // This allows the user to get immediate feedback while sync happens async
-    // Note: Errors in background sync won't be reported to the user in the response.
-    // Consider implementing a status tracking mechanism for better UX if needed.
-    Promise.resolve()
-      .then(() => initialSyncForAccount(accessToken, createdAccount.id, user.id))
-      .then((result) => {
+    // Trigger initial sync after response is sent (serverless-safe via after())
+    after(async () => {
+      try {
+        const result = await initialSyncForAccount(accessToken, createdAccount.id, user.id);
         if (result.success) {
           console.log(`Initial sync completed for account ${createdAccount.id}`);
         } else {
           console.error(`Initial sync failed for account ${createdAccount.id}:`, result.error);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error(`Error in initial sync for account ${createdAccount.id}:`, error);
-      });
+      }
+    });
 
     return NextResponse.json({
       success: true,

@@ -130,6 +130,7 @@ export default function ReportsTable({
     setCanCompareReports(false);
     setReportsToCompare([]);
     setMaxRowExceeded(false);
+    setPage(1);
   }, [selectionResetKey]);
 
   //pagination

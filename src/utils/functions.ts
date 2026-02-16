@@ -50,7 +50,7 @@ const US_DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 /**
  * Normalizes date strings to canonical YYYY-MM-DD for consistent sorting.
  * Supports YYYY-MM-DD (pass-through) and MM/DD/YYYY (converted).
- * Returns original string if unrecognized (comparison will still work via getDateSortKey).
+ * Returns the trimmed string if unrecognized (comparison will still work via getDateSortKey).
  */
 export const normalizeDateString = (dateStr: string): string => {
   if (!dateStr || typeof dateStr !== "string") return dateStr;
@@ -73,7 +73,7 @@ export const normalizeDateString = (dateStr: string): string => {
 export const getDateSortKey = (dateStr: string): number => {
   const normalized = normalizeDateString(dateStr);
   const parsed = new Date(normalized);
-  return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+  return isNaN(parsed.getTime()) ? Number.NEGATIVE_INFINITY : parsed.getTime();
 };
 
 /**

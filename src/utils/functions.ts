@@ -44,6 +44,50 @@ export const formatDate = (date: Date) => {
   return [year, month, day].join("-");
 };
 
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const US_DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+
+/**
+ * Normalizes date strings to canonical YYYY-MM-DD for consistent sorting.
+ * Supports YYYY-MM-DD (pass-through) and MM/DD/YYYY (converted).
+ * Returns original string if unrecognized (comparison will still work via getDateSortKey).
+ */
+export const normalizeDateString = (dateStr: string): string => {
+  if (!dateStr || typeof dateStr !== "string") return dateStr;
+  const trimmed = dateStr.trim();
+  if (ISO_DATE_REGEX.test(trimmed)) return trimmed;
+  const usMatch = trimmed.match(US_DATE_REGEX);
+  if (usMatch) {
+    const [, month, day, year] = usMatch;
+    const m = month.padStart(2, "0");
+    const d = day.padStart(2, "0");
+    return `${year}-${m}-${d}`;
+  }
+  return trimmed;
+};
+
+/**
+ * Returns a numeric key for safe chronological comparison (higher = later).
+ * Uses normalized YYYY-MM-DD when possible so string order matches date order.
+ */
+export const getDateSortKey = (dateStr: string): number => {
+  const normalized = normalizeDateString(dateStr);
+  const parsed = new Date(normalized);
+  return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+};
+
+/**
+ * Sorts transactions by date descending (newest first / 31st to 1st).
+ * Uses shared normalization so mixed formats (YYYY-MM-DD, MM/DD/YYYY) order correctly.
+ */
+export const sortTransactionsByDateDesc = <T extends { date: string }>(
+  transactions: T[]
+): T[] => {
+  return [...transactions].sort(
+    (a, b) => getDateSortKey(b.date) - getDateSortKey(a.date)
+  );
+};
+
 export const formatRecurringTransactions = (transactions: TransactionStream[], userId: string) => {
   const formattedTransactions = transactions.map((transaction) => {
     return {

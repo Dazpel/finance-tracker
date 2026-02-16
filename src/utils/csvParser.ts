@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { formatDate } from './functions';
+import { formatDate, normalizeDateString } from './functions';
 import { LOCAL_ACCOUNT_ID } from './constants';
 import { TransactionWithNotes } from './types';
 
@@ -103,7 +103,7 @@ export const parseCSV = (csvText: string, descriptionToUse: DescriptionName = 'o
       const transaction: TransactionWithNotes = {
         transaction_id: uuidv4(),
         account_id: LOCAL_ACCOUNT_ID,
-        date: date ? date : formatDate(new Date()),
+        date: date ? normalizeDateString(date) : formatDate(new Date()),
         [descriptionToUse]: description,
         category: [category.toLowerCase()],
         amount: invertedAmount,

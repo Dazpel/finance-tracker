@@ -5,6 +5,7 @@ import DateRangePicker, {
   DateRange,
 } from "@components/DateRangePicker/DateRangePicker";
 import axios from "axios";
+import { sortTransactionsByDateDesc } from "utils/functions";
 import {
   defaultCategories,
   defaultCategorieToValueObject,
@@ -119,8 +120,10 @@ export default function TransactionsPage() {
           endDate,
         },
       });
-      let reversedTransactions = res.data.transactions.reverse();
-      generateSelectedCategoryKeys(reversedTransactions);
+      const sortedTransactions = sortTransactionsByDateDesc(
+        res.data.transactions as TransactionWithNotes[]
+      );
+      generateSelectedCategoryKeys(sortedTransactions);
       setIsLoading(false);
     } catch(e) {
       console.error({e});

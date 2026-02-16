@@ -2,8 +2,6 @@ import React, { Suspense } from "react";
 import PageLoader from "@components/PageLoader/PageLoader";
 import ReportsPage from "./ReportsPage";
 
-// Needs work, doesn't reload data on page change
-// Explore react query for this
 export const dynamic = "force-dynamic";
 
 export default function Page() {

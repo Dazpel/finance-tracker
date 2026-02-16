@@ -28,7 +28,7 @@ import {
   defaultCategories,
   defaultCategoryFilterOptions,
 } from "utils/constants";
-import { formatDate } from "utils/functions";
+import { formatDate, sortTransactionsByDateDesc } from "utils/functions";
 import { defaultColorVariants, TransactionWithNotes } from "utils/types";
 import { parseCSV } from "utils/csvParser";
 import { v4 as uuidv4 } from "uuid";
@@ -292,7 +292,7 @@ export default function TransactionsTable({
       });
     }
 
-    return filteredTransactions;
+    return sortTransactionsByDateDesc(filteredTransactions);
   }, [transactions, categoryFilter]);
 
   const renderDropDown = (transactionId: string) => {

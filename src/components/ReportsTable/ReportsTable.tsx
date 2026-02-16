@@ -1,4 +1,4 @@
-import React, { Key, useCallback, useMemo, useState } from "react";
+import React, { Key, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Dropdown,
@@ -46,11 +46,15 @@ type ReportsTableProps = {
   handleOnView?: (encodedURI: string) => void;
   handleOnEdit?: (encodedURI: string) => void;
   handleOnDelete: (index: number) => Promise<void>;
-  handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>
-  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>
+  handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>;
+  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
   handleOnInsights?: (reportId: number, reportType: string) => void;
   showCreateAnnualReportHeader?: boolean;
   disableHeader?: boolean;
+  isDeletePending?: boolean;
+  isMergePending?: boolean;
+  isCreateAnnualPending?: boolean;
+  selectionResetKey?: number;
 };
 
 const columns = [
@@ -106,6 +110,10 @@ export default function ReportsTable({
   handleOnInsights,
   showCreateAnnualReportHeader = false,
   disableHeader = false,
+  isDeletePending = false,
+  isMergePending = false,
+  isCreateAnnualPending = false,
+  selectionResetKey = 0,
 }: ReportsTableProps) {
   const isAnnual = reportType === "anual";
   const [canCompareReports, setCanCompareReports] = useState(false);
@@ -117,6 +125,12 @@ export default function ReportsTable({
   const [reportIndexToDelete, setReportIndexToDelete] = useState<number | null>(
     null
   );
+
+  useEffect(() => {
+    setCanCompareReports(false);
+    setReportsToCompare([]);
+    setMaxRowExceeded(false);
+  }, [selectionResetKey]);
 
   //pagination
   const [page, setPage] = React.useState(1);
@@ -210,6 +224,7 @@ export default function ReportsTable({
             variant="flat"
             className="w-fit"
             onPress={() => setCanCompareReports(!canCompareReports)}
+            isDisabled={isDeletePending || isMergePending || isCreateAnnualPending}
           >
             {!canCompareReports ? "Merge or Compare" : "Disable"}
           </Button>
@@ -220,6 +235,7 @@ export default function ReportsTable({
               variant="flat"
               className="w-fit"
               onPress={handleCompare}
+              isDisabled={isMergePending}
             >
               Compare
             </Button>
@@ -228,6 +244,8 @@ export default function ReportsTable({
               variant="flat"
               className="w-fit"
               onPress={() => setIsMergeModalOpen(true)}
+              isLoading={isMergePending}
+              isDisabled={isMergePending}
             >
               Merge
             </Button>
@@ -239,6 +257,8 @@ export default function ReportsTable({
               variant="flat"
               className="w-fit"
               onPress={() => setIsAnnualReportModalOpen(true)}
+              isLoading={isCreateAnnualPending}
+              isDisabled={isCreateAnnualPending}
             >
               Create Annual Report
             </Button>
@@ -251,7 +271,7 @@ export default function ReportsTable({
         )}
       </div>
     );
-  }, [canCompareReports, maxRowExceeded, reportsToCompare, showCreateAnnualReportHeader, handleCompare]);
+  }, [canCompareReports, maxRowExceeded, reportsToCompare, showCreateAnnualReportHeader, handleCompare, isDeletePending, isMergePending, isCreateAnnualPending]);
 
   const bottomContent = useMemo(() => {
     return (
@@ -358,7 +378,13 @@ export default function ReportsTable({
                 <Button color="primary" onPress={onClose}>
                   Cancel
                 </Button>
-                <Button color="danger" variant="light" onPress={handleDelete}>
+                <Button
+                  color="danger"
+                  variant="light"
+                  onPress={handleDelete}
+                  isLoading={isDeletePending}
+                  isDisabled={isDeletePending}
+                >
                   Delete
                 </Button>
               </ModalFooter>
@@ -388,7 +414,13 @@ export default function ReportsTable({
                 <Button color="primary" onPress={onClose}>
                   Cancel
                 </Button>
-                <Button color="primary" variant="light" onPress={handleMergeConfirm}>
+                <Button
+                  color="primary"
+                  variant="light"
+                  onPress={handleMergeConfirm}
+                  isLoading={isMergePending}
+                  isDisabled={isMergePending}
+                >
                   Merge
                 </Button>
               </ModalFooter>
@@ -396,11 +428,13 @@ export default function ReportsTable({
           )}
         </ModalContent>
       </Modal>
-      <AnnualReportCreationModal 
+      <AnnualReportCreationModal
         reportData={reportData}
-        isOpen={isAnnualReportModalOpen} 
+        isOpen={isAnnualReportModalOpen}
         handleAnnualReport={handleAnnualReport}
-        setIsOpen={setIsAnnualReportModalOpen} />
+        setIsOpen={setIsAnnualReportModalOpen}
+        isCreateAnnualPending={isCreateAnnualPending}
+      />
     </>
   );
 }

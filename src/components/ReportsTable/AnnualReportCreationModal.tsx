@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Input,
@@ -17,6 +17,7 @@ type AnnualReportCreationModalProps = {
   setIsOpen: (value: boolean) => void;
   reportData: ReportDataDTO[];
   handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
+  isCreateAnnualPending?: boolean;
 };
 
 export default function AnnualReportCreationModal({
@@ -24,10 +25,19 @@ export default function AnnualReportCreationModal({
   setIsOpen,
   reportData,
   handleAnnualReport,
+  isCreateAnnualPending = false,
 }: AnnualReportCreationModalProps) {
   const [reportsSelected, setReportsSelected] = useState("");
   const [reportName, setReportName] = useState("");
   const [isReportNameValid, setIsReportNameValid] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setReportName("");
+      setReportsSelected("");
+      setIsReportNameValid(true);
+    }
+  }, [isOpen]);
 
   const handleReportNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsReportNameValid(true);
@@ -99,7 +109,8 @@ export default function AnnualReportCreationModal({
               <Button
                 color="primary"
                 variant="light"
-                isDisabled={!reportsSelected || !isReportNameValid}
+                isDisabled={!reportsSelected || !isReportNameValid || isCreateAnnualPending}
+                isLoading={isCreateAnnualPending}
                 onPress={createAnnualReport}
               >
                 Create

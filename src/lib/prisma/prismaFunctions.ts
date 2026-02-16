@@ -478,20 +478,21 @@ export const mergeReports = async (
           WHERE duplicates.row_number > 1
         )`;
       
+      // Recompute report totals from transactions: revenue positive, expenses negative, total = revenue + expenses (matches edit/create logic).
       await prisma.$executeRaw`
         WITH expense_aggregation AS (
-          SELECT COALESCE(SUM(amount), 0) * -1 AS total_expenses 
+          SELECT COALESCE(SUM(amount), 0) * -1 AS total_expenses
           FROM "Transaction"
-          WHERE "reportId" = ${reportId_1} AND "category" <> '{\"revenue\"}'
+          WHERE "reportId" = ${reportId_1} AND (LOWER("category"[1]) <> 'revenue' OR "category"[1] IS NULL)
         ), revenue_aggregation AS (
           SELECT COALESCE(SUM(ABS(amount)), 0) AS total_revenue
           FROM "Transaction"
-          WHERE "reportId" = ${reportId_1} AND "category" = '{\"revenue\"}'
+          WHERE "reportId" = ${reportId_1} AND LOWER("category"[1]) = 'revenue'
         )
         UPDATE "Report"
         SET "expenses" = (SELECT total_expenses FROM expense_aggregation),
             "revenue" = (SELECT total_revenue FROM revenue_aggregation),
-            "total" = (SELECT total_revenue FROM revenue_aggregation) - (SELECT total_expenses FROM expense_aggregation)
+            "total" = (SELECT total_revenue FROM revenue_aggregation) + (SELECT total_expenses FROM expense_aggregation)
         WHERE "id" = ${reportId_1}`;
 
       // Delete the now-empty second report

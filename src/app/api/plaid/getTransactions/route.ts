@@ -3,7 +3,7 @@ import { plaidClient } from "@lib/plaid";
 import { plaidAccount } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import { Transaction } from "plaid";
-import { formatPlaidTransactions, refreshUserTransactions } from "utils/functions";
+import { formatPlaidTransactions, refreshUserTransactions, sortTransactionsByDateDesc } from "utils/functions";
 
 export async function GET(req: Request) {
   const session = await getServerSession(options);
@@ -43,12 +43,9 @@ export async function GET(req: Request) {
     }));
 
     const formattedTransactions = formatPlaidTransactions(transactions, false);
-    
-    formattedTransactions.sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-    
-    return Response.json({ success: true, transactions: formattedTransactions });
+    const sortedTransactions = sortTransactionsByDateDesc(formattedTransactions);
+
+    return Response.json({ success: true, transactions: sortedTransactions });
   } catch (error) {
     console.error(error);
     return Response.json({

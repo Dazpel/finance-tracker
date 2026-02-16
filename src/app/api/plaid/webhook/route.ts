@@ -123,11 +123,6 @@ export async function POST(request: Request) {
     const body = await request.text();
     const verificationHeader = request.headers.get('Plaid-Verification') || '';
 
-    // Log request headers for debugging
-    const headers: Record<string, string> = {};
-    request.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
     console.log('--------Plaid Webhook Received--------');
     console.log('Plaid-Verification:', verificationHeader ? 'Present' : 'Missing');
 

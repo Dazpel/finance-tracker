@@ -168,7 +168,7 @@ export async function processSyncedTransactions(
       }
 
       // Update or create cursor
-      if (syncResponse.nextCursor) {
+      if (syncResponse.nextCursor !== undefined && syncResponse.nextCursor !== null) {
         await tx.plaidCursor.upsert({
           where: {
             plaidAccountId,

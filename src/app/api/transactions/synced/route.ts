@@ -1,5 +1,6 @@
 import { options } from "@api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@lib/prisma/prismaClient";
 
@@ -7,7 +8,7 @@ export async function GET(req: Request) {
   const session = await getServerSession(options);
 
   if (!session || !session.user || !session.user.email) {
-    return Response.json({ success: false, error: "Session not found" });
+    return NextResponse.json({ success: false, error: "Session not found" }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
   const plaidAccountId = searchParams.get("plaidAccountId");
 
   if (!startDate || !endDate) {
-    return Response.json({ success: false, error: "Missing date parameters" });
+    return NextResponse.json({ success: false, error: "Missing date parameters" }, { status: 400 });
   }
 
   try {
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
     });
 
     if (!user) {
-      return Response.json({ success: false, error: "User not found" });
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
     // Build query conditions
@@ -47,9 +48,9 @@ export async function GET(req: Request) {
     if (plaidAccountId) {
       const parsedId = parseInt(plaidAccountId, 10);
       if (isNaN(parsedId)) {
-        return Response.json({ 
-          success: false, 
-          error: "Invalid plaidAccountId parameter. Must be a valid integer." 
+        return NextResponse.json({
+          success: false,
+          error: "Invalid plaidAccountId parameter. Must be a valid integer.",
         }, { status: 400 });
       }
       where.plaidAccountId = parsedId;
@@ -77,16 +78,19 @@ export async function GET(req: Request) {
       notes: transaction.notes,
     }));
 
-    return Response.json({ 
-      success: true, 
-      transactions: formattedTransactions 
+    return NextResponse.json({
+      success: true,
+      transactions: formattedTransactions,
     });
   } catch (error) {
     console.error("Error fetching synced transactions:", error);
-    return Response.json({
-      success: false,
-      error: "Failed to fetch synced transactions",
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch synced transactions",
+      },
+      { status: 500 }
+    );
   }
 }
 

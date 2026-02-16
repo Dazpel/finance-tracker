@@ -37,8 +37,7 @@ export async function POST(request: Request) {
 
     if (accounts.length === 0) {
       console.log('No accounts found to sync');
-      return NextResponse.json({ 
-        status: 200,
+      return NextResponse.json({
         message: 'No accounts to sync',
       });
     }
@@ -48,16 +47,50 @@ export async function POST(request: Request) {
     let successCount = 0;
     let errorCount = 0;
 
-    // Sync each account
-    for (const account of accounts) {
-      try {
-        console.log(`Syncing account ${account.id} (${account.institutionName})`);
-        
-        const syncResult = await incrementalSyncForAccount(
-          account.accessToken,
-          account.id,
-          account.user.id
-        );
+    const BATCH_SIZE = 5;
+
+    for (let i = 0; i < accounts.length; i += BATCH_SIZE) {
+      const batch = accounts.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(async (account) => {
+          console.log(`Syncing account ${account.id} (${account.institutionName})`);
+          try {
+            const syncResult = await incrementalSyncForAccount(
+              account.accessToken,
+              account.id,
+              account.user.id
+            );
+            return { account, syncResult };
+          } catch (error) {
+            return { account, error };
+          }
+        })
+      );
+
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          errorCount++;
+          console.error('Error syncing account:', result.reason);
+          continue;
+        }
+
+        const { account, syncResult, error } = result.value as {
+          account: (typeof accounts)[0];
+          syncResult?: Awaited<ReturnType<typeof incrementalSyncForAccount>>;
+          error?: unknown;
+        };
+
+        if (error !== undefined) {
+          errorCount++;
+          console.error(`Error syncing account ${account.id}:`, error);
+          continue;
+        }
+
+        if (!syncResult) {
+          errorCount++;
+          console.error(`Account ${account.id}: missing sync result`);
+          continue;
+        }
 
         if (syncResult.success) {
           successCount++;
@@ -67,46 +100,36 @@ export async function POST(request: Request) {
           );
         } else {
           errorCount++;
-          // syncResult.error is now sanitized with format: { code?: string; message: string; type?: string; }
           const errorCode = syncResult.error?.code;
           const errorMessage = syncResult.error?.message || 'Unknown error';
           const errorType = syncResult.error?.type || 'Unknown';
-          
+
           console.error(`Account ${account.id} sync failed:`, {
             errorCode,
             errorMessage,
             errorType,
           });
-          
-          // Handle specific Plaid error codes
+
           switch (errorCode) {
             case 'ITEM_LOGIN_REQUIRED':
               console.error(`Account ${account.id} (${account.institutionName}) requires re-authentication`);
-              // TODO: Send email notification to user about re-authentication requirement
               break;
             case 'INVALID_ACCESS_TOKEN':
               console.error(`Account ${account.id} (${account.institutionName}) has invalid access token`);
-              // TODO: Mark account as invalid or trigger re-link flow
               break;
             case 'ITEM_NOT_FOUND':
               console.error(`Account ${account.id} (${account.institutionName}) item not found in Plaid`);
-              // TODO: Mark account as deleted or trigger cleanup
               break;
             case 'RATE_LIMIT_EXCEEDED':
               console.error(`Account ${account.id} sync rate limited - will retry on next cron run`);
-              // Rate limit is temporary, will retry automatically
               break;
             case 'INSTITUTION_DOWN':
               console.error(`Account ${account.id} (${account.institutionName}) institution is temporarily unavailable`);
-              // Temporary issue, will retry automatically
               break;
             default:
               console.error(`Account ${account.id} sync failed with error code: ${errorCode || 'UNKNOWN'}`);
           }
         }
-      } catch (error) {
-        errorCount++;
-        console.error(`Error syncing account ${account.id}:`, error);
       }
     }
 
@@ -115,7 +138,6 @@ export async function POST(request: Request) {
     console.log('-----------------------------------');
 
     return NextResponse.json({
-      status: 200,
       message: 'Sync completed',
       successCount,
       errorCount,
@@ -124,10 +146,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error in sync-transactions cron job:', error);
     return NextResponse.json(
-      { 
-        status: 500,
-        error: 'Internal server error',
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   } finally {

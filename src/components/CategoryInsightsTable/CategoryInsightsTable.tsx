@@ -167,7 +167,6 @@ export default function CategoryInsightsTable({
       )}
 
       <Table
-        isVirtualized
         aria-label="Category insights table"
         classNames={{
           wrapper: "min-h-[400px]",

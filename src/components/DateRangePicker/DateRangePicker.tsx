@@ -48,6 +48,7 @@ export default function DateRangePicker({
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
       <HeroUIDateRangePicker
+        aria-label={label}
         label={label}
         labelPlacement={labelPlacement}
         showMonthAndYearPickers={showMonthAndYearPickers}

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react"
 import { Roboto_Flex } from "next/font/google";
@@ -39,7 +40,12 @@ export default async function RootLayout({
 
   return (
     <html suppressHydrationWarning dir="ltr" lang="en">
-      <head />
+      <head>
+        <Script
+          src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className={`${roboto.variable}`} suppressHydrationWarning>
         {res.data ? (
           <Providers

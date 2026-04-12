@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": "src/",
-    "target": "es5",
+    "target": "esnext",
     "lib": [
       "dom",
       "dom.iterable",
@@ -25,19 +24,22 @@
     ],
     "paths": {
       "@api/*": [
-        "app/api/*"
+        "./src/app/api/*"
       ],
       "@components/*": [
-        "components/*"
+        "./src/components/*"
       ],
       "@constants/*": [
-        "constants/*"
+        "./src/constants/*"
       ],
       "@lib/*": [
-        "lib/*"
+        "./src/lib/*"
       ],
       "@hooks/*": [
-        "hooks/*"
+        "./src/hooks/*"
+      ],
+      "*": [
+        "./src/*"
       ]
     }
   },

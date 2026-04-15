@@ -2,7 +2,6 @@ import React, { Suspense } from "react";
 import PageLoader from "@components/PageLoader/PageLoader";
 import ReportsPage from "./ReportsPage";
 
-export const dynamic = "force-dynamic";
 
 export default function Page() {
   return (

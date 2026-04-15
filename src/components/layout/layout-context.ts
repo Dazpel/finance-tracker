@@ -1,13 +1,13 @@
 import {createContext, useContext} from 'react';
 
 interface SidebarContext {
-   collapsed: boolean;
-   setCollapsed: () => void;
+   sidebarOpen: boolean;
+   toggleSidebar: () => void;
 }
 
 export const SidebarContext = createContext<SidebarContext>({
-   collapsed: false,
-   setCollapsed: () => {},
+   sidebarOpen: false,
+   toggleSidebar: () => {},
 });
 
 export const useSidebarContext = () => {

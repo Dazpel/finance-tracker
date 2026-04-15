@@ -11,7 +11,7 @@ export const SidebarWrapper = tv({
 });
 
 export const Overlay = tv({
-  base: "fixed inset-0 opacity-80 transition-opacity md:hidden md:z-auto md:opacity-100",
+  base: "bg-black/80 fixed inset-0 z-[201] transition-opacity md:hidden",
 });
 
 export const Header = tv({

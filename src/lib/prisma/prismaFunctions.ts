@@ -554,6 +554,7 @@ export const createAnnualReport = async (
         feesAndAdjustments: totals.feesAndAdjustments + report.feesAndAdjustments,
         others: totals.others + report.others,
         revenue: totals.revenue + report.revenue,
+        foster: totals.foster + report.foster,
         expenses: totals.expenses + report.expenses,
         total: totals.total + report.total,
       }),
@@ -569,6 +570,7 @@ export const createAnnualReport = async (
         feesAndAdjustments: 0,
         others: 0,
         revenue: 0,
+        foster: 0,
         expenses: 0,
         total: 0,
       }

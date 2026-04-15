@@ -27,7 +27,11 @@ export default function Page(props: {
   const [transactions, setTransactions] = useState([] as TransactionWithNotes[]);
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const reportData = decodeQueryString(searchParams.data);
-  const { reportName, createdAt, id, reportType, ...rest } = reportData;
+  const { reportName, createdAt, id, reportType, parentReportId,
+    foodAndDrink, billsAndUtilities, car, entertainment, groceries,
+    foster, healthAndWellness, personal, shopping, feesAndAdjustments, others,
+    revenue, expenses, total } = reportData;
+  const rest = { foodAndDrink, billsAndUtilities, car, entertainment, groceries, foster, healthAndWellness, personal, shopping, feesAndAdjustments, others, revenue, expenses, total };
 
   const generateSelectedCategoryKeys = (transactions: TransactionWithNotes[]) => {
     let newKeys = transactions.reduce(

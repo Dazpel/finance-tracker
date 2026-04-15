@@ -9,7 +9,8 @@ import {
   PlaidLinkOnExit,
   PlaidLinkOptions,
 } from "react-plaid-link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { addAccountAction } from "app/accounts/actions";
 
 type PlaidButtonProps = {
   updateMode?: boolean;
@@ -32,7 +33,6 @@ function PlaidButton({
 }: PlaidButtonProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const queryClient = useQueryClient();
   const { successToast, errorToast } = useToast();
   const [isConnecting, setIsConnecting] = useState(false);
   
@@ -65,33 +65,24 @@ function PlaidButton({
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (publicToken, metadata) => {
       setIsConnecting(true);
-      
+
       try {
         if (!updateMode) {
-          const response = await fetch("/api/plaid/getAccessToken", {
-            method: "POST",
-            body: JSON.stringify({ 
-              publicToken, 
-              institutionName: metadata?.institution?.name || "Connected Institution" 
-            }),
-          });
-          
-          const data = await response.json();
-          
-          if (data?.success) {
-             successToast("Bank account connected successfully!");
-             // Invalidate relevant queries to refresh data
-             queryClient.invalidateQueries({ queryKey: ['accountsData'] });
-             queryClient.invalidateQueries({ queryKey: ['plaidToken'] });
-           } else {
-             errorToast(data?.error || "Failed to connect account");
-           }
-         } else {
-           successToast("Account updated successfully!");
-           // Invalidate relevant queries to refresh data
-           queryClient.invalidateQueries({ queryKey: ['accountsData'] });
-           queryClient.invalidateQueries({ queryKey: ['plaidToken'] });
-         }
+          const result = await addAccountAction(
+            publicToken,
+            metadata?.institution?.name || "Connected Institution"
+          );
+
+          if (result.success) {
+            successToast("Bank account connected successfully!");
+            router.refresh();
+          } else {
+            errorToast(result.error || "Failed to connect account");
+          }
+        } else {
+          successToast("Account updated successfully!");
+          router.refresh();
+        }
       } catch (error) {
         errorToast("Connection failed. Please try again.");
         console.error("Plaid connection error:", error);
@@ -100,7 +91,7 @@ function PlaidButton({
         setIsConnecting(false);
       }
     },
-    [updateMode, router, queryClient, successToast, errorToast, onSuccessCallback]
+    [updateMode, router, successToast, errorToast, onSuccessCallback]
   );
   const onEvent = useCallback<PlaidLinkOnEvent>((eventName, metadata) => {
     // Enhanced event logging

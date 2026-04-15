@@ -1,0 +1,86 @@
+'use server'
+
+import { getServerSession } from 'next-auth'
+import { options } from '@api/auth/[...nextauth]/options'
+import { revalidateTag } from 'next/cache'
+import { plaidClient } from '@lib/plaid'
+import prisma from '@lib/prisma/prismaClient'
+
+export async function addAccountAction(publicToken: string, institutionName: string) {
+  const session = await getServerSession(options)
+  if (!session?.user?.email) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  try {
+    const exchangeResponse = await plaidClient.itemPublicTokenExchange({
+      public_token: publicToken,
+    })
+    const accessToken = exchangeResponse.data.access_token
+    const itemId = exchangeResponse.data.item_id
+
+    if (!accessToken || !itemId) {
+      return { success: false, error: 'Access token or Item Id not found' }
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    })
+
+    if (!user) {
+      return { success: false, error: 'User not found' }
+    }
+
+    await prisma.user.update({
+      where: { email: session.user.email },
+      data: {
+        accounts: {
+          create: { institutionName, accessToken, itemId },
+        },
+      },
+    })
+
+    revalidateTag(`user-accounts-${user.id}`, { expire: 0 })
+
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+}
+
+export async function removeAccountAction(accessToken: string) {
+  const session = await getServerSession(options)
+  if (!session?.user?.email) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  try {
+    const response = await plaidClient.itemRemove({
+      access_token: accessToken,
+    })
+
+    if (!response.data.request_id) {
+      return { success: false, error: 'Connection not removed' }
+    }
+
+    // Deleting a PlaidAccount cascades automatically to SyncedTransaction and PlaidCursor
+    // via DB constraints — no manual cleanup of those tables needed.
+    await prisma.plaidAccount.deleteMany({
+      where: { accessToken },
+    })
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    })
+
+    if (user) {
+      revalidateTag(`user-accounts-${user.id}`, { expire: 0 })
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+}

@@ -12,8 +12,9 @@ import {
   Tooltip,
   Chip,
 } from "@heroui/react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { ConnectionType } from "app/accounts/AccountsPage";
+import { removeAccountAction } from "app/accounts/actions";
 import { useToast } from "../../hooks/useToast";
 
 type TableRow = {
@@ -54,46 +55,33 @@ const rows = (entries: ConnectionType[], removingItems: Set<string>) => {
 };
 
 export default function ItemRemoveTable({ connections }: ItemRemoveTableProps) {
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const { successToast, errorToast } = useToast();
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
 
   const removeConnection = useCallback(async (accessToken: string) => {
-    // Add to removing items set to show loading state
     setRemovingItems(prev => new Set(prev).add(accessToken));
-    
+
     try {
-      const response = await fetch("/api/plaid/removeItem", {
-        method: "POST",
-        body: JSON.stringify({ accessToken }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data?.success) {
+      const result = await removeAccountAction(accessToken);
+
+      if (result.success) {
         successToast("Bank connection removed successfully!");
-        
-        // Invalidate queries to refresh data
-        await queryClient.invalidateQueries({ queryKey: ['accountsData'] });
+        router.refresh();
       } else {
-        throw new Error(data?.error || "Failed to remove connection");
+        throw new Error(result.error || "Failed to remove connection");
       }
     } catch (error) {
       console.error("Error removing connection:", error);
       errorToast(error instanceof Error ? error.message : "Failed to remove connection. Please try again.");
     } finally {
-      // Remove from removing items set
       setRemovingItems(prev => {
         const newSet = new Set(prev);
         newSet.delete(accessToken);
         return newSet;
       });
     }
-  }, [queryClient, successToast, errorToast]);
+  }, [router, successToast, errorToast]);
 
   const renderCell = useCallback(
     (connection: TableRow, columnKey: React.Key) => {

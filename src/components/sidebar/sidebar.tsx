@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "./sidebar.styles";
 import { Tooltip } from "@heroui/react";
 import { HomeIcon } from "@components/icons/sidebar/home-icon";
@@ -13,7 +13,6 @@ import { usePathname } from "next/navigation";
 import { SunIcon } from "@components/icons/sidebar/SunIcon";
 import { useTheme as useNextTheme } from "next-themes";
 import { MoonIcon } from "@components/icons/sidebar/MoonIcon";
-import { useIsSSR } from "@react-aria/ssr";
 import { appRoutes } from "utils/constants";
 import TransactionIcon from "@components/icons/sidebar/currency-dollar";
 import { RecurringPaymentsIcon } from "@components/icons/sidebar/recurring-payments-icon";
@@ -22,10 +21,11 @@ import { NotesIcon } from "@components/icons/sidebar/notes-icon";
 
 export const SidebarWrapper = () => {
   const pathname = usePathname();
-  const { setTheme, theme } = useNextTheme();
-  const isSSR = useIsSSR();
-  const { collapsed } = useSidebarContext();
-  const isDarkTheme = theme === "dark" ? true : false;
+  const { setTheme, resolvedTheme } = useNextTheme();
+  const { sidebarOpen, toggleSidebar } = useSidebarContext();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDarkTheme = resolvedTheme === "dark";
 
   const handleThemeChange = () => {
     setTheme(isDarkTheme ? "light" : "dark");
@@ -33,10 +33,13 @@ export const SidebarWrapper = () => {
 
   return (
     <aside className="h-screen z-[202] sticky top-0">
+      {sidebarOpen && (
+        <div className={Sidebar.Overlay()} onClick={toggleSidebar} />
+      )}
       <div
         className={`${Sidebar({
-          collapsed: collapsed,
-        })} ${!collapsed && "static"}`}
+          collapsed: sidebarOpen,
+        })} ${!sidebarOpen && "static"}`}
       >
         <div className="flex flex-col justify-between h-full">
           <div className={Sidebar.Body()}>
@@ -92,7 +95,7 @@ export const SidebarWrapper = () => {
                 className="max-w-fit hover:cursor-pointer"
                 onClick={handleThemeChange}
               >
-                {isDarkTheme || isSSR ? <SunIcon /> : <MoonIcon />}
+                {mounted && (isDarkTheme ? <SunIcon /> : <MoonIcon />)}
               </div>
             </Tooltip>
           </div>

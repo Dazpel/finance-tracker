@@ -51,8 +51,10 @@ export default function Page(props: {
   }
 
   const formattedReport = (report: ReportData) => {
-    const { id, reportName, createdAt, ...rest } = report;
-    return rest;
+    const { foodAndDrink, billsAndUtilities, car, entertainment, groceries,
+      foster, healthAndWellness, personal, shopping, feesAndAdjustments, others,
+      revenue, expenses, total } = report;
+    return { foodAndDrink, billsAndUtilities, car, entertainment, groceries, foster, healthAndWellness, personal, shopping, feesAndAdjustments, others, revenue, expenses, total };
   };
 
   const handleOrderSwap = () => {

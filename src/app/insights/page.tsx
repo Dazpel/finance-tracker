@@ -1,8 +1,8 @@
+import { Suspense } from "react";
 import { getAvailableYears } from "./actions";
 import InsightsPageComponent from "../../components/InsightsPage/InsightsPage";
 import { ReportType } from "@prisma/client";
-
-export const dynamic = 'force-dynamic';
+import PageLoader from "@components/PageLoader/PageLoader";
 
 interface InsightsPageProps {
   searchParams: Promise<{
@@ -11,9 +11,9 @@ interface InsightsPageProps {
   }>;
 }
 
-export default async function InsightsPage({ searchParams }: InsightsPageProps) {
+async function InsightsLoader({ searchParams }: InsightsPageProps) {
   const params = await searchParams;
-  
+
   // Server fetch for available years only
   const years = await getAvailableYears();
 
@@ -24,7 +24,7 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
   // Parse URL params for report-based insights
   const reportId = params.reportId ? parseInt(params.reportId, 10) : undefined;
   const reportType = params.reportType as ReportType | undefined;
-  
+
   return (
     <InsightsPageComponent
       years={years?.data || 0}
@@ -32,4 +32,12 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
       initialReportType={reportType}
     />
   );
-} 
+}
+
+export default function InsightsPage({ searchParams }: InsightsPageProps) {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <InsightsLoader searchParams={searchParams} />
+    </Suspense>
+  );
+}

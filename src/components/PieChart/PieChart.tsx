@@ -35,6 +35,7 @@ const categoryColors = [
   "#EF4444", // Red
   "#3B82F6", // Blue
   "#14B8A6", // Teal
+  "#A855F7", // Purple
 ];
 
 export default function PieChart({ transactions }: PieChartProps) {
@@ -146,17 +147,16 @@ export default function PieChart({ transactions }: PieChartProps) {
                   </Pie>
                   <Tooltip
                     formatter={(value: unknown, name: unknown): [string, string] => {
-                      // Use pre-calculated percentage from categoryData to keep
-                      // tooltip aligned with the legend and avoid duplicate logic.
+                      const nameStr = String(name ?? "");
                       const category = categoryData.find(
-                        (data) => data.category === name
+                        (data) => data.category === nameStr
                       );
                       const percent = category
                         ? category.percentage.toFixed(1)
                         : "0.0";
                       return [
                         `$${Number(value ?? 0).toFixed(2)} (${percent}%)`,
-                        String(name ?? ""),
+                        nameStr,
                       ];
                     }}
                     contentStyle={{

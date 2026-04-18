@@ -24,6 +24,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.22",
     "isomorphic-dompurify": "^2.26.0",
+    "jose": "^6.2.2",
     "jsdom": "^26.1.0",
     "lodash.isequal": "^4.5.0",
     "lz-string": "^1.5.0",

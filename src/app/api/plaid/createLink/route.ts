@@ -23,6 +23,9 @@ export async function POST(request: Request) {
       language: "en",
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
+      ...(process.env.PLAID_WEBHOOK_URL
+        ? { webhook: process.env.PLAID_WEBHOOK_URL }
+        : {}),
     }
 
     const requestVariables = updateMode 

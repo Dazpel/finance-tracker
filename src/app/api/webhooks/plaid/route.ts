@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const account = await prisma.plaidAccount.findFirst({
+    const account = await prisma.plaidAccount.findUnique({
       where: { itemId: item_id },
       select: { id: true },
     });
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     try {
       const result = await syncTransactionsForAccount(account.id);
       console.log(
-        `Plaid sync [${webhook_code}] account=${account.id} +${result.added} ~${result.modified} -${result.removed}`
+        `Plaid sync [${webhook_code}] account=${account.id} pages=${result.pages} +${result.added} ~${result.modified} -${result.removed}`
       );
     } catch (error) {
       console.error(

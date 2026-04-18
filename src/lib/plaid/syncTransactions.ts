@@ -1,14 +1,18 @@
-import { plaidClient } from "@lib/plaid";
+import { plaidClient } from "./client";
 import prisma from "@lib/prisma/prismaClient";
 import type { RemovedTransaction, Transaction } from "plaid";
 
 const MUTATION_ERROR = "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION";
+const UPSERT_CHUNK_SIZE = 100;
+const MAX_MUTATION_RETRIES = 3;
+const PAGE_COUNT = 500;
 
 type SyncResult = {
   added: number;
   modified: number;
   removed: number;
   cursor: string;
+  pages: number;
 };
 
 const mapTransaction = (
@@ -28,6 +32,13 @@ const mapTransaction = (
   merchant_name: t.merchant_name ?? null,
 });
 
+const chunk = <T>(arr: T[], size: number): T[][] => {
+  if (arr.length <= size) return arr.length ? [arr] : [];
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+};
+
 export const syncTransactionsForAccount = async (
   plaidAccountId: number
 ): Promise<SyncResult> => {
@@ -41,94 +52,90 @@ export const syncTransactionsForAccount = async (
   }
 
   const startingCursor = account.cursor?.cursor ?? "";
-
-  let added: Transaction[] = [];
-  let modified: Transaction[] = [];
-  let removed: RemovedTransaction[] = [];
-  let nextCursor = startingCursor;
+  let pageCursor = startingCursor;
   let hasMore = true;
-  let attempts = 0;
-  const MAX_ATTEMPTS = 3;
+  let mutationRetries = 0;
+  let pages = 0;
+  const totals = { added: 0, modified: 0, removed: 0 };
 
-  pagination: while (hasMore) {
+  while (hasMore) {
+    let added: Transaction[];
+    let modified: Transaction[];
+    let removed: RemovedTransaction[];
+    let nextCursor: string;
+
     try {
       const response = await plaidClient.transactionsSync({
         access_token: account.accessToken,
-        cursor: nextCursor || undefined,
-        count: 500,
+        cursor: pageCursor || undefined,
+        count: PAGE_COUNT,
         options: { include_original_description: true },
       });
-
-      const data = response.data;
-      added = added.concat(data.added);
-      modified = modified.concat(data.modified);
-      removed = removed.concat(data.removed);
-      hasMore = data.has_more;
-      nextCursor = data.next_cursor;
+      added = response.data.added;
+      modified = response.data.modified;
+      removed = response.data.removed;
+      nextCursor = response.data.next_cursor;
+      hasMore = response.data.has_more;
     } catch (error: unknown) {
       const code = (error as { response?: { data?: { error_code?: string } } })
         ?.response?.data?.error_code;
 
-      if (code === MUTATION_ERROR && attempts < MAX_ATTEMPTS) {
-        attempts += 1;
-        added = [];
-        modified = [];
-        removed = [];
-        nextCursor = startingCursor;
+      if (code === MUTATION_ERROR && mutationRetries < MAX_MUTATION_RETRIES) {
+        mutationRetries += 1;
+        pageCursor = startingCursor;
         hasMore = true;
-        continue pagination;
+        pages = 0;
+        totals.added = 0;
+        totals.modified = 0;
+        totals.removed = 0;
+        continue;
       }
       throw error;
     }
+
+    const upsertOps = [...added, ...modified].map((t) => {
+      const data = mapTransaction(t, account.userId, account.id);
+      return prisma.syncedTransaction.upsert({
+        where: {
+          transaction_id_plaidAccountId: {
+            transaction_id: t.transaction_id,
+            plaidAccountId: account.id,
+          },
+        },
+        create: data,
+        update: data,
+      });
+    });
+
+    const removeIds = removed
+      .map((r) => r.transaction_id)
+      .filter((id): id is string => Boolean(id));
+
+    for (const group of chunk(upsertOps, UPSERT_CHUNK_SIZE)) {
+      await prisma.$transaction(group);
+    }
+
+    if (removeIds.length) {
+      await prisma.syncedTransaction.deleteMany({
+        where: {
+          plaidAccountId: account.id,
+          transaction_id: { in: removeIds },
+        },
+      });
+    }
+
+    await prisma.plaidCursor.upsert({
+      where: { plaidAccountId: account.id },
+      create: { plaidAccountId: account.id, cursor: nextCursor },
+      update: { cursor: nextCursor, lastSyncAt: new Date() },
+    });
+
+    totals.added += added.length;
+    totals.modified += modified.length;
+    totals.removed += removeIds.length;
+    pageCursor = nextCursor;
+    pages += 1;
   }
 
-  const upserts = [...added, ...modified].map((t) => {
-    const data = mapTransaction(t, account.userId, account.id);
-    return prisma.syncedTransaction.upsert({
-      where: {
-        transaction_id_plaidAccountId: {
-          transaction_id: t.transaction_id,
-          plaidAccountId: account.id,
-        },
-      },
-      create: data,
-      update: data,
-    });
-  });
-
-  const removeIds = removed
-    .map((r) => r.transaction_id)
-    .filter((id): id is string => Boolean(id));
-
-  const deleteOp = removeIds.length
-    ? [
-        prisma.syncedTransaction.deleteMany({
-          where: {
-            plaidAccountId: account.id,
-            transaction_id: { in: removeIds },
-          },
-        }),
-      ]
-    : [];
-
-  const cursorOp = prisma.plaidCursor.upsert({
-    where: { plaidAccountId: account.id },
-    create: {
-      plaidAccountId: account.id,
-      cursor: nextCursor,
-    },
-    update: {
-      cursor: nextCursor,
-      lastSyncAt: new Date(),
-    },
-  });
-
-  await prisma.$transaction([...upserts, ...deleteOp, cursorOp]);
-
-  return {
-    added: added.length,
-    modified: modified.length,
-    removed: removeIds.length,
-    cursor: nextCursor,
-  };
+  return { ...totals, cursor: pageCursor, pages };
 };

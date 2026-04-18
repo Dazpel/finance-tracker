@@ -32,13 +32,10 @@ export async function addAccountAction(publicToken: string, institutionName: str
       return { success: false, error: 'User not found' }
     }
 
-    await prisma.user.update({
-      where: { email: session.user.email },
-      data: {
-        accounts: {
-          create: { institutionName, accessToken, itemId },
-        },
-      },
+    await prisma.plaidAccount.upsert({
+      where: { itemId },
+      create: { institutionName, accessToken, itemId, userId: user.id },
+      update: { institutionName, accessToken },
     })
 
     revalidateTag(`user-accounts-${user.id}`, { expire: 0 })

@@ -4,9 +4,9 @@ export const proxy = middleware;
 
 export const config = {
   matcher: [
-    // Exclude cronjobs from being authenticated
+    // Exclude cronjobs and webhooks from being authenticated
     {
-      source: "/((?!api/cronjob).*)",
+      source: "/((?!api/cronjob|api/webhooks).*)",
     },
   ],
 };

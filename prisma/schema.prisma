@@ -30,7 +30,7 @@ model PlaidAccount {
   user               User                @relation(fields: [userId], references: [id])
   institutionName    String
   accessToken        String
-  itemId             String
+  itemId             String              @unique
   syncedTransactions SyncedTransaction[]
   cursor             PlaidCursor?
   createdAt          DateTime            @default(now())

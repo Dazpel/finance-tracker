@@ -19,20 +19,23 @@ model User {
   recurringReports      RecurringReport[]
   transactions          Transaction[]
   recurringTransactions RecurringTransaction[]
+  syncedTransactions    SyncedTransaction[]
   notes                 Note[]
   authorized            Boolean                @default(false)
 }
 
 model PlaidAccount {
-  id              Int      @id @default(autoincrement())
-  userId          String // Foreign key to User
-  user            User     @relation(fields: [userId], references: [id])
-  institutionName String
-  accessToken     String
-  itemId          String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id                 Int                 @id @default(autoincrement())
+  userId             String // Foreign key to User
+  user               User                @relation(fields: [userId], references: [id])
+  institutionName    String
+  accessToken        String
+  itemId             String
+  syncedTransactions SyncedTransaction[]
+  cursor             PlaidCursor?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
   @@index([userId])
 }
 
@@ -57,6 +60,7 @@ model Report {
   feesAndAdjustments Float         @default(0)
   others             Float         @default(0)
   revenue            Float         @default(0)
+  foster             Float         @default(0)
   expenses           Float         @default(0)
   total              Float         @default(0)
   createdAt          DateTime      @default(now())
@@ -131,6 +135,42 @@ model Note {
   updatedAt DateTime @updatedAt
   
   @@index([userId])
+}
+
+// Live sync data from Plaid webhooks. Scoped to a PlaidAccount — cascades on account removal.
+// Reports copy from this table at creation time (Transaction model) so historical data is preserved.
+model SyncedTransaction {
+  id                   String       @id @default(uuid())
+  userId               String
+  user                 User         @relation(fields: [userId], references: [id])
+  plaidAccountId       Int
+  plaidAccount         PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
+  transaction_id       String
+  account_id           String
+  name                 String
+  amount               Float
+  date                 String
+  category             String[]
+  original_description String?
+  merchant_name        String?
+  notes                String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@unique([transaction_id, plaidAccountId])
+  @@index([userId, date])
+  @@index([plaidAccountId])
+  @@index([transaction_id])
+}
+
+// Plaid cursor for incremental transaction sync. One per PlaidAccount, cascades on account removal.
+model PlaidCursor {
+  id             String       @id @default(uuid())
+  plaidAccountId Int          @unique
+  plaidAccount   PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
+  cursor         String
+  lastSyncAt     DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 enum ReportType {

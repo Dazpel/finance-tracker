@@ -35,6 +35,7 @@ const categoryColors = [
   "#EF4444", // Red
   "#3B82F6", // Blue
   "#14B8A6", // Teal
+  "#A855F7", // Purple
 ];
 
 export default function PieChart({ transactions }: PieChartProps) {
@@ -127,7 +128,7 @@ export default function PieChart({ transactions }: PieChartProps) {
           {/* Pie Chart */}
           <div className="flex justify-center lg:w-1/2">
             <div className="h-[300px] w-full max-w-sm">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={300}>
                 <RechartsPieChart>
                   <Pie
                     data={chartData}
@@ -145,16 +146,18 @@ export default function PieChart({ transactions }: PieChartProps) {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number, name: string) => {
-                      // Use pre-calculated percentage from categoryData to keep
-                      // tooltip aligned with the legend and avoid duplicate logic.
+                    formatter={(value: unknown, name: unknown): [string, string] => {
+                      const nameStr = String(name ?? "");
                       const category = categoryData.find(
-                        (data) => data.category === name
+                        (data) => data.category === nameStr
                       );
                       const percent = category
                         ? category.percentage.toFixed(1)
                         : "0.0";
-                      return [`$${value.toFixed(2)} (${percent}%)`, name];
+                      return [
+                        `$${Number(value ?? 0).toFixed(2)} (${percent}%)`,
+                        nameStr,
+                      ];
                     }}
                     contentStyle={{
                       backgroundColor: 'white',

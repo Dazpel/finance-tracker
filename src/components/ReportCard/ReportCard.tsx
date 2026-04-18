@@ -74,7 +74,7 @@ export default function ReportCard({
   const cardPosition = useMemo(() => {
     const position = fixedPosition ? "fixed" : "relative"
 
-    return deviceHeight < 600 ? "relative" : position;
+    return deviceHeight !== undefined && deviceHeight < 600 ? "relative" : position;
   }, [deviceHeight, fixedPosition]);
 
   const formatNumber = (value: number) => {

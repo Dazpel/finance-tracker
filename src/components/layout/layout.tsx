@@ -21,8 +21,8 @@ export const Layout = ({ children }: Props) => {
   return (
     <SidebarContext.Provider
       value={{
-        collapsed: sidebarOpen,
-        setCollapsed: handleToggleSidebar,
+        sidebarOpen,
+        toggleSidebar: handleToggleSidebar,
       }}
     >
       <section className="flex">

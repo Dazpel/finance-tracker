@@ -51,8 +51,10 @@ export default function Page(props: {
   }
 
   const formattedReport = (report: ReportData) => {
-    const { id, reportName, createdAt, ...rest } = report;
-    return rest;
+    const { foodAndDrink, billsAndUtilities, car, entertainment, groceries,
+      foster, healthAndWellness, personal, shopping, feesAndAdjustments, others,
+      revenue, expenses, total } = report;
+    return { foodAndDrink, billsAndUtilities, car, entertainment, groceries, foster, healthAndWellness, personal, shopping, feesAndAdjustments, others, revenue, expenses, total };
   };
 
   const handleOrderSwap = () => {
@@ -66,10 +68,11 @@ export default function Page(props: {
     const report2 = formattedReport(reportData[reportsOrder[1]]);
 
     Object.entries(report1).map(([key, value]) => {
+      const k = key as keyof typeof report2;
       const difference =
         key === "expenses"
-          ? Math.abs(report2[key]) - Math.abs(value)
-          : report2[key] - value;
+          ? Math.abs(report2[k]) - Math.abs(value)
+          : report2[k] - value;
       if (difference !== 0) {
         const direction = difference > 0 ? "increased" : "decreased";
         const formattedKey =

@@ -61,15 +61,15 @@ const CategoryMonthlyChart: React.FC<CategoryMonthlyChartProps> = ({
   );
 
   const handleTooltipFormatter = useCallback(
-    (value: number, name: string) => [
-      `$${value.toFixed(2)}`,
+    (value: unknown, name: unknown): [string, string] => [
+      `$${Number(value ?? 0).toFixed(2)}`,
       name === "amount" ? "Total Spent" : "Transactions",
     ],
     []
   );
 
   const handleLabelFormatter = useCallback(
-    (label: string) => `Month: ${label}`,
+    (label: unknown) => `Month: ${String(label ?? "")}`,
     []
   );
 
@@ -117,7 +117,7 @@ const CategoryMonthlyChart: React.FC<CategoryMonthlyChartProps> = ({
           role="img"
           aria-label={`Line chart showing monthly spending for ${selectedCategory} category`}
         >
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={256}>
             <LineChart data={monthlyData} margin={chartMargin}>
               <CartesianGrid strokeDasharray="3 3" stroke={strokeColor} />
               <XAxis

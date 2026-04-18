@@ -22,6 +22,7 @@ export const defaultCategoryFilterOptions = [
   { name: "Fees & Adjustments", uid: "Fees & Adjustments" },
   { name: "Others", uid: "Others" },
   { name: "Revenue", uid: "Revenue" },
+  { name: "Foster", uid: "Foster" },
   { name: "All", uid: "All" },
   { name: "None", uid: "None" },
 ];
@@ -60,6 +61,7 @@ export const defaultCategories = [
   "fees & adjustments",
   "others",
   "revenue",
+  "foster",
 ];
 
 export const defaultCategorieToValueObject = {
@@ -68,6 +70,7 @@ export const defaultCategorieToValueObject = {
   car: 0,
   entertainment: 0,
   groceries: 0,
+  foster: 0,
   "health & wellness": 0,
   personal: 0,
   shopping: 0,
@@ -92,6 +95,7 @@ export const fiftyThirtyTwentyCategories = {
     "personal",
     "others",
     "fees & adjustments",
+    "foster",
   ],
 };
 

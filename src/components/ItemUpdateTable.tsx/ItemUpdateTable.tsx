@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -10,7 +10,7 @@ import {
   TableRow,
   Chip,
 } from "@heroui/react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { AccountWithErrors, ConnectionType } from "app/accounts/AccountsPage";
 import PlaidButton from "@components/PlaidButton/PlaidButton";
 import { useToast } from "../../hooks/useToast";
@@ -51,14 +51,13 @@ const rows = (entries: AccountWithErrors[]) => {
 };
 
 export default function ItemUpdateTable({ connections }: ItemRemoveTableProps) {
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const { successToast } = useToast();
 
   const handleUpdateSuccess = useCallback(async () => {
     successToast("Bank connection updated successfully!");
-    // Invalidate queries to refresh data
-    await queryClient.invalidateQueries({ queryKey: ['accountsData'] });
-  }, [queryClient, successToast]);
+    router.refresh();
+  }, [router, successToast]);
 
   const renderCell = useCallback(
     (connection: TableRow, columnKey: React.Key) => {

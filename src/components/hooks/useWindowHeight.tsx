@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 
 export const useWindowHeight = () => {
-  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+  const [windowHeight, setWindowHeight] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const handleResize = () => {
       setWindowHeight(window.innerHeight);
     };
 
-    // Add event listener to monitor window resize
+    handleResize();
     window.addEventListener('resize', handleResize);
 
     return () => window.removeEventListener('resize', handleResize);

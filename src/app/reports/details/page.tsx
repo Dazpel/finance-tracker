@@ -27,7 +27,7 @@ export default function Page(props: {
   const [transactions, setTransactions] = useState([] as TransactionWithNotes[]);
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const reportData = decodeQueryString(searchParams.data);
-  const { reportName, createdAt, id, reportType, parentReportId,
+  const { reportName, createdAt, id, reportType,
     foodAndDrink, billsAndUtilities, car, entertainment, groceries,
     foster, healthAndWellness, personal, shopping, feesAndAdjustments, others,
     revenue, expenses, total } = reportData;

@@ -37,9 +37,9 @@ export const SidebarWrapper = () => {
         <div className={Sidebar.Overlay()} onClick={toggleSidebar} />
       )}
       <div
-        className={`${Sidebar({
+        className={Sidebar({
           collapsed: sidebarOpen,
-        })} ${!sidebarOpen && "static"}`}
+        })}
       >
         <div className="flex flex-col justify-between h-full">
           <div className={Sidebar.Body()}>

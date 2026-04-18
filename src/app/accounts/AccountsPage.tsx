@@ -73,11 +73,11 @@ const rows = (entries: AccountType[]) => {
 export default function AccountsPage({ initialData }: { initialData: AccountsPageProps }) {
   const accountsData = initialData;
 
-  const buttonText = accountsData.accounts.length > 0 ? "Link more accounts" : "No accounts linked yet.";
+  const buttonText = accountsData.connections.length > 0 ? "Link more accounts" : "No accounts linked yet.";
 
   return (
     <div className="h-inherit">
-      {accountsData.accounts.length > 0 && (
+      {accountsData.connections.length > 0 && (
         <div className="flex flex-col w-full gap-6">
           <Table aria-label="Accounts linked table">
             <TableHeader columns={columns}>

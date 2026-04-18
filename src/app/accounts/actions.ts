@@ -45,7 +45,8 @@ export async function addAccountAction(publicToken: string, institutionName: str
 
     return { success: true }
   } catch (error) {
-    return { success: false, error: String(error) }
+    console.error('addAccountAction failed', error)
+    return { success: false, error: 'Failed to add account' }
   }
 }
 
@@ -56,6 +57,24 @@ export async function removeAccountAction(accessToken: string) {
   }
 
   try {
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    })
+
+    if (!user) {
+      return { success: false, error: 'User not found' }
+    }
+
+    const ownedAccount = await prisma.plaidAccount.findFirst({
+      where: { accessToken, userId: user.id },
+      select: { id: true },
+    })
+
+    if (!ownedAccount) {
+      return { success: false, error: 'Connection not found' }
+    }
+
     const response = await plaidClient.itemRemove({
       access_token: accessToken,
     })
@@ -67,20 +86,14 @@ export async function removeAccountAction(accessToken: string) {
     // Deleting a PlaidAccount cascades automatically to SyncedTransaction and PlaidCursor
     // via DB constraints — no manual cleanup of those tables needed.
     await prisma.plaidAccount.deleteMany({
-      where: { accessToken },
+      where: { accessToken, userId: user.id },
     })
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    })
-
-    if (user) {
-      revalidateTag(`user-accounts-${user.id}`, { expire: 0 })
-    }
+    revalidateTag(`user-accounts-${user.id}`, { expire: 0 })
 
     return { success: true }
   } catch (error) {
-    return { success: false, error: String(error) }
+    console.error('removeAccountAction failed', error)
+    return { success: false, error: 'Failed to remove account' }
   }
 }

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import prisma from "@lib/prisma/prismaClient";
 import { verifyPlaidWebhook } from "@lib/plaid/verifyWebhook";
 import { syncTransactionsForAccount } from "@lib/plaid/syncTransactions";
@@ -49,17 +49,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    try {
-      const result = await syncTransactionsForAccount(account.id);
-      console.log(
-        `Plaid sync [${webhook_code}] account=${account.id} pages=${result.pages} +${result.added} ~${result.modified} -${result.removed}`
-      );
-    } catch (error) {
-      console.error(
-        `Plaid sync failed for account=${account.id} code=${webhook_code}:`,
-        error
-      );
-    }
+    const accountId = account.id;
+    after(async () => {
+      try {
+        const result = await syncTransactionsForAccount(accountId);
+        if (result.skipped) {
+          console.log(
+            `Plaid sync [${webhook_code}] account=${accountId} skipped (lock held)`
+          );
+        } else {
+          console.log(
+            `Plaid sync [${webhook_code}] account=${accountId} pages=${result.pages} +${result.added} ~${result.modified} -${result.removed}`
+          );
+        }
+      } catch (error) {
+        console.error(
+          `Plaid sync failed for account=${accountId} code=${webhook_code}:`,
+          error
+        );
+      }
+    });
   } else {
     console.log(`Plaid webhook [${webhook_type}/${webhook_code}] item=${item_id}`);
   }

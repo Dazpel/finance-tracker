@@ -33,6 +33,7 @@ model PlaidAccount {
   itemId             String              @unique
   syncedTransactions SyncedTransaction[]
   cursor             PlaidCursor?
+  syncLock           PlaidSyncLock?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
@@ -179,8 +180,9 @@ model PlaidCursor {
 // Mutex for /transactions/sync. Row exists = sync in flight for that account.
 // Stale rows (older than SYNC_LOCK_STALE_MS in syncTransactions.ts) are reclaimable.
 model PlaidSyncLock {
-  plaidAccountId Int      @id
-  acquiredAt     DateTime @default(now())
+  plaidAccountId Int          @id
+  plaidAccount   PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
+  acquiredAt     DateTime     @default(now())
 }
 
 enum ReportType {

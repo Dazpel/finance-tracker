@@ -49,10 +49,13 @@ const chunk = <T>(arr: T[], size: number): T[][] => {
 const isUniqueViolation = (e: unknown): boolean =>
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
-const tryAcquireLock = async (plaidAccountId: number): Promise<boolean> => {
+// Returns the acquired row's `acquiredAt` as a release token, or null if the lock
+// is held by an active sync. Callers MUST pass the token back to release, so a
+// sync that overran the stale window and got reclaimed can't unlock its successor.
+const tryAcquireLock = async (plaidAccountId: number): Promise<Date | null> => {
   try {
-    await prisma.plaidSyncLock.create({ data: { plaidAccountId } });
-    return true;
+    const row = await prisma.plaidSyncLock.create({ data: { plaidAccountId } });
+    return row.acquiredAt;
   } catch (e) {
     if (!isUniqueViolation(e)) throw e;
   }
@@ -61,7 +64,7 @@ const tryAcquireLock = async (plaidAccountId: number): Promise<boolean> => {
     where: { plaidAccountId },
   });
   if (!existing || Date.now() - existing.acquiredAt.getTime() < SYNC_LOCK_STALE_MS) {
-    return false;
+    return null;
   }
 
   // Stale lock — previous holder likely crashed. Reclaim atomically: only the caller
@@ -69,13 +72,13 @@ const tryAcquireLock = async (plaidAccountId: number): Promise<boolean> => {
   const { count } = await prisma.plaidSyncLock.deleteMany({
     where: { plaidAccountId, acquiredAt: existing.acquiredAt },
   });
-  if (count === 0) return false;
+  if (count === 0) return null;
 
   try {
-    await prisma.plaidSyncLock.create({ data: { plaidAccountId } });
-    return true;
+    const row = await prisma.plaidSyncLock.create({ data: { plaidAccountId } });
+    return row.acquiredAt;
   } catch (e) {
-    if (isUniqueViolation(e)) return false;
+    if (isUniqueViolation(e)) return null;
     throw e;
   }
 };
@@ -92,8 +95,8 @@ export const syncTransactionsForAccount = async (
     throw new Error(`PlaidAccount ${plaidAccountId} not found`);
   }
 
-  const acquired = await tryAcquireLock(plaidAccountId);
-  if (!acquired) {
+  const token = await tryAcquireLock(plaidAccountId);
+  if (!token) {
     return {
       added: 0,
       modified: 0,
@@ -107,8 +110,10 @@ export const syncTransactionsForAccount = async (
   try {
     return await runSync(account);
   } finally {
+    // Release by (plaidAccountId, acquiredAt) so we can never delete a lock that
+    // another sync reclaimed from us. deleteMany is a no-op if our row is gone.
     await prisma.plaidSyncLock
-      .delete({ where: { plaidAccountId } })
+      .deleteMany({ where: { plaidAccountId, acquiredAt: token } })
       .catch(() => {});
   }
 };

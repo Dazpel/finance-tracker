@@ -63,7 +63,20 @@ const tryAcquireLock = async (plaidAccountId: number): Promise<Date | null> => {
   const existing = await prisma.plaidSyncLock.findUnique({
     where: { plaidAccountId },
   });
-  if (!existing || Date.now() - existing.acquiredAt.getTime() < SYNC_LOCK_STALE_MS) {
+
+  // Lock was released between our failed create and this read — retry once.
+  // A P2002 on the retry means another caller beat us; genuinely skip.
+  if (!existing) {
+    try {
+      const row = await prisma.plaidSyncLock.create({ data: { plaidAccountId } });
+      return row.acquiredAt;
+    } catch (e) {
+      if (isUniqueViolation(e)) return null;
+      throw e;
+    }
+  }
+
+  if (Date.now() - existing.acquiredAt.getTime() < SYNC_LOCK_STALE_MS) {
     return null;
   }
 

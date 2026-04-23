@@ -14,19 +14,21 @@ ALTER TABLE "SyncedTransaction"
     ADD COLUMN "userCategoryOverride" TEXT,
     ADD COLUMN "userSoftDeleted"      BOOLEAN NOT NULL DEFAULT false;
 
--- Backfill existing reports so they are treated as historical/approved
--- and have month/year populated for the unique constraint.
+-- Backfill approvedAt on legacy rows so they have a sensible approval timestamp.
+-- Do NOT populate month/year here: legacy rows predate the auto-draft system,
+-- may include multiple MONTHLY reports per calendar month (bi-weekly / partial
+-- flows), and should not participate in the auto-draft partial unique index
+-- or occupy the auto-draft slot for their calendar month.
 UPDATE "Report"
-SET
-    "status"     = 'APPROVED',
-    "approvedAt" = "createdAt",
-    "year"       = EXTRACT(YEAR  FROM "createdAt")::int,
-    "month"      = EXTRACT(MONTH FROM "createdAt")::int
-WHERE "month" IS NULL;
+SET "approvedAt" = "createdAt"
+WHERE "approvedAt" IS NULL;
 
--- Unique + supporting indexes
-CREATE UNIQUE INDEX "Report_userId_year_month_reportType_key"
-    ON "Report"("userId", "year", "month", "reportType");
+-- Partial unique index: one auto-maintained row per (user, year, month, reportType).
+-- Scoped via WHERE so UI-created reports (autoMaintainedAt IS NULL) are unaffected
+-- and can continue to allow multiple MONTHLY rows per month.
+CREATE UNIQUE INDEX "Report_user_month_autoDraft_key"
+    ON "Report"("userId", "year", "month", "reportType")
+    WHERE "autoMaintainedAt" IS NOT NULL;
 
 CREATE INDEX "Report_userId_status_idx"
     ON "Report"("userId", "status");

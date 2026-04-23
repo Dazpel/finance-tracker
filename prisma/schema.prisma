@@ -72,7 +72,6 @@ model Report {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
-  @@unique([userId, year, month, reportType])
   @@index([userId, reportType])
   @@index([userId, status])
   @@index([parentReportId])
@@ -89,7 +88,7 @@ model RecurringReport {
   outflow             Float                  @default(0)
   total               Float                  @default(0)
   createdAt           DateTime               @default(now())
-  
+
   @@index([userId])
 }
 
@@ -108,7 +107,7 @@ model RecurringTransaction {
   last_date       String
   frequency       String
   createdAt       DateTime         @default(now())
-  
+
   @@index([userId])
   @@index([outflowReportId])
   @@index([inflowReportId])
@@ -126,33 +125,33 @@ model Transaction {
   amount         Float
   date           String
   category       String[]
-  notes          String?  // Optional notes field for transactions
+  notes          String? // Optional notes field for transactions
   createdAt      DateTime @default(now())
-  
+
   @@index([userId, date])
   @@index([reportId])
 }
 
 model Note {
   id        Int      @id @default(autoincrement())
-  userId    String   // Foreign key to User
+  userId    String // Foreign key to User
   user      User     @relation(fields: [userId], references: [id])
   title     String
   content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([userId])
 }
 
 // Live sync data from Plaid webhooks. Scoped to a PlaidAccount — cascades on account removal.
 // Reports copy from this table at creation time (Transaction model) so historical data is preserved.
 model SyncedTransaction {
-  id                   String       @id @default(uuid())
-  userId               String
-  user                 User         @relation(fields: [userId], references: [id])
-  plaidAccountId       Int
-  plaidAccount         PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
+  id                     String       @id @default(uuid())
+  userId                 String
+  user                   User         @relation(fields: [userId], references: [id])
+  plaidAccountId         Int
+  plaidAccount           PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
   transaction_id         String
   account_id             String
   name                   String

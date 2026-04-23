@@ -108,7 +108,8 @@ export const resolveCategory = (
 };
 
 // Pure. Sums per-category totals. Skips userSoftDeleted rows. Respects userCategoryOverride.
-// Revenue is stored positive; expenses = sum of non-revenue positives; total = revenue - expenses.
+// Sign convention (matches TransactionsPage + mergeReports + createAnnualReport):
+// revenue positive, per-category fields positive, expenses negative, total = revenue + expenses.
 export function computeReportTotals(transactions: SyncedTransaction[]): Totals {
   const totals = emptyTotals();
 
@@ -124,7 +125,7 @@ export function computeReportTotals(transactions: SyncedTransaction[]): Totals {
     }
   }
 
-  totals.expenses =
+  const expenseSum =
     totals.foodAndDrink +
     totals.billsAndUtilities +
     totals.car +
@@ -137,7 +138,8 @@ export function computeReportTotals(transactions: SyncedTransaction[]): Totals {
     totals.others +
     totals.foster;
 
-  totals.total = totals.revenue - totals.expenses;
+  totals.expenses = -Number(expenseSum.toFixed(2));
+  totals.total = Number((totals.revenue + totals.expenses).toFixed(2));
 
   return totals;
 }
@@ -171,14 +173,16 @@ export async function upsertCurrentMonthDraftReport(
   const months = getEligibleDraftMonths(now);
 
   for (const target of months) {
-    const existing = await prisma.report.findUnique({
+    // Partial unique index (WHERE "autoMaintainedAt" IS NOT NULL) scopes uniqueness
+    // to auto-drafts only, so findFirst + autoMaintainedAt filter is the correct lookup.
+    // Legacy/manual reports for the same month are intentionally invisible here.
+    const existing = await prisma.report.findFirst({
       where: {
-        userId_year_month_reportType: {
-          userId,
-          year: target.year,
-          month: target.month,
-          reportType: ReportType.MONTHLY,
-        },
+        userId,
+        year: target.year,
+        month: target.month,
+        reportType: ReportType.MONTHLY,
+        autoMaintainedAt: { not: null },
       },
     });
 

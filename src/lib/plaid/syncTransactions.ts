@@ -123,15 +123,19 @@ export const syncTransactionsForAccount = async (
 
   try {
     const result = await runSync(account);
-    try {
-      await upsertCurrentMonthDraftReport(account.userId);
-    } catch (err) {
-      // Draft upsert failure is non-fatal — sync already committed cursor state,
-      // and the next sync recomputes from scratch, so transient failures self-heal.
-      console.error(
-        `Draft report upsert failed for user=${account.userId}:`,
-        err
-      );
+    // Skip the per-user draft recompute when this sync touched nothing — duplicate
+    // webhooks / retries would otherwise trigger back-to-back full-month scans.
+    if (result.added || result.modified || result.removed) {
+      try {
+        await upsertCurrentMonthDraftReport(account.userId);
+      } catch (err) {
+        // Draft upsert failure is non-fatal — sync already committed cursor state,
+        // and the next sync recomputes from scratch, so transient failures self-heal.
+        console.error(
+          `Draft report upsert failed for user=${account.userId}:`,
+          err
+        );
+      }
     }
     return result;
   } finally {
@@ -229,32 +233,46 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
 
     // If the posted row already exists from a prior partial sync, the upsert hits `update`
     // (which omits user-intent fields). Migrate carried values onto the existing posted row
-    // so they survive the subsequent `removed` delete of the pending row.
+    // so they survive the subsequent `removed` delete of the pending row. Each field is
+    // guarded by a null/default WHERE clause so we only fill in missing values — never
+    // clobber edits the user already made directly on the posted row.
     if (carriedByPendingId.size) {
-      await Promise.all(
-        added
-          .filter(
-            (t) =>
-              t.pending_transaction_id &&
-              carriedByPendingId.has(t.pending_transaction_id)
-          )
-          .map((t) => {
-            const carried = carriedByPendingId.get(t.pending_transaction_id!)!;
-            return prisma.syncedTransaction.updateMany({
-              where: {
-                transaction_id: t.transaction_id,
-                plaidAccountId: account.id,
-              },
-              data: {
-                ...(carried.notes != null ? { notes: carried.notes } : {}),
-                ...(carried.userCategoryOverride != null
-                  ? { userCategoryOverride: carried.userCategoryOverride }
-                  : {}),
-                ...(carried.userSoftDeleted ? { userSoftDeleted: true } : {}),
-              },
-            });
-          })
-      );
+      const ops: Prisma.PrismaPromise<unknown>[] = [];
+      for (const t of added) {
+        if (!t.pending_transaction_id) continue;
+        const carried = carriedByPendingId.get(t.pending_transaction_id);
+        if (!carried) continue;
+        const base = {
+          transaction_id: t.transaction_id,
+          plaidAccountId: account.id,
+        } as const;
+
+        if (carried.notes != null) {
+          ops.push(
+            prisma.syncedTransaction.updateMany({
+              where: { ...base, notes: null },
+              data: { notes: carried.notes },
+            })
+          );
+        }
+        if (carried.userCategoryOverride != null) {
+          ops.push(
+            prisma.syncedTransaction.updateMany({
+              where: { ...base, userCategoryOverride: null },
+              data: { userCategoryOverride: carried.userCategoryOverride },
+            })
+          );
+        }
+        if (carried.userSoftDeleted) {
+          ops.push(
+            prisma.syncedTransaction.updateMany({
+              where: { ...base, userSoftDeleted: false },
+              data: { userSoftDeleted: true },
+            })
+          );
+        }
+      }
+      if (ops.length) await Promise.all(ops);
     }
 
     // update payload deliberately excludes user-intent fields (notes,

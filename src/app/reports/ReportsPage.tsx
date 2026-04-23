@@ -7,7 +7,7 @@ import FullScreenOverlay from "@components/Loader/Loader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
 import { ReportDataDTO } from "utils/types";
-import { ReportType } from "@prisma/client";
+import { ReportType, ReportStatus } from "@prisma/client";
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -138,8 +138,21 @@ export default function ReportsPage() {
     }
   };
 
+  const isApproved = (report: ReportDataDTO) =>
+    !report.status || report.status === ReportStatus.APPROVED;
+
+  const filterPendingReports = (reports: ReportDataDTO[]) => {
+    return reports.filter(
+      (report) =>
+        report.reportType === ReportType.MONTHLY && !isApproved(report)
+    );
+  };
+
   const filterMonthlyReports = (reports: ReportDataDTO[]) => {
-    return reports.filter((report) => report.reportType === ReportType.MONTHLY);
+    return reports.filter(
+      (report) =>
+        report.reportType === ReportType.MONTHLY && isApproved(report)
+    );
   };
 
   const filterAnualReports = (reports: ReportDataDTO[]) => {
@@ -167,6 +180,30 @@ export default function ReportsPage() {
       {isPending && <PageLoader />}
       {!isPending && (
         <div className="flex flex-col gap-4">
+          {filterPendingReports(data).length > 0 && (
+            <>
+              <h3 className="text-xl font-semibold">Pending Review</h3>
+              <p className="text-sm text-default-500 -mt-2">
+                Auto-generated from your Plaid transactions. Review and approve once the month has ended.
+              </p>
+              <ReportsTable
+                reportData={filterPendingReports(data).reverse()}
+                handleOnEdit={handleOnEdit}
+                handleOnView={handleOnView}
+                handleOnCompare={handleOnCompare}
+                handleOnDelete={handleOnDelete}
+                handleAnnualReport={handleAnualReport}
+                handleMerge={handleMerge}
+                handleOnInsights={handleOnInsights}
+                disableHeader
+                isDeletePending={deleteMutation.isPending}
+                isMergePending={mergeMutation.isPending}
+                isCreateAnnualPending={createAnnualMutation.isPending}
+                selectionResetKey={selectionResetKey}
+              />
+              <h3 className="text-xl font-semibold mt-4">Monthly Reports</h3>
+            </>
+          )}
           <ReportsTable
             reportData={filterMonthlyReports(data).reverse() || []}
             handleOnEdit={handleOnEdit}

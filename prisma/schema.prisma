@@ -64,10 +64,17 @@ model Report {
   foster             Float         @default(0)
   expenses           Float         @default(0)
   total              Float         @default(0)
+  status             ReportStatus  @default(APPROVED)
+  month              Int?
+  year               Int?
+  autoMaintainedAt   DateTime?
+  approvedAt         DateTime?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
-  
+
+  @@unique([userId, year, month, reportType])
   @@index([userId, reportType])
+  @@index([userId, status])
   @@index([parentReportId])
 }
 
@@ -157,6 +164,9 @@ model SyncedTransaction {
   pending                Boolean      @default(false)
   pending_transaction_id String?
   notes                  String?
+  // User-intent fields. MUST be preserved across Plaid MODIFIED updates and pending→posted carryover.
+  userCategoryOverride   String?
+  userSoftDeleted        Boolean      @default(false)
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
 
@@ -188,4 +198,10 @@ model PlaidSyncLock {
 enum ReportType {
   MONTHLY
   ANNUAL
+}
+
+enum ReportStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
 }

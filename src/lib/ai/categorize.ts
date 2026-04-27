@@ -92,8 +92,17 @@ export async function categorizeBatch(
     prompt,
   });
 
+  const inputIds = new Set(transactions.map((t) => t.id));
   const out = new Map<string, CanonicalCategory>();
   for (const r of output.results) {
+    if (!inputIds.has(r.id)) {
+      console.warn(`Unexpected id in model output: ${r.id}`);
+      continue;
+    }
+    if (out.has(r.id)) {
+      console.warn(`Duplicate id in model output: ${r.id}`);
+      continue;
+    }
     out.set(r.id, r.category);
   }
   return out;

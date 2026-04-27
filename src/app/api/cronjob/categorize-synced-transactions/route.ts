@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
     if (pending.length === 0) {
       console.log("No transactions need categorization.");
-      return NextResponse.json({ status: 200, processed: 0 });
+      return NextResponse.json({ processed: 0 }, { status: 200 });
     }
 
     const byUser = new Map<string, typeof pending>();
@@ -107,6 +107,15 @@ export async function POST(request: Request) {
           continue;
         }
 
+        const missingIds = chunk
+          .filter((r) => !assignments.has(r.id))
+          .map((r) => r.id);
+        if (missingIds.length > 0) {
+          console.error(
+            `Model omitted ids for user=${userId}: ${missingIds.join(",")}`
+          );
+        }
+
         const writes = chunk.map((r) => {
           const category = assignments.get(r.id);
           if (!category) return Promise.resolve({ ok: false as const, id: r.id });
@@ -134,15 +143,20 @@ export async function POST(request: Request) {
       `Categorized ${totalUpdated} rows across ${byUser.size} users (failed: ${totalFailed}).`
     );
 
-    return NextResponse.json({
-      status: 200,
-      processed: totalUpdated,
-      failed: totalFailed,
-      users: byUser.size,
-    });
+    return NextResponse.json(
+      {
+        processed: totalUpdated,
+        failed: totalFailed,
+        users: byUser.size,
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.log(error);
-    return NextResponse.json({ status: 500 });
+    console.error(error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   } finally {
     console.log(`Time taken: ${Date.now() - initTimer}ms`);
   }

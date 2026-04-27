@@ -1,7 +1,12 @@
 import { ReportData } from "@components/ReportCard/ReportCard";
 import { PrismaClient, ReportStatus, ReportType } from "@prisma/client";
 import { RecurringReportData } from "app/recurring-transactions/_utils/constants";
-import { computeReportTotals, resolveCategory } from "@lib/reports/draftReport";
+import {
+  computeReportTotals,
+  monthDateRange,
+  normalizeCategory,
+  resolveCategory,
+} from "@lib/reports/draftReport";
 import { LOCAL_ACCOUNT_ID } from "utils/constants";
 import { formatReportKeys, formatTransactions } from "utils/functions";
 import { ReportDataDTO, TransactionWithNotes } from "utils/types";
@@ -192,20 +197,11 @@ export const getTransactions = async (
         report.year != null;
 
       if (isPending) {
-        const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-        const start = `${report.year}-${pad2(report.month!)}-01`;
-        const nextMonthStart = new Date(
-          Date.UTC(report.year!, report.month!, 1)
-        );
-        const end =
-          `${nextMonthStart.getUTCFullYear()}-` +
-          `${pad2(nextMonthStart.getUTCMonth() + 1)}-01`;
-
         const synced = await prisma.syncedTransaction.findMany({
           where: {
             userId: report.userId,
             userSoftDeleted: false,
-            date: { gte: start, lt: end },
+            date: monthDateRange({ month: report.month!, year: report.year! }),
           },
         });
 
@@ -476,20 +472,16 @@ export const updateReport = async (
       // Manually-added rows (LOCAL_ACCOUNT_ID) are skipped — they have no
       // SyncedTransaction to attach to. The edit UI hides those affordances
       // when the report is pending, so this is a defense-in-depth no-op.
-      const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-      const start = `${existingReport.year}-${pad2(existingReport.month!)}-01`;
-      const nextMonthStart = new Date(
-        Date.UTC(existingReport.year!, existingReport.month!, 1)
-      );
-      const end =
-        `${nextMonthStart.getUTCFullYear()}-` +
-        `${pad2(nextMonthStart.getUTCMonth() + 1)}-01`;
+      const range = monthDateRange({
+        month: existingReport.month!,
+        year: existingReport.year!,
+      });
 
       const liveSynced = await prisma.syncedTransaction.findMany({
         where: {
           userId: user.id,
           userSoftDeleted: false,
-          date: { gte: start, lt: end },
+          date: range,
         },
       });
 
@@ -516,11 +508,9 @@ export const updateReport = async (
             name: existing.name,
             userCategoryOverride: null,
           });
-          const desiredCategory = edited.category?.[0] ?? null;
+          const desiredCategory = normalizeCategory(edited.category?.[0]);
           const override =
-            desiredCategory && desiredCategory !== naturalCategory
-              ? desiredCategory
-              : null;
+            desiredCategory !== naturalCategory ? desiredCategory : null;
 
           await tx.syncedTransaction.update({
             where: { id: existing.id },
@@ -537,7 +527,7 @@ export const updateReport = async (
         where: {
           userId: user.id,
           userSoftDeleted: false,
-          date: { gte: start, lt: end },
+          date: range,
         },
       });
       const totals = computeReportTotals(refreshed);

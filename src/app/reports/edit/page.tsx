@@ -345,7 +345,7 @@ export default function Page(
         handleEditSubmit={handleEditSubmit}
         setSelectedCategory={setSelectedCategory}
         descriptionToUse="name"
-        isAmountReadOnly={isPendingReport}
+        isPendingReport={isPendingReport}
       />
     </div>
   );

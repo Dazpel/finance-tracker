@@ -77,8 +77,33 @@ const emptyTotals = (): Totals => ({
   total: 0,
 });
 
+// Canonical form = Title Case keys exactly as `mapDefaultCategoryToCustomCategory`
+// returns and as `categoryToReportKey` expects. UI lowercase values, raw Plaid
+// strings, and any historical overrides all flow through `normalizeCategory`
+// so totals/comparisons agree on a single representation.
+const CATEGORY_CANONICAL: Record<string, string> = {
+  "food & drink": "Food & Drink",
+  "bills & utilities": "Bills & Utilities",
+  "car": "Car",
+  "entertainment": "Entertainment",
+  "groceries": "Groceries",
+  "health & wellness": "Health & Wellness",
+  "personal": "Personal",
+  "foster": "Foster",
+  "shopping": "Shopping",
+  "fees & adjustments": "Fees & Adjustments",
+  "others": "Others",
+  "revenue": "Revenue",
+};
+
+export function normalizeCategory(raw: string | null | undefined): string {
+  if (!raw) return "Others";
+  const key = raw.replace(/\s+and\s+/gi, " & ").trim().toLowerCase();
+  return CATEGORY_CANONICAL[key] ?? "Others";
+}
+
 const categoryToReportKey = (category: string): keyof Totals => {
-  switch (category) {
+  switch (normalizeCategory(category)) {
     case "Food & Drink":       return "foodAndDrink";
     case "Bills & Utilities":  return "billsAndUtilities";
     case "Car":                return "car";
@@ -86,10 +111,10 @@ const categoryToReportKey = (category: string): keyof Totals => {
     case "Groceries":          return "groceries";
     case "Health & Wellness":  return "healthAndWellness";
     case "Personal":           return "personal";
+    case "Foster":             return "foster";
     case "Shopping":           return "shopping";
     case "Fees & Adjustments": return "feesAndAdjustments";
     case "Revenue":            return "revenue";
-    case "Foster":             return "foster";
     default:                   return "others";
   }
 };
@@ -100,11 +125,11 @@ export const resolveCategory = (
     "category" | "merchant_name" | "name" | "userCategoryOverride"
   >
 ): string => {
-  if (t.userCategoryOverride) return t.userCategoryOverride;
+  if (t.userCategoryOverride) return normalizeCategory(t.userCategoryOverride);
   const rawCategory = t.category?.[0]?.replace("and", "&") ?? "Others";
   const mapped = mapPlaidCategoryToDefaultCategory(rawCategory);
   const description = t.merchant_name ?? t.name ?? "";
-  return mapDefaultCategoryToCustomCategory(description, mapped);
+  return normalizeCategory(mapDefaultCategoryToCustomCategory(description, mapped));
 };
 
 // Pure. Sums per-category totals. Skips userSoftDeleted rows. Respects userCategoryOverride.
@@ -146,7 +171,7 @@ export function computeReportTotals(transactions: SyncedTransaction[]): Totals {
 
 const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
 
-const monthDateRange = (target: DraftMonth) => {
+export const monthDateRange = (target: DraftMonth) => {
   const start = `${target.year}-${pad2(target.month)}-01`;
   const nextMonthStartDate = new Date(Date.UTC(target.year, target.month, 1));
   const end =

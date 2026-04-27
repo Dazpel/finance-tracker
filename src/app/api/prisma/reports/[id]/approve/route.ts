@@ -3,7 +3,11 @@ import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
 import { ReportStatus, ReportType } from "@prisma/client";
-import { isMonthFullyPast, resolveCategory } from "@lib/reports/draftReport";
+import {
+  isMonthFullyPast,
+  monthDateRange,
+  resolveCategory,
+} from "@lib/reports/draftReport";
 
 export async function POST(
   _request: Request,
@@ -62,18 +66,11 @@ export async function POST(
     );
   }
 
-  const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-  const start = `${target.year}-${pad2(target.month)}-01`;
-  const nextMonthStart = new Date(Date.UTC(target.year, target.month, 1));
-  const end =
-    `${nextMonthStart.getUTCFullYear()}-` +
-    `${pad2(nextMonthStart.getUTCMonth() + 1)}-01`;
-
   const synced = await prisma.syncedTransaction.findMany({
     where: {
       userId: report.userId,
       userSoftDeleted: false,
-      date: { gte: start, lt: end },
+      date: monthDateRange(target),
     },
   });
 

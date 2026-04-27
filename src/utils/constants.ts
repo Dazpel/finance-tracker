@@ -1,3 +1,5 @@
+import { CANONICAL_CATEGORIES } from "@lib/categories";
+
 export const appRoutes = {
   ROOT: "/",
   ACCOUNTS_PAGE: "/accounts",
@@ -11,18 +13,7 @@ export const appRoutes = {
 };
 
 export const defaultCategoryFilterOptions = [
-  { name: "Food & Drink", uid: "Food & Drink" },
-  { name: "Bills & Utilities", uid: "Bills & Utilities" },
-  { name: "Car", uid: "Car" },
-  { name: "Entertainment", uid: "Entertainment" },
-  { name: "Groceries", uid: "Groceries" },
-  { name: "Health & Wellness", uid: "Health & Wellness" },
-  { name: "Personal", uid: "Personal" },
-  { name: "Shopping", uid: "Shopping" },
-  { name: "Fees & Adjustments", uid: "Fees & Adjustments" },
-  { name: "Others", uid: "Others" },
-  { name: "Revenue", uid: "Revenue" },
-  { name: "Foster", uid: "Foster" },
+  ...CANONICAL_CATEGORIES.map((c) => ({ name: c, uid: c })),
   { name: "All", uid: "All" },
   { name: "None", uid: "None" },
 ];

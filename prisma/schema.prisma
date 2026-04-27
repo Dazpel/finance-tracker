@@ -174,6 +174,7 @@ model SyncedTransaction {
   @@index([plaidAccountId])
   @@index([transaction_id])
   @@index([pending_transaction_id])
+  @@index([userCategoryOverride, userSoftDeleted, createdAt])
 }
 
 // Plaid cursor for incremental transaction sync. One per PlaidAccount, cascades on account removal.

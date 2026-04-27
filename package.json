@@ -10,6 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.53",
     "@heroui/react": "2.8.10",
     "@internationalized/date": "^3.9.0",
     "@prisma/client": "6.16.2",
@@ -18,6 +19,7 @@
     "@tanstack/react-query": "^5.97.0",
     "@vercel/analytics": "^1.6.1",
     "@vercel/speed-insights": "^1.3.1",
+    "ai": "^6.0.168",
     "axios": "^1.8.4",
     "chart.js": "^4.4.8",
     "classnames": "^2.5.1",
@@ -39,7 +41,8 @@
     "recharts": "^3.8.1",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.5.0",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/lodash.isequal": "^4.5.8",

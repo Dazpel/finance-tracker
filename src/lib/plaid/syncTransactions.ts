@@ -2,6 +2,7 @@ import { plaidClient } from "./client";
 import prisma from "@lib/prisma/prismaClient";
 import { Prisma, type PlaidAccount, type PlaidCursor } from "@prisma/client";
 import type { RemovedTransaction, Transaction } from "plaid";
+import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
 
 const MUTATION_ERROR = "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION";
 const UPSERT_CHUNK_SIZE = 100;
@@ -121,7 +122,22 @@ export const syncTransactionsForAccount = async (
   }
 
   try {
-    return await runSync(account);
+    const result = await runSync(account);
+    // Skip the per-user draft recompute when this sync touched nothing — duplicate
+    // webhooks / retries would otherwise trigger back-to-back full-month scans.
+    if (result.added || result.modified || result.removed) {
+      try {
+        await upsertCurrentMonthDraftReport(account.userId);
+      } catch (err) {
+        // Draft upsert failure is non-fatal — sync already committed cursor state,
+        // and the next sync recomputes from scratch, so transient failures self-heal.
+        console.error(
+          `Draft report upsert failed for user=${account.userId}:`,
+          err
+        );
+      }
+    }
+    return result;
   } finally {
     // Release by (plaidAccountId, acquiredAt) so we can never delete a lock that
     // another sync reclaimed from us. deleteMany is a no-op if our row is gone.
@@ -177,55 +193,103 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
     }
 
     // When a pending txn posts, Plaid sends `added` (new posted row, with pending_transaction_id)
-    // and `removed` (old pending row). Carry over the user's note before the removed step deletes it.
+    // and `removed` (old pending row). Carry user intent (notes, category override, soft-delete)
+    // over before the removed step deletes the pending row.
     const pendingIds = added
       .map((t) => t.pending_transaction_id)
       .filter((id): id is string => Boolean(id));
+
+    type CarriedFields = {
+      notes: string | null;
+      userCategoryOverride: string | null;
+      userSoftDeleted: boolean;
+    };
 
     const priorPending = pendingIds.length
       ? await prisma.syncedTransaction.findMany({
           where: {
             plaidAccountId: account.id,
             transaction_id: { in: pendingIds },
-            notes: { not: null },
           },
-          select: { transaction_id: true, notes: true },
+          select: {
+            transaction_id: true,
+            notes: true,
+            userCategoryOverride: true,
+            userSoftDeleted: true,
+          },
         })
       : [];
-    const noteByPendingId = new Map(
-      priorPending.map((p) => [p.transaction_id, p.notes])
+
+    const carriedByPendingId = new Map<string, CarriedFields>(
+      priorPending.map((p) => [
+        p.transaction_id,
+        {
+          notes: p.notes,
+          userCategoryOverride: p.userCategoryOverride,
+          userSoftDeleted: p.userSoftDeleted,
+        },
+      ])
     );
 
-    // If the posted row already exists from a prior partial sync, the upsert hits
-    // `update` (which omits notes). Migrate the pending note onto the existing row
-    // here so it survives the subsequent `removed` delete of the pending row.
-    if (noteByPendingId.size) {
-      await Promise.all(
-        added
-          .filter(
-            (t) =>
-              t.pending_transaction_id &&
-              noteByPendingId.has(t.pending_transaction_id)
-          )
-          .map((t) =>
+    // If the posted row already exists from a prior partial sync, the upsert hits `update`
+    // (which omits user-intent fields). Migrate carried values onto the existing posted row
+    // so they survive the subsequent `removed` delete of the pending row. Each field is
+    // guarded by a null/default WHERE clause so we only fill in missing values — never
+    // clobber edits the user already made directly on the posted row.
+    if (carriedByPendingId.size) {
+      const ops: Prisma.PrismaPromise<unknown>[] = [];
+      for (const t of added) {
+        if (!t.pending_transaction_id) continue;
+        const carried = carriedByPendingId.get(t.pending_transaction_id);
+        if (!carried) continue;
+        const base = {
+          transaction_id: t.transaction_id,
+          plaidAccountId: account.id,
+        } as const;
+
+        if (carried.notes != null) {
+          ops.push(
             prisma.syncedTransaction.updateMany({
-              where: {
-                transaction_id: t.transaction_id,
-                plaidAccountId: account.id,
-                notes: null,
-              },
-              data: { notes: noteByPendingId.get(t.pending_transaction_id!)! },
+              where: { ...base, notes: null },
+              data: { notes: carried.notes },
             })
-          )
-      );
+          );
+        }
+        if (carried.userCategoryOverride != null) {
+          ops.push(
+            prisma.syncedTransaction.updateMany({
+              where: { ...base, userCategoryOverride: null },
+              data: { userCategoryOverride: carried.userCategoryOverride },
+            })
+          );
+        }
+        if (carried.userSoftDeleted) {
+          ops.push(
+            prisma.syncedTransaction.updateMany({
+              where: { ...base, userSoftDeleted: false },
+              data: { userSoftDeleted: true },
+            })
+          );
+        }
+      }
+      if (ops.length) await Promise.all(ops);
     }
 
+    // update payload deliberately excludes user-intent fields (notes,
+    // userCategoryOverride, userSoftDeleted) so Plaid MODIFIED cannot overwrite user edits.
     const upsertOps = [...added, ...modified].map((t) => {
       const data = mapTransaction(t, account.userId, account.id);
-      const carriedNote = t.pending_transaction_id
-        ? noteByPendingId.get(t.pending_transaction_id)
+      const carried = t.pending_transaction_id
+        ? carriedByPendingId.get(t.pending_transaction_id)
         : undefined;
-      const createData = carriedNote ? { ...data, notes: carriedNote } : data;
+      const createData = carried
+        ? {
+            ...data,
+            notes: carried.notes ?? undefined,
+            userCategoryOverride: carried.userCategoryOverride ?? undefined,
+            userSoftDeleted: carried.userSoftDeleted,
+          }
+        : data;
       return prisma.syncedTransaction.upsert({
         where: {
           transaction_id_plaidAccountId: {

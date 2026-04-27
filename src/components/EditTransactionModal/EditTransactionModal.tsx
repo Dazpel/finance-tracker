@@ -25,6 +25,7 @@ type EditTransactionModalProps = {
   handleEditSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   setSelectedCategory: (keys: Set<string>) => void;
   descriptionToUse?: "original_description" | "name";
+  isPendingReport?: boolean;
 };
 
 function EditTransactionModal({
@@ -35,7 +36,8 @@ function EditTransactionModal({
   selectedCategory,
   handleEditSubmit,
   setSelectedCategory,
-  descriptionToUse = "original_description"
+  descriptionToUse = "original_description",
+  isPendingReport = false,
 }: EditTransactionModalProps) {
   return (
     <Modal
@@ -59,6 +61,12 @@ function EditTransactionModal({
                   defaultValue={
                     editableTransaction[descriptionToUse] || ""
                   }
+                  isReadOnly={isPendingReport}
+                  description={
+                    isPendingReport
+                      ? "Description cannot be edited on a pending report"
+                      : undefined
+                  }
                 />
                 <Input
                   label="Amount"
@@ -66,6 +74,12 @@ function EditTransactionModal({
                   type="number"
                   variant="bordered"
                   defaultValue={`${-editableTransaction.amount}`}
+                  isReadOnly={isPendingReport}
+                  description={
+                    isPendingReport
+                      ? "Amount cannot be edited on a pending report"
+                      : undefined
+                  }
                 />
                 <Textarea
                   label="Notes"

@@ -53,7 +53,8 @@ export default function Page(
   const [errorMessage, setErrorMessage] = useState("");
   const reportData = decodeQueryString(searchParams.data);
 
-  const { reportName: currentReportName, createdAt, id, reportType, ...rest } = reportData;
+  const { reportName: currentReportName, createdAt, id, reportType, status, ...rest } = reportData;
+  const isPendingReport = status === "DRAFT" || status === "PENDING_APPROVAL";
 
   const [reportName, setReportName] = useState(currentReportName);
   const [isReportNameValid, setIsReportNameValid] = useState(true);
@@ -260,6 +261,7 @@ export default function Page(
       updateHistory={updateHistory}
       onEdit={handleEdit}
       descriptionToUse="name"
+      isPendingReport={isPendingReport}
     />
   );
 
@@ -343,6 +345,7 @@ export default function Page(
         handleEditSubmit={handleEditSubmit}
         setSelectedCategory={setSelectedCategory}
         descriptionToUse="name"
+        isPendingReport={isPendingReport}
       />
     </div>
   );

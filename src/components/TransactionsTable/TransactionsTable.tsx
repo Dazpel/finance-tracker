@@ -53,6 +53,7 @@ type TransactionsTableProps = {
   generateSelectedCategoryKeys: (transactions: TransactionWithNotes[]) => void;
   descriptionToUse?: DescriptionName;
   onEdit: (transactionId: string) => void;
+  isPendingReport?: boolean;
 };
 
 type TableRow = {
@@ -114,8 +115,13 @@ export default function TransactionsTable({
   generateSelectedCategoryKeys,
   descriptionToUse = "original_description",
   onEdit,
+  isPendingReport = false,
 }: TransactionsTableProps) {
   const canEdit = tableMode === "edit";
+  // Pending auto-draft reports persist edits on SyncedTransaction (soft-delete
+  // + category override). Adding rows / CSV upload have no SyncedTransaction
+  // to attach to, so those affordances are hidden.
+  const canAddRows = canEdit && !isPendingReport;
   const [categoryFilter, setCategoryFilter] = useState<Selection>("all");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -383,7 +389,7 @@ export default function TransactionsTable({
                 ))}
               </DropdownMenu>
             </Dropdown>
-            {canEdit && (
+            {canAddRows && (
               <>
                 <Button
                   onPress={() =>

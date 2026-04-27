@@ -1,4 +1,4 @@
-import { ReportType } from "@prisma/client";
+import { ReportType, ReportStatus } from "@prisma/client";
 import { TransactionBase } from "plaid";
 
 // Extended transaction type that includes notes field
@@ -34,6 +34,11 @@ export type ReportDataDTO = {
   reportType: ReportType;
   reportName: string;
   createdAt: string;
+  status?: ReportStatus;
+  month?: number | null;
+  year?: number | null;
+  autoMaintainedAt?: string | null;
+  approvedAt?: string | null;
   foodAndDrink: number;
   billsAndUtilities: number;
   car: number;

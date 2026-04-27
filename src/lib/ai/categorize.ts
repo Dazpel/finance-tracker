@@ -68,7 +68,7 @@ export async function categorizeBatch(
     "You categorize bank transactions into exactly one of these buckets:",
     CANONICAL_CATEGORIES.join(", "),
     "",
-    "Plaid categories are the PRIMARY signal. The full Plaid path is shown in [brackets] after each merchant. Map by the Plaid leaf first; only use the merchant name when Plaid is missing or ambiguous.",
+    "Plaid categories are the PRIMARY signal. The full Plaid path is shown in [brackets] after each merchant. Map by the Plaid leaf first; only use the merchant name when Plaid is missing or ambiguous. Match Plaid category names case-insensitively (e.g., 'Food and Drink' and 'Food and drink' are the same).",
     "",
     "Plaid leaf → bucket mapping:",
     "- Any leaf containing 'Gas Stations' (even under 'Travel') => Car",

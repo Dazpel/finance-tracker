@@ -121,8 +121,9 @@ export async function POST(request: Request) {
         }
 
         // Group ids by category so a chunk of 40 collapses to ~N updateMany
-        // statements inside one $transaction, keeping us within the pooled
-        // connection limit (Supabase transaction pooler, connection_limit=1).
+        // statements, keeping us within the pooled connection limit (Supabase
+        // transaction pooler, connection_limit=1). Run each category update
+        // independently so a single failure preserves partial progress.
         const byCategory = new Map<CanonicalCategory, string[]>();
         for (const r of chunk) {
           // Fallback to "Others" when the model omits an id so the row exits
@@ -133,19 +134,23 @@ export async function POST(request: Request) {
           byCategory.set(category, list);
         }
 
-        try {
-          await prisma.$transaction(
-            [...byCategory].map(([category, ids]) =>
-              prisma.syncedTransaction.updateMany({
-                where: { id: { in: ids } },
-                data: { userCategoryOverride: category },
-              })
-            )
-          );
-          totalUpdated += chunk.length;
-        } catch (err) {
-          console.error(`DB batch update failed for user=${userId}:`, err);
-          totalFailed += chunk.length;
+        for (const [category, ids] of byCategory) {
+          try {
+            const { count } = await prisma.syncedTransaction.updateMany({
+              where: { id: { in: ids } },
+              data: { userCategoryOverride: category },
+            });
+            totalUpdated += count;
+            if (count < ids.length) {
+              totalFailed += ids.length - count;
+            }
+          } catch (err) {
+            console.error(
+              `DB update failed for user=${userId} category=${category}:`,
+              err
+            );
+            totalFailed += ids.length;
+          }
         }
       }
     }

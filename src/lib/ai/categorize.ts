@@ -65,16 +65,32 @@ export async function categorizeBatch(
       : [...userExamples, ...FALLBACK_EXAMPLES].slice(0, MAX_USER_EXAMPLES);
 
   const system = [
-    "You categorize bank transactions into one of these exact buckets:",
+    "You categorize bank transactions into exactly one of these buckets:",
     CANONICAL_CATEGORIES.join(", "),
-    "Rules:",
-    "- Pick the single closest bucket. If nothing fits, use Others.",
-    "- Subscriptions and recurring services (streaming, internet, phone) => Bills & Utilities.",
-    "- Restaurants, cafes, bars, delivery => Food & Drink. Supermarkets/grocers => Groceries.",
-    "- Gas, auto repair, parking, rideshare for vehicle => Car.",
-    "- Bank/card fees, overdrafts, adjustments => Fees & Adjustments.",
-    "- Payroll, deposits, refunds, interest income => Revenue.",
-    "- Match the user's historical preferences shown in the examples; their labels override generic intuition.",
+    "",
+    "Plaid categories are the PRIMARY signal. The full Plaid path is shown in [brackets] after each merchant. Map by the Plaid leaf first; only use the merchant name when Plaid is missing or ambiguous.",
+    "",
+    "Plaid leaf → bucket mapping:",
+    "- Any leaf containing 'Gas Stations' (even under 'Travel') => Car",
+    "- 'Travel / Lodging' (hotels, motels, Airbnb, resorts) => Entertainment",
+    "- 'Travel / *' for flights, taxi, rideshare, public transit => Entertainment",
+    "- Any leaf containing 'Supermarkets', 'Groceries', or produce/butcher/fruit shops => Groceries",
+    "- 'Food and Drink / *' (restaurants, cafes, bars, fast food, coffee, delivery) => Food & Drink",
+    "- 'Shops / *' that is not a grocery, pharmacy, or gas station (incl. 'Digital Purchase', clothing, electronics, online retail like Amazon) => Shopping",
+    "- 'Recreation / *' or 'Entertainment / *' => Entertainment",
+    "- 'Healthcare / *', pharmacy, medical, dental, vision => Health & Wellness",
+    "- 'Service / Subscription' or recurring streaming/internet/phone/electric/water/gas-utility => Bills & Utilities",
+    "- 'Transfer / Payroll' => Revenue (ALWAYS — ignore the merchant name; payroll deposits often have weird employer names)",
+    "- 'Deposit', 'Interest Earned', refunds, reimbursements, tax refunds => Revenue",
+    "- 'Payment / Credit Card', 'Transfer / Debit', 'Transfer / Credit' (any non-payroll transfer) => Others",
+    "- 'Bank Fees / *', overdraft, ATM fee, late fee, FX fee => Fees & Adjustments",
+    "- Animal-welfare orgs (Humane Society, ASPCA, animal rescue/shelter, pet adoption) => Foster",
+    "",
+    "Hard rules:",
+    "- Revenue is for INFLOWS only. Never assign Revenue to a shop, restaurant, gas station, hotel, or any merchant where money was spent.",
+    "- Foster is for animal-welfare donations only. Other charities/non-profits with no animal context => Personal.",
+    "- Use Others ONLY when no Plaid leaf above matches AND the merchant name gives no clear signal. Do NOT default to Others when a specific Plaid leaf is present.",
+    "- The user's history examples override these defaults when the same merchant appears in their history.",
   ].join("\n");
 
   const prompt = [
@@ -88,6 +104,7 @@ export async function categorizeBatch(
   const { output } = await generateText({
     model: openai("gpt-4.1-nano"),
     output: Output.object({ schema: ResultSchema }),
+    temperature: 0,
     system,
     prompt,
   });

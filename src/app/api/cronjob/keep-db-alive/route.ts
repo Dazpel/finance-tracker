@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     ) {
       return Response.json(
         { message: "Invalid authorization header" },
-        { status: 200 }
+        { status: 401 }
       );
     }
     console.log("-----------------------------------");

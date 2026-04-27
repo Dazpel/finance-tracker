@@ -117,8 +117,9 @@ export async function POST(request: Request) {
         }
 
         const writes = chunk.map((r) => {
-          const category = assignments.get(r.id);
-          if (!category) return Promise.resolve({ ok: false as const, id: r.id });
+          // Fallback to "Others" when the model omits an id so the row exits
+          // the pending pool and the cron doesn't re-spend tokens on it forever.
+          const category: CanonicalCategory = assignments.get(r.id) ?? "Others";
           return prisma.syncedTransaction
             .update({
               where: { id: r.id },

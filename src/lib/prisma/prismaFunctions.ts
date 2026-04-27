@@ -1,6 +1,8 @@
 import { ReportData } from "@components/ReportCard/ReportCard";
-import { PrismaClient, ReportType } from "@prisma/client";
+import { PrismaClient, ReportStatus, ReportType } from "@prisma/client";
 import { RecurringReportData } from "app/recurring-transactions/_utils/constants";
+import { computeReportTotals, resolveCategory } from "@lib/reports/draftReport";
+import { LOCAL_ACCOUNT_ID } from "utils/constants";
 import { formatReportKeys, formatTransactions } from "utils/functions";
 import { ReportDataDTO, TransactionWithNotes } from "utils/types";
 
@@ -161,7 +163,7 @@ export const getTransactions = async (
         },
       });
     } else {
-      transactions = await prisma.report.findUnique({
+      const report = await prisma.report.findUnique({
         where: {
           id: Number(reportId),
           AND: {
@@ -171,11 +173,62 @@ export const getTransactions = async (
           },
         },
         select: {
+          id: true,
+          userId: true,
+          status: true,
+          month: true,
+          year: true,
           transactions: true,
         },
       });
+
+      // Pending monthly reports have no committed Transaction snapshot yet —
+      // pull from SyncedTransaction by month/year and shape rows to match.
+      const isPending =
+        report &&
+        (report.status === ReportStatus.DRAFT ||
+          report.status === ReportStatus.PENDING_APPROVAL) &&
+        report.month != null &&
+        report.year != null;
+
+      if (isPending) {
+        const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+        const start = `${report.year}-${pad2(report.month!)}-01`;
+        const nextMonthStart = new Date(
+          Date.UTC(report.year!, report.month!, 1)
+        );
+        const end =
+          `${nextMonthStart.getUTCFullYear()}-` +
+          `${pad2(nextMonthStart.getUTCMonth() + 1)}-01`;
+
+        const synced = await prisma.syncedTransaction.findMany({
+          where: {
+            userId: report.userId,
+            userSoftDeleted: false,
+            date: { gte: start, lt: end },
+          },
+        });
+
+        transactions = {
+          transactions: synced.map((t) => ({
+            id: t.id,
+            reportId: report.id,
+            userId: report.userId,
+            account_id: t.account_id,
+            transaction_id: t.transaction_id,
+            name: t.merchant_name ?? t.name,
+            amount: t.amount,
+            date: t.date,
+            category: [resolveCategory(t)],
+            notes: t.notes,
+            createdAt: t.createdAt,
+          })),
+        };
+      } else {
+        transactions = report ? { transactions: report.transactions } : null;
+      }
     }
-    
+
     response = {
       success: true,
       data: transactions,
@@ -390,14 +443,124 @@ export const updateReport = async (
     const formattedReport = formatReportKeys(report);
     const formattedTransactions = formatTransactions(transactions, user.id);
 
-    // Delete all transactions associated with the report
+    const existingReport = await prisma.report.findUnique({
+      where: { id: reportId },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        reportType: true,
+        month: true,
+        year: true,
+      },
+    });
+
+    if (!existingReport || existingReport.userId !== user.id) {
+      return (response = {
+        success: false,
+        error: "Report not found",
+      });
+    }
+
+    const isPendingMonthly =
+      existingReport.reportType === ReportType.MONTHLY &&
+      (existingReport.status === ReportStatus.DRAFT ||
+        existingReport.status === ReportStatus.PENDING_APPROVAL) &&
+      existingReport.month != null &&
+      existingReport.year != null;
+
+    if (isPendingMonthly) {
+      // Pending monthly reports persist edits on SyncedTransaction:
+      //   - removed rows  → userSoftDeleted = true
+      //   - kept rows     → userCategoryOverride (if changed from natural) + notes
+      // Manually-added rows (LOCAL_ACCOUNT_ID) are skipped — they have no
+      // SyncedTransaction to attach to. The edit UI hides those affordances
+      // when the report is pending, so this is a defense-in-depth no-op.
+      const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+      const start = `${existingReport.year}-${pad2(existingReport.month!)}-01`;
+      const nextMonthStart = new Date(
+        Date.UTC(existingReport.year!, existingReport.month!, 1)
+      );
+      const end =
+        `${nextMonthStart.getUTCFullYear()}-` +
+        `${pad2(nextMonthStart.getUTCMonth() + 1)}-01`;
+
+      const liveSynced = await prisma.syncedTransaction.findMany({
+        where: {
+          userId: user.id,
+          userSoftDeleted: false,
+          date: { gte: start, lt: end },
+        },
+      });
+
+      const payloadById = new Map<string, TransactionWithNotes>();
+      for (const t of transactions) {
+        if (t.account_id === LOCAL_ACCOUNT_ID) continue;
+        payloadById.set(t.transaction_id, t);
+      }
+
+      await prisma.$transaction(async (tx) => {
+        for (const existing of liveSynced) {
+          const edited = payloadById.get(existing.transaction_id);
+          if (!edited) {
+            await tx.syncedTransaction.update({
+              where: { id: existing.id },
+              data: { userSoftDeleted: true },
+            });
+            continue;
+          }
+
+          const naturalCategory = resolveCategory({
+            category: existing.category,
+            merchant_name: existing.merchant_name,
+            name: existing.name,
+            userCategoryOverride: null,
+          });
+          const desiredCategory = edited.category?.[0] ?? null;
+          const override =
+            desiredCategory && desiredCategory !== naturalCategory
+              ? desiredCategory
+              : null;
+
+          await tx.syncedTransaction.update({
+            where: { id: existing.id },
+            data: {
+              userSoftDeleted: false,
+              userCategoryOverride: override,
+              notes: edited.notes ?? null,
+            },
+          });
+        }
+      });
+
+      const refreshed = await prisma.syncedTransaction.findMany({
+        where: {
+          userId: user.id,
+          userSoftDeleted: false,
+          date: { gte: start, lt: end },
+        },
+      });
+      const totals = computeReportTotals(refreshed);
+
+      await prisma.report.update({
+        where: { id: reportId },
+        data: {
+          reportName,
+          ...totals,
+          autoMaintainedAt: new Date(),
+        },
+      });
+
+      return (response = { success: true });
+    }
+
+    // Approved monthly + annual reports: existing blow-away+recreate flow.
     await prisma.transaction.deleteMany({
       where: {
         reportId,
       },
     });
 
-    // Update the report
     await prisma.report.update({
       where: {
         id: reportId,

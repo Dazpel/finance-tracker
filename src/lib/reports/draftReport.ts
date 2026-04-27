@@ -1,5 +1,5 @@
 import prisma from "@lib/prisma/prismaClient";
-import { ReportStatus, ReportType, type SyncedTransaction } from "@prisma/client";
+import { Prisma, ReportStatus, ReportType, type SyncedTransaction } from "@prisma/client";
 import {
   mapPlaidCategoryToDefaultCategory,
   mapDefaultCategoryToCustomCategory,
@@ -216,18 +216,51 @@ export async function upsertCurrentMonthDraftReport(
         },
       });
     } else {
-      await prisma.report.create({
-        data: {
-          userId,
-          reportName: defaultReportName(target),
-          reportType: ReportType.MONTHLY,
-          status: ReportStatus.DRAFT,
-          month: target.month,
-          year: target.year,
-          autoMaintainedAt: now,
-          ...totals,
-        },
-      });
+      try {
+        await prisma.report.create({
+          data: {
+            userId,
+            reportName: defaultReportName(target),
+            reportType: ReportType.MONTHLY,
+            status: ReportStatus.DRAFT,
+            month: target.month,
+            year: target.year,
+            autoMaintainedAt: now,
+            ...totals,
+          },
+        });
+      } catch (e) {
+        // Concurrent sync for the same user (e.g. multiple Plaid accounts)
+        // can race past findFirst and both call create, hitting the partial
+        // unique index on (userId, year, month, reportType). Recover by
+        // re-fetching the row the other call created and updating it.
+        if (
+          e instanceof Prisma.PrismaClientKnownRequestError &&
+          e.code === "P2002"
+        ) {
+          const raced = await prisma.report.findFirst({
+            where: {
+              userId,
+              year: target.year,
+              month: target.month,
+              reportType: ReportType.MONTHLY,
+              autoMaintainedAt: { not: null },
+            },
+          });
+          if (raced) {
+            await prisma.report.update({
+              where: { id: raced.id },
+              data: {
+                ...totals,
+                status: ReportStatus.DRAFT,
+                autoMaintainedAt: now,
+              },
+            });
+            continue;
+          }
+        }
+        throw e;
+      }
     }
   }
 }

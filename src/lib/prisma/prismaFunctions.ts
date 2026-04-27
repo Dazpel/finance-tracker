@@ -229,6 +229,7 @@ export const createReport = async (
         reports: {
           create: {
             reportName,
+            approvedAt: new Date(),
             ...formattedReport,
             transactions: {
               create: formattedTransactions,
@@ -581,6 +582,7 @@ export const createAnnualReport = async (
       data: {
         reportName: annualReportName,
         reportType: "ANNUAL",
+        approvedAt: new Date(),
         user: { connect: { id: user.id } },
         childReports: {
           connect: monthlyReportIds.map((id) => ({ id })),

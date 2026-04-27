@@ -12,6 +12,9 @@ export const maxDuration = 60;
 const MAX_ROWS_PER_RUN = 200;
 const CHUNK_SIZE = 40;
 const USER_HISTORY_LIMIT = 30;
+// Skip pre-launch backfill: those reports have already been generated, so
+// categorizing them now would burn tokens with no downstream effect.
+const MIN_TRANSACTION_DATE = "2026-04-01";
 
 export async function POST(request: Request) {
   const initTimer = Date.now();
@@ -41,6 +44,7 @@ export async function POST(request: Request) {
       where: {
         userCategoryOverride: null,
         userSoftDeleted: false,
+        date: { gte: MIN_TRANSACTION_DATE },
       },
       orderBy: { createdAt: "asc" },
       take: MAX_ROWS_PER_RUN,

@@ -61,7 +61,7 @@ export default function RootLayout({
 }) {
   return (
     <html suppressHydrationWarning dir="ltr" lang="en">
-      <body className={`${roboto.variable}`} suppressHydrationWarning>
+      <body className={`${roboto.variable} h-screen overflow-hidden`} suppressHydrationWarning>
         <Suspense fallback={<PageLoader />}>
           <AuthGate>{children}</AuthGate>
         </Suspense>

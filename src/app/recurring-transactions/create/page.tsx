@@ -7,7 +7,7 @@ import axios from "axios";
 import { TransactionStream } from "plaid";
 import RecurringTransactionsTable from "@components/RecurringTransactionsTable/RecurringTransactionsTable";
 import EditRecurringTransactionModal from "@components/EditRecurringTransactionModal/EditRecurringTransactionModal";
-import { useRouter } from "next/navigation";
+import { useNavigateWithPending } from "@hooks/useNavigateWithPending";
 
 type TransactionFlows = {
   inflows: TransactionStream[];
@@ -17,7 +17,7 @@ type TransactionFlows = {
 export type FlowType = "inflows" | "outflows";
 
 function RecurringTransactionsPage() {
-  const router = useRouter();
+  const { navigate, isPending: isNavigating } = useNavigateWithPending();
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -170,7 +170,7 @@ function RecurringTransactionsPage() {
         return setIsError(true);
       }
       setIsLoading(false);
-      router.push("/recurring-transactions");
+      navigate("/recurring-transactions");
     } catch (error) {
       setIsLoading(false);
       setIsError(true);
@@ -246,7 +246,7 @@ function RecurringTransactionsPage() {
           </div>
         </div>
       )}
-      {isLoading && <FullScreenOverlay />}
+      {(isLoading || isNavigating) && <FullScreenOverlay />}
       <EditRecurringTransactionModal
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}

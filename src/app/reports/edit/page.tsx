@@ -9,7 +9,7 @@ import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
 import { Input, Tab, Tabs } from "@heroui/react";
 import axios from "axios";
 import useUndoRedoState from "hooks/useUndoRedoState";
-import { useRouter } from "next/navigation";
+import { useNavigateWithPending } from "@hooks/useNavigateWithPending";
 import {
   defaultCategorieToValueObject,
   defaultCategories,
@@ -44,7 +44,7 @@ export default function Page(
   const searchParams = use(props.searchParams);
   //todo: abstract generateSelectedCategoryKeys so it can be reused
   const isMobile = useDeviceSize();
-  const router = useRouter();
+  const { navigate, isPending: isNavigating } = useNavigateWithPending();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableTransaction, setEditableTransaction] = useState({} as TransactionWithNotes);
   const [selectedCategory, setSelectedCategory] = useState(new Set<string>());
@@ -175,7 +175,7 @@ export default function Page(
         setErrorMessage("Error submitting report");
         return setIsError(true);
       }
-      router.push("/reports");
+      navigate("/reports");
     } catch (error) {
       setIsError(true);
       setErrorMessage("Error submitting report");
@@ -335,7 +335,7 @@ export default function Page(
           </div>
         )}
       </div>
-      {isLoading && <FullScreenOverlay />}
+      {(isLoading || isNavigating) && <FullScreenOverlay />}
       <EditTransactionModal 
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}

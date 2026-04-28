@@ -54,6 +54,7 @@ export async function POST(request: Request) {
         name: true,
         merchant_name: true,
         category: true,
+        amount: true,
       },
     });
 
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
           name: r.name,
           merchantName: r.merchant_name,
           plaidCategory: r.category,
+          amount: r.amount,
         }));
 
         let assignments: Map<string, CanonicalCategory>;
@@ -120,26 +122,37 @@ export async function POST(request: Request) {
           );
         }
 
-        const writes = chunk.map((r) => {
+        // Group ids by category so a chunk of 40 collapses to ~N updateMany
+        // statements, keeping us within the pooled connection limit (Supabase
+        // transaction pooler, connection_limit=1). Run each category update
+        // independently so a single failure preserves partial progress.
+        const byCategory = new Map<CanonicalCategory, string[]>();
+        for (const r of chunk) {
           // Fallback to "Others" when the model omits an id so the row exits
           // the pending pool and the cron doesn't re-spend tokens on it forever.
           const category: CanonicalCategory = assignments.get(r.id) ?? "Others";
-          return prisma.syncedTransaction
-            .update({
-              where: { id: r.id },
-              data: { userCategoryOverride: category },
-            })
-            .then(() => ({ ok: true as const, id: r.id }))
-            .catch((err) => {
-              console.error(`DB update failed for id=${r.id}:`, err);
-              return { ok: false as const, id: r.id };
-            });
-        });
+          const list = byCategory.get(category) ?? [];
+          list.push(r.id);
+          byCategory.set(category, list);
+        }
 
-        const results = await Promise.all(writes);
-        for (const res of results) {
-          if (res.ok) totalUpdated += 1;
-          else totalFailed += 1;
+        for (const [category, ids] of byCategory) {
+          try {
+            const { count } = await prisma.syncedTransaction.updateMany({
+              where: { id: { in: ids } },
+              data: { userCategoryOverride: category },
+            });
+            totalUpdated += count;
+            if (count < ids.length) {
+              totalFailed += ids.length - count;
+            }
+          } catch (err) {
+            console.error(
+              `DB update failed for user=${userId} category=${category}:`,
+              err
+            );
+            totalFailed += ids.length;
+          }
         }
       }
     }

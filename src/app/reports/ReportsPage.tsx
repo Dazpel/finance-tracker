@@ -1,18 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import ReportsTable from "@components/ReportsTable/ReportsTable";
 import FullScreenOverlay from "@components/Loader/Loader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
+import { useNavigateWithPending } from "@hooks/useNavigateWithPending";
 import { ReportDataDTO } from "utils/types";
 import { ReportType, ReportStatus } from "@prisma/client";
 
 export default function ReportsPage() {
-  const router = useRouter();
+  const { navigate, isPending: isNavigating } = useNavigateWithPending();
   const queryClient = useQueryClient();
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectionResetKey, setSelectionResetKey] = useState(0);
@@ -99,25 +98,17 @@ export default function ReportsPage() {
     },
   });
 
-  const handleOnEdit = (encodedURI: string): void => {
-    setIsLoading(true);
-    router.push(`/reports/edit?data=${encodedURI}`);
-  };
+  const handleOnEdit = (encodedURI: string): void =>
+    navigate(`/reports/edit?data=${encodedURI}`);
 
-  const handleOnView = (encodedURI: string): void => {
-    setIsLoading(true);
-    router.push(`/reports/details?data=${encodedURI}`);
-  };
+  const handleOnView = (encodedURI: string): void =>
+    navigate(`/reports/details?data=${encodedURI}`);
 
-  const handleOnCompare = (encodedURI: string): void => {
-    setIsLoading(true);
-    router.push(`/reports/compare?data=${encodedURI}`);
-  };
+  const handleOnCompare = (encodedURI: string): void =>
+    navigate(`/reports/compare?data=${encodedURI}`);
 
-  const handleOnInsights = (reportId: number, reportType: string): void => {
-    setIsLoading(true);
-    router.push(`/insights?reportId=${reportId}&reportType=${reportType}`);
-  };
+  const handleOnInsights = (reportId: number, reportType: string): void =>
+    navigate(`/insights?reportId=${reportId}&reportType=${reportType}`);
 
   const handleOnDelete = async (reportId: number): Promise<void> => {
     try {
@@ -238,7 +229,7 @@ export default function ReportsPage() {
           />
         </div>
       )}
-      {isLoading && <FullScreenOverlay />}
+      {isNavigating && <FullScreenOverlay />}
     </>
   );
 }

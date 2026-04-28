@@ -25,7 +25,7 @@ export const Layout = ({ children }: Props) => {
         toggleSidebar: handleToggleSidebar,
       }}
     >
-      <section className="flex">
+      <section className="flex h-screen">
         <SidebarWrapper />
         <NavbarWrapper>{children}</NavbarWrapper>
       </section>

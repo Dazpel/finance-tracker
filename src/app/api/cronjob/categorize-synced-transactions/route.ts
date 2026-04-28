@@ -54,6 +54,7 @@ export async function POST(request: Request) {
         name: true,
         merchant_name: true,
         category: true,
+        amount: true,
       },
     });
 
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
           name: r.name,
           merchantName: r.merchant_name,
           plaidCategory: r.category,
+          amount: r.amount,
         }));
 
         let assignments: Map<string, CanonicalCategory>;

@@ -198,7 +198,8 @@ function formatExample(e: CategorizeExample): string {
 
 function formatTarget(t: CategorizeInput): string {
   const plaid = t.plaidCategory?.join(" / ") || "";
-  const merchant = t.merchantName ? ` (merchant: ${t.merchantName})` : "";
+  const merchantTrimmed = t.merchantName?.trim();
+  const merchant = merchantTrimmed ? ` (merchant: ${merchantTrimmed})` : "";
   // Surface signed amount so the model can read inflow/outflow direction.
   const amount =
     typeof t.amount === "number"

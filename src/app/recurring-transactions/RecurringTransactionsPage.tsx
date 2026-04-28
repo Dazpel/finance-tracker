@@ -7,11 +7,13 @@ import PageLoader from "@components/PageLoader/PageLoader";
 import RecurringReportsTable from "@components/RecurringReportsTable/RecurringReportsTable";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/react";
+import { useNavigateWithPending } from "@hooks/useNavigateWithPending";
 
 export type FlowType = "inflows" | "outflows";
 
 function RecurringTransactionsPage() {
   const router = useRouter();
+  const { navigate, isPending: isNavigating } = useNavigateWithPending();
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -25,15 +27,11 @@ function RecurringTransactionsPage() {
     },
   });
 
-  const handleOnEdit = (encodedURI: string): void => {
-    setIsLoading(true);
-    router.push(`/recurring-transactions/edit?data=${encodedURI}`);
-  };
+  const handleOnEdit = (encodedURI: string): void =>
+    navigate(`/recurring-transactions/edit?data=${encodedURI}`);
 
-  const handleOnView = (encodedURI: string): void => {
-    setIsLoading(true);
-    router.push(`/recurring-transactions/details?data=${encodedURI}`);
-  };
+  const handleOnView = (encodedURI: string): void =>
+    navigate(`/recurring-transactions/details?data=${encodedURI}`);
 
   const handleOnDelete = async (reportId: number): Promise<void> => {
     try {
@@ -65,12 +63,12 @@ function RecurringTransactionsPage() {
             handleOnView={handleOnView}
             handleOnDelete={handleOnDelete}
           />
-          <Button className="w-fit" onPress={() => router.push("/recurring-transactions/create")} color="primary">
+          <Button className="w-fit" onPress={() => navigate("/recurring-transactions/create")} color="primary">
             Create New Report
           </Button>
         </div>
       )}
-      {isLoading && <FullScreenOverlay />}
+      {(isLoading || isNavigating) && <FullScreenOverlay />}
     </>
   );
 }

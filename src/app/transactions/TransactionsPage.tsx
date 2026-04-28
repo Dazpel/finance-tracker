@@ -23,9 +23,11 @@ import { useQuery } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
 import usePreventNavigation from "@components/hooks/usePreventNavigation";
 import { useDeviceSize } from "@components/hooks/useDeviceSize";
+import { useNavigateWithPending } from "@hooks/useNavigateWithPending";
 
 export default function TransactionsPage() {
   const router = useRouter();
+  const { navigate, isPending: isNavigating } = useNavigateWithPending();
   const isMobile = useDeviceSize();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableTransaction, setEditableTransaction] = useState({} as TransactionWithNotes);
@@ -191,7 +193,7 @@ export default function TransactionsPage() {
         return setIsError(true);
       }
       setIsLoading(false);
-      router.push("/reports");
+      navigate("/reports");
     } catch (error) {
       setIsLoading(false);
       setIsError(true);
@@ -319,7 +321,7 @@ export default function TransactionsPage() {
           {renderTabs()}
         </div>
       )}
-      {isLoading && <FullScreenOverlay />}
+      {(isLoading || isNavigating) && <FullScreenOverlay />}
       <EditTransactionModal
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}

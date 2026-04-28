@@ -128,7 +128,7 @@ export const resolveCategory = (
   if (t.userCategoryOverride) return normalizeCategory(t.userCategoryOverride);
   const rawCategory = t.category?.[0]?.replace("and", "&") ?? "Others";
   const mapped = mapPlaidCategoryToDefaultCategory(rawCategory);
-  const description = t.merchant_name ?? t.name ?? "";
+  const description = t.name ?? t.merchant_name ?? "";
   return normalizeCategory(mapDefaultCategoryToCustomCategory(description, mapped));
 };
 

@@ -212,7 +212,7 @@ export const getTransactions = async (
             userId: report.userId,
             account_id: t.account_id,
             transaction_id: t.transaction_id,
-            name: t.merchant_name ?? t.name,
+            name: t.name ?? t.merchant_name,
             amount: t.amount,
             date: t.date,
             category: [resolveCategory(t)],
@@ -491,37 +491,72 @@ export const updateReport = async (
         payloadById.set(t.transaction_id, t);
       }
 
-      await prisma.$transaction(async (tx) => {
-        for (const existing of liveSynced) {
-          const edited = payloadById.get(existing.transaction_id);
-          if (!edited) {
-            await tx.syncedTransaction.update({
-              where: { id: existing.id },
-              data: { userSoftDeleted: true },
-            });
-            continue;
-          }
+      // Precompute all desired changes outside the transaction so the
+      // interactive tx window stays short — sequential per-row updates inside
+      // $transaction(async tx => …) blow past Prisma's 5s default timeout
+      // once a month has more than a handful of rows, surfacing as
+      // "Transaction not found / refers to an old closed transaction".
+      const idsToSoftDelete: string[] = [];
+      const rowUpdates: Array<{
+        id: string;
+        userCategoryOverride: string | null;
+        notes: string | null;
+      }> = [];
 
-          const naturalCategory = resolveCategory({
-            category: existing.category,
-            merchant_name: existing.merchant_name,
-            name: existing.name,
-            userCategoryOverride: null,
-          });
-          const desiredCategory = normalizeCategory(edited.category?.[0]);
-          const override =
-            desiredCategory !== naturalCategory ? desiredCategory : null;
-
-          await tx.syncedTransaction.update({
-            where: { id: existing.id },
-            data: {
-              userSoftDeleted: false,
-              userCategoryOverride: override,
-              notes: edited.notes ?? null,
-            },
-          });
+      for (const existing of liveSynced) {
+        const edited = payloadById.get(existing.transaction_id);
+        if (!edited) {
+          idsToSoftDelete.push(existing.id);
+          continue;
         }
-      });
+
+        const naturalCategory = resolveCategory({
+          category: existing.category,
+          merchant_name: existing.merchant_name,
+          name: existing.name,
+          userCategoryOverride: null,
+        });
+        const desiredCategory = normalizeCategory(edited.category?.[0]);
+        const override =
+          desiredCategory !== naturalCategory ? desiredCategory : null;
+        const desiredNotes = edited.notes ?? null;
+
+        const unchanged =
+          existing.userSoftDeleted === false &&
+          existing.userCategoryOverride === override &&
+          (existing.notes ?? null) === desiredNotes;
+        if (unchanged) continue;
+
+        rowUpdates.push({
+          id: existing.id,
+          userCategoryOverride: override,
+          notes: desiredNotes,
+        });
+      }
+
+      if (idsToSoftDelete.length > 0 || rowUpdates.length > 0) {
+        await prisma.$transaction(
+          async (tx) => {
+            if (idsToSoftDelete.length > 0) {
+              await tx.syncedTransaction.updateMany({
+                where: { id: { in: idsToSoftDelete } },
+                data: { userSoftDeleted: true },
+              });
+            }
+            for (const u of rowUpdates) {
+              await tx.syncedTransaction.update({
+                where: { id: u.id },
+                data: {
+                  userSoftDeleted: false,
+                  userCategoryOverride: u.userCategoryOverride,
+                  notes: u.notes,
+                },
+              });
+            }
+          },
+          { timeout: 30000 }
+        );
+      }
 
       const refreshed = await prisma.syncedTransaction.findMany({
         where: {

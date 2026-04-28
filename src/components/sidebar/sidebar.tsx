@@ -32,7 +32,7 @@ export const SidebarWrapper = () => {
   };
 
   return (
-    <aside className="h-screen z-[202] sticky top-0">
+    <aside className="h-full z-[202] shrink-0">
       {sidebarOpen && (
         <div className={Sidebar.Overlay()} onClick={toggleSidebar} />
       )}

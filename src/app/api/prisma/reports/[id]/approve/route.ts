@@ -99,7 +99,7 @@ export async function POST(
           userId: report.userId,
           account_id: t.account_id,
           transaction_id: t.transaction_id,
-          name: t.name ?? t.merchant_name,
+          name: t.name?.trim() ? t.name : (t.merchant_name ?? ""),
           amount: t.amount,
           date: t.date,
           category: [resolveCategory(t)],

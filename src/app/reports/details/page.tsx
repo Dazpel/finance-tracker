@@ -144,13 +144,7 @@ export default function Page(props: {
               className="w-fit"
               color="primary"
               variant="bordered"
-              onPress={() =>
-                navigate(
-                  `/reports/edit?data=${encodeURIComponent(
-                    (searchParams.data ?? "").replaceAll(" ", "+")
-                  )}`
-                )
-              }
+              onPress={() => navigate(`/reports/edit?data=${searchParams.data}`)}
             >
               Edit
             </Button>

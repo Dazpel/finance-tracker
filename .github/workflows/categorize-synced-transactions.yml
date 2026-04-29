@@ -23,7 +23,7 @@ jobs:
             --retry 2 \
             --retry-all-errors \
             --retry-delay 5 \
-            https://finance-tracker-plum-six.vercel.app/api/cronjob/categorize-synced-transactions \
+            https://www.moneyeye.dev/api/cronjob/categorize-synced-transactions \
             -H "Authorization: Bearer $CRON_SECRET")
           cat /tmp/response.json
           echo

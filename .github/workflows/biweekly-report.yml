@@ -14,5 +14,5 @@ jobs:
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -X POST https://finance-tracker-plum-six.vercel.app/api/cronjob/biweek-report \
+          curl -X POST https://www.moneyeye.dev/api/cronjob/biweek-report \
           -H "Authorization: Bearer $CRON_SECRET"

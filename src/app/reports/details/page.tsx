@@ -2,9 +2,11 @@
 
 import React, { useState, use } from "react";
 import { useDeviceSize } from "@components/hooks/useDeviceSize";
+import FullScreenOverlay from "@components/Loader/Loader";
 import ReportCard from "@components/ReportCard/ReportCard";
 import TransactionsTable from "@components/TransactionsTable/TransactionsTable";
 import { Button, Tab, Tabs } from "@heroui/react";
+import { useNavigateWithPending } from "@hooks/useNavigateWithPending";
 import {
   decodeQueryString,
   filterTransactions,
@@ -20,6 +22,7 @@ export default function Page(props: {
   const searchParams = use(props.searchParams);
   //todo: abstract generateSelectedCategoryKeys so it can be reused
   const isMobile = useDeviceSize();
+  const { navigate, isPending: isNavigating } = useNavigateWithPending();
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -126,18 +129,31 @@ export default function Page(props: {
           Created At:{" "}
           <span className="font-normal">{formatCreatedDate(createdAt)}</span>
         </p>
-        <Button
-          className="w-fit mb-5"
-          color="primary"
-          isLoading={isLoading}
-          isDisabled={isLoading || displayTransactions}
-          onPress={() => fetchTransactions()}
-        >
-          View Transactions
-        </Button>
+        <div className="flex gap-2 mb-5">
+          <Button
+            className="w-fit"
+            color="primary"
+            isLoading={isLoading}
+            isDisabled={isLoading || displayTransactions}
+            onPress={() => fetchTransactions()}
+          >
+            View Transactions
+          </Button>
+          {reportType !== "ANNUAL" && (
+            <Button
+              className="w-fit"
+              color="primary"
+              variant="bordered"
+              onPress={() => navigate(`/reports/edit?data=${searchParams.data}`)}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
         {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
         <div className="flex flex-col gap-4">{renderTabs()}</div>
       </div>
+      {isNavigating && <FullScreenOverlay />}
     </div>
   );
 }

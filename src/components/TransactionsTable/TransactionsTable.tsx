@@ -1,4 +1,12 @@
 import { InfoIcon } from "@components/icons/table/info-icon";
+import { DeleteIcon } from "@components/icons/table/delete-icon";
+import {
+  countSelectedRows,
+  removeTransactionById,
+  removeTransactionsByIds,
+  resolveSelectedRowIds,
+} from "./utils";
+import { BulkDeleteConfirmModal } from "./BulkDeleteConfirmModal";
 import {
   Button,
   Dropdown,
@@ -124,6 +132,8 @@ export default function TransactionsTable({
   const canAddRows = canEdit && !isPendingReport;
   const [categoryFilter, setCategoryFilter] = useState<Selection>("all");
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Selection>(new Set());
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const capitalize = (s: string) => {
@@ -226,19 +236,17 @@ export default function TransactionsTable({
   };
 
   const onDelete = (transactionId?: string) => {
-    const prevTransactions = [...transactions];
-    const transactionIndex = prevTransactions.findIndex(
-      (transaction) => transaction.transaction_id === transactionId
-    );
-
-    if (transactionIndex === -1) {
-      return prevTransactions;
-    }
-
-    let updatedTransactions = [...prevTransactions];
-
-    updatedTransactions.splice(transactionIndex, 1);
+    if (!transactionId) return;
+    const updatedTransactions = removeTransactionById(transactions, transactionId);
     return generateSelectedCategoryKeys(updatedTransactions);
+  };
+
+  const onBulkDelete = () => {
+    const ids = resolveSelectedRowIds(selectedRowKeys, filteredItems);
+    if (ids.size === 0) return;
+    const updatedTransactions = removeTransactionsByIds(transactions, ids);
+    generateSelectedCategoryKeys(updatedTransactions);
+    setSelectedRowKeys(new Set());
   };
 
 
@@ -341,6 +349,7 @@ export default function TransactionsTable({
             color="primary"
             disallowEmptySelection
             selectionMode="single"
+            className="max-h-64 overflow-y-auto"
             //@ts-ignore
             selectedKeys={selectedKeys[transactionId]}
             onSelectionChange={(keys) =>
@@ -358,11 +367,32 @@ export default function TransactionsTable({
     );
   };
 
+  const selectedRowCount = countSelectedRows(
+    selectedRowKeys,
+    filteredItems.length
+  );
+
   const topContent = useMemo(() => {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex justify-between gap-3 items-end">
           <div className="flex gap-3">
+            {canEdit && selectedRowCount > 0 && (
+              <Tooltip
+                content={`Delete ${selectedRowCount} selected`}
+                color="danger"
+              >
+                <Button
+                  isIconOnly
+                  color="danger"
+                  variant="flat"
+                  aria-label="Delete selected transactions"
+                  onPress={() => setIsBulkDeleteOpen(true)}
+                >
+                  <DeleteIcon fill="currentColor" />
+                </Button>
+              </Tooltip>
+            )}
             <Dropdown shouldBlockScroll={false}>
               <DropdownTrigger className="hidden sm:flex">
                 <Button
@@ -376,6 +406,7 @@ export default function TransactionsTable({
                 disallowEmptySelection
                 aria-label="Table Columns"
                 closeOnSelect={false}
+                className="max-h-64 overflow-y-auto"
                 selectedKeys={categoryFilter}
                 selectionMode="multiple"
                 onSelectionChange={(keys) =>
@@ -446,7 +477,7 @@ export default function TransactionsTable({
         </div>
       </div>
     );
-  }, [categoryFilter, transactions.length, selectedKeys, canUndo, canRedo, isUploading]);
+  }, [categoryFilter, transactions.length, selectedKeys, canUndo, canRedo, isUploading, canEdit, selectedRowCount]);
 
   const renderCell = React.useCallback(
     (transaction: TableRow, columnKey: React.Key) => {
@@ -528,29 +559,40 @@ export default function TransactionsTable({
   );
 
   return (
-    <Table
-      aria-label="Transactions table"
-      topContent={topContent}
-      topContentPlacement="inside"
-      classNames={{
-        th: "last:text-center",
-      }}
-    >
-      <TableHeader columns={colums}>
-        {(column) => <TableColumn key={column.key}>{column.label}</TableColumn>}
-      </TableHeader>
-      <TableBody
-        items={rows(filteredItems, descriptionToUse)}
-        emptyContent="No transactions found yet."
+    <>
+      <Table
+        aria-label="Transactions table"
+        topContent={topContent}
+        topContentPlacement="inside"
+        selectionMode={canEdit ? "multiple" : "none"}
+        selectedKeys={selectedRowKeys}
+        onSelectionChange={setSelectedRowKeys}
+        classNames={{
+          th: "last:text-center",
+        }}
       >
-        {(item) => (
-          <TableRow className="hover:bg-default-100" key={item.key}>
-            {(columnKey) => (
-              <TableCell>{renderCell(item, columnKey)}</TableCell>
-            )}
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+        <TableHeader columns={colums}>
+          {(column) => <TableColumn key={column.key}>{column.label}</TableColumn>}
+        </TableHeader>
+        <TableBody
+          items={rows(filteredItems, descriptionToUse)}
+          emptyContent="No transactions found yet."
+        >
+          {(item) => (
+            <TableRow className="hover:bg-default-100" key={item.key}>
+              {(columnKey) => (
+                <TableCell>{renderCell(item, columnKey)}</TableCell>
+              )}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <BulkDeleteConfirmModal
+        isOpen={isBulkDeleteOpen}
+        onClose={() => setIsBulkDeleteOpen(false)}
+        onConfirm={onBulkDelete}
+        count={selectedRowCount}
+      />
+    </>
   );
 }

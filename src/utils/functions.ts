@@ -250,7 +250,7 @@ export const formatToDefaultCategories = (report: ReportData) => {
 };
 
 export const decodeQueryString = (queryString: string) => {
-  const formattedString = queryString.replace(" ", "+");
+  const formattedString = queryString.replaceAll(" ", "+");
   return JSON.parse(decompressFromEncodedURIComponent(formattedString));
 }
 

@@ -5,7 +5,7 @@ export const SidebarWrapper = tv({
 
   variants: {
     collapsed: {
-      true: "translate-x-0 ml-0 static",
+      true: "translate-x-0 ml-0 md:static",
     },
   },
 });

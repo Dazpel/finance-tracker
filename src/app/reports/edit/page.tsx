@@ -10,6 +10,7 @@ import { Input, Tab, Tabs } from "@heroui/react";
 import axios from "axios";
 import useUndoRedoState from "hooks/useUndoRedoState";
 import { useNavigateWithPending } from "@hooks/useNavigateWithPending";
+import { useToast } from "@hooks/useToast";
 import {
   defaultCategorieToValueObject,
   defaultCategories,
@@ -45,12 +46,11 @@ export default function Page(
   //todo: abstract generateSelectedCategoryKeys so it can be reused
   const isMobile = useDeviceSize();
   const { navigate, isPending: isNavigating } = useNavigateWithPending();
+  const { errorToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableTransaction, setEditableTransaction] = useState({} as TransactionWithNotes);
   const [selectedCategory, setSelectedCategory] = useState(new Set<string>());
   const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const reportData = decodeQueryString(searchParams.data);
 
   const { reportName: currentReportName, createdAt, id, reportType, status, ...rest } = reportData;
@@ -146,21 +146,17 @@ export default function Page(
   }, [selectedKeys, transactions]);
 
   const handleUpdateReport = async () => {
-    setIsLoading(true);
-    setIsError(false);
-    setErrorMessage("");
-
     if (!isAllCategoriesAccepted) {
-      setErrorMessage("Please make sure all categories are recognized");
-      setIsError(true);
+      errorToast("Please make sure all categories are recognized");
       return;
     }
 
     if (!isReportNameValid || reportName.length === 0) {
-      setErrorMessage("Please enter a report name");
-      setIsError(true);
+      errorToast("Please enter a report name");
       return;
     }
+
+    setIsLoading(true);
 
     try {
       const body = {
@@ -172,13 +168,14 @@ export default function Page(
 
       const res = await axios.post("/api/prisma/reports/update", body);
       if (!res.data.success) {
-        setErrorMessage("Error submitting report");
-        return setIsError(true);
+        errorToast("Error submitting report");
+        setIsLoading(false);
+        return;
       }
       navigate("/reports");
     } catch (error) {
-      setIsError(true);
-      setErrorMessage("Error submitting report");
+      errorToast("Error submitting report");
+      setIsLoading(false);
     }
   };
 
@@ -189,10 +186,11 @@ export default function Page(
   }
 
   const getCategorySelected = useMemo(() => {
-    const defaultCategory = editableTransaction?.category ? editableTransaction.category[0] : "Others";
+    const rawCategory = editableTransaction?.category?.[0] ?? "others";
+    const defaultCategory = rawCategory.replace("and", "&").toLocaleLowerCase();
     const categorySelected = selectedCategory.values().next().value;
     const val = categorySelected || defaultCategory;
-    
+
     return val;
   }, [selectedCategory, editableTransaction]);
 
@@ -213,7 +211,7 @@ export default function Page(
       name: (formValues[0] as HTMLInputElement)?.value,
       amount: -Number((formValues[1] as HTMLInputElement)?.value),
       notes: (formValues[2] as HTMLTextAreaElement)?.value || undefined,
-      category: [formValues[3]?.ariaLabel || "Others"],
+      category: [formValues[3]?.ariaLabel || "others"],
     };
     
     prevTransactions[transactionIndex] = updatedTransaction;
@@ -243,8 +241,7 @@ export default function Page(
       setIsLoading(false);
     } catch (error) {
       console.log({ error });
-      setIsError(true);
-      setErrorMessage("Error fetching transactions");
+      errorToast("Error fetching transactions");
       setIsLoading(false);
     }
   };
@@ -316,7 +313,6 @@ export default function Page(
           Created:{" "}
           <span className="font-normal">{formatCreatedDate(createdAt)}</span>
         </p>
-        {isError && <p className="mb-4 text-danger">{errorMessage}</p>}
         {/* <button onPress={() => handleDownload(transactions)}>Download CSV</button> */}
         {transactions.length > 0 && (
           <div className="flex flex-col gap-4">

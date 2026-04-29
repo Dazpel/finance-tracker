@@ -341,6 +341,7 @@ export default function TransactionsTable({
             color="primary"
             disallowEmptySelection
             selectionMode="single"
+            className="max-h-64 overflow-y-auto"
             //@ts-ignore
             selectedKeys={selectedKeys[transactionId]}
             onSelectionChange={(keys) =>
@@ -376,6 +377,7 @@ export default function TransactionsTable({
                 disallowEmptySelection
                 aria-label="Table Columns"
                 closeOnSelect={false}
+                className="max-h-64 overflow-y-auto"
                 selectedKeys={categoryFilter}
                 selectionMode="multiple"
                 onSelectionChange={(keys) =>

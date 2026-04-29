@@ -207,10 +207,11 @@ export default function TransactionsPage() {
   }
 
   const getCategorySelected = useMemo(() => {
-    const defaultCategory = editableTransaction?.category ? editableTransaction.category[0] : "Others";
+    const rawCategory = editableTransaction?.category?.[0] ?? "others";
+    const defaultCategory = rawCategory.replace("and", "&").toLocaleLowerCase();
     const categorySelected = selectedCategory.values().next().value;
     const val = categorySelected || defaultCategory;
-    
+
     return val;
   }, [selectedCategory, editableTransaction]);
 
@@ -230,7 +231,7 @@ export default function TransactionsPage() {
       original_description: (formValues[0] as HTMLInputElement)?.value,
       amount: -Number((formValues[1] as HTMLInputElement)?.value),
       notes: (formValues[2] as HTMLTextAreaElement)?.value || undefined,
-      category: [formValues[3]?.ariaLabel || "Others"],
+      category: [formValues[3]?.ariaLabel || "others"],
     };
     
     prevTransactions[transactionIndex] = updatedTransaction;

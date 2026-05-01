@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add user-configurable per-category spending thresholds, plus a check-and-notify pipeline that fires alerts when monthly spend crosses 70% of, reaches 100% of, or exceeds the threshold for any category. Phase 1 ships email-only via the existing SendGrid integration. Phase 2 wires up Expo push notifications to the existing `finance-tracker-mobile` app once it's ready.
+Add user-configurable per-category spending thresholds, plus a check-and-notify pipeline that fires alerts when monthly spend crosses 70% of, reaches 100% of, or exceeds the threshold for any category. Phase 1 ships email-only via Resend with templates rendered through React Email. Phase 2 wires up Expo push notifications to the existing `finance-tracker-mobile` app once it's ready.
 
 The full end-to-end flow is designed up front so the architecture has the right seams (a `Notifier` interface, a clean check function, idempotent integration points). Phase 1 implementation lands the threshold half plus the email-shaped half of the pipeline; Phase 2 is a follow-up plan that drops in `ExpoPushNotifier`, the `/api/push-tokens` endpoint, and the mobile-side cleanups.
 
@@ -25,7 +25,7 @@ The full end-to-end flow is designed up front so the architecture has the right 
 | Q1 | Scope of this brainstorm | Full end-to-end design; implementation phased — thresholds + email first, push later |
 | Q2 | Threshold model | One `ExpenseThreshold` row per user, per-category dollar columns (mirrors `Report` shape). Single value applies to current and future months. |
 | Q3 | When the check runs | After both Plaid sync (`upsertCurrentMonthDraftReport`) and AI categorize cron. Cron also triggers a recompute for affected users. |
-| Q4 | Notification channel | Email now (existing SendGrid), push later (Expo). `Notifier` interface is the seam. |
+| Q4 | Notification channel | Email now (Resend + React Email), push later (Expo). `Notifier` interface is the seam. |
 | Q5 | Categories + defaults | All 11 expense categories thresholdable. Pre-seed Food & Drink $400, Groceries $400, Entertainment $400, Shopping $300. Other 7 default to 0 (silent until user sets). |
 | Q6 | Levels + dedupe | Three levels: `WARNING_70`, `REACHED_100`, `EXCEEDED`. Use strict `>` for EXCEEDED, not a `1.01` magic number. Dedupe key = `(userId, category, level, month)`. |
 | Q7 | Push provider | Expo Push API. Confirmed by inspecting `finance-tracker-mobile`: `expo-notifications` already configured, EAS `projectId` set, `usePushNotifications.ts` already drafted. |
@@ -195,7 +195,7 @@ export type Alert = {
    - Otherwise, `prisma.notificationLog.create` inside a try/catch. On `P2002` (concurrent worker won the race): skip. On success: push onto `dispatched[]`.
 5. Single dispatch call: `await notifier.dispatch(userId, dispatched)`. If it throws, log and continue — log rows are already committed, so we won't retry. User misses one alert. Acceptable for v1.
 
-**Why insert-log-first, dispatch-second:** two concurrent webhooks racing the same alert. Insert-first means the loser hits the unique constraint and bails before sending a duplicate. SendGrid + Prisma can't share a transaction; this ordering is the available primitive.
+**Why insert-log-first, dispatch-second:** two concurrent webhooks racing the same alert. Insert-first means the loser hits the unique constraint and bails before sending a duplicate. Resend + Prisma can't share a transaction; this ordering is the available primitive.
 
 ### `Notifier` interface
 
@@ -209,7 +209,7 @@ export interface Notifier {
 **`EmailNotifier`** (Phase 1):
 - Loads `User.email` for the user.
 - Renders one email summarizing all alerts in the batch via `formatAlertEmail`.
-- Sends via existing `@sendgrid/mail` setup.
+- Sends via Resend, rendering the email body from a React Email component.
 - No-op if alerts array is empty.
 
 **`ExpoPushNotifier`** (Phase 2):
@@ -401,7 +401,7 @@ export function formatAlertPush(alert: Alert): {
 | `/api/push-tokens` (Phase 2) | Curl with a real Supabase access token. Verify: valid → 200, missing/garbage → 401, no matching User → 404, idempotent re-register, cross-user token rotation. Mobile-side: install dev build on real device, sign in, verify row in `prisma studio`, sign out, verify deletion. |
 | Categorize cron regression | Console.log instrumentation: cron run with no eligible rows → no recompute; cron updating 5 rows across 2 users → exactly 2 recomputes + 2 threshold checks; one user throwing → other user still processed |
 | Plaid webhook regression | Webhook with no transactions still completes cleanly (early exit when no `Report` row) |
-| Production canary | Deploy with email-only and `DRY_RUN_NOTIFICATIONS=false`. Watch SendGrid logs for first 2-3 emails. Adjust thresholds based on a week of real data. |
+| Production canary | Deploy with email-only and `DRY_RUN_NOTIFICATIONS=false`. Watch Resend dashboard logs for first 2-3 emails. Adjust thresholds based on a week of real data. |
 
 ## File layout
 
@@ -519,7 +519,7 @@ The design is end-to-end. Implementation ships in two phases.
 | Concurrent webhooks racing the same alert | Insert `NotificationLog` first, dispatch second. Loser hits P2002 and bails before sending. |
 | Stale Plaid totals when AI cron changes a category — already a latent gap today | Phase 1 fixes this gap (cron now triggers `upsertCurrentMonthDraftReport`). Side benefit, not new risk. |
 | Pre-seeded defaults annoy users who don't want them | Defaults chosen for the single current user (you). If multi-user comes later, revisit per Q5(b). |
-| SendGrid down → user misses an alert | Acceptable for v1. If volume grows, add retry queue (Phase 3). |
+| Resend down → user misses an alert | Acceptable for v1. If volume grows, add retry queue (Phase 3). |
 | Supabase JWT verification fails in prod (wrong secret, alg mismatch) | Phase 2 risk — smoke-test mobile→backend roundtrip before any Phase 2 deploy. |
 | Manual transaction edits in the UI don't trigger threshold check in v1 | Picked up on next Plaid sync. Acceptable; flag if bug reports surface. |
 

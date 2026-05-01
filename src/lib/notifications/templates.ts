@@ -56,8 +56,8 @@ export type AlertEmailData = {
   reportsUrl: string;
 };
 
-// Pure. Takes the alerts batch + base URL; returns the dynamic_template_data
-// payload for the SendGrid dynamic template.
+// Pure. Takes the alerts batch + base URL; returns the props consumed by the
+// React Email alert template, which is rendered and delivered via Resend.
 export function buildAlertEmailData(
   alerts: Alert[],
   baseUrl: string

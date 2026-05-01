@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship per-category spending thresholds, an editable `/thresholds` page, and a check-and-notify pipeline that fires SendGrid emails when monthly spend crosses 70% / 100% / over a threshold. Phase 2 (Expo push) is a separate plan.
+**Goal:** Ship per-category spending thresholds, an editable `/thresholds` page, and a check-and-notify pipeline that fires emails (via Resend, with React Email-rendered templates) when monthly spend crosses 70% / 100% / over a threshold. Phase 2 (Expo push) is a separate plan.
+
+> **Provider note (post-merge):** This plan was originally written assuming `@sendgrid/mail` Dynamic Templates. The merged implementation uses **Resend + React Email** instead. The high-level Goal / Tech Stack / Prerequisites in this header have been revised to match. The deeper Task sections below still contain the original SendGrid-shaped guidance and example code — those are preserved as the historical plan-of-record. When following along, defer to the actual code in `src/lib/notifications/notifier.ts` and the React Email component under `src/lib/notifications/` for the canonical wiring; treat the SendGrid-named env vars and template-ID setup in later sections as superseded by `RESEND_API_KEY` + a sender email.
 
 **Architecture:** Three new Prisma models (`ExpenseThreshold` columnar like `Report`, `NotificationLog` for dedupe, `PushToken` for future use). New `src/lib/notifications/` module holds the pure math + Notifier interface + EmailNotifier. Two integration points: end of `upsertCurrentMonthDraftReport` (Plaid path) and end of `categorize-synced-transactions` cron (after a per-touched-user recompute). The cron integration also fixes a latent stale-totals gap. Verification uses standalone scripts under `scripts/` (codebase has no test framework today; spec defers introducing one).
 
-**Tech Stack:** Next.js 16 + Prisma + PostgreSQL + NextAuth, TanStack Query + HeroUI on the page, `@sendgrid/mail` Dynamic Templates for delivery, `jose` already present (used in Phase 2 only).
+**Tech Stack:** Next.js 16 + Prisma + PostgreSQL + NextAuth, TanStack Query + HeroUI on the page, **Resend** SDK for delivery with **React Email** for template rendering, `jose` already present (used in Phase 2 only).
 
 **Spec:** `docs/superpowers/specs/2026-04-30-push-notifications-and-thresholds-design.md`
 
@@ -22,7 +24,7 @@ prisma/migrations/<ts>_thresholds_notifications/migration.sql      [generated]
 src/lib/notifications/
   monthKey.ts                  # toMonthKey(date) → "YYYY-MM"
   expenseKeys.ts               # EXPENSE_KEYS constant + levelsCrossed() helper
-  templates.ts                 # buildAlertEmailData() — returns SendGrid dynamic_template_data
+  templates.ts                 # buildAlertEmailData() — returns props for the React Email alert template (rendered + sent via Resend)
   notifier.ts                  # Notifier interface + EmailNotifier (Phase 1 only)
   thresholdCheck.ts            # checkThresholdsAndNotify() — main entrypoint
   index.ts                     # re-exports
@@ -53,7 +55,7 @@ src/lib/reports/draftReport.ts                                  # call checkThre
 src/app/api/cronjob/categorize-synced-transactions/route.ts     # per-user recompute + check
 src/utils/constants.ts                                          # add THRESHOLDS_PAGE
 src/components/sidebar/sidebar.tsx                              # add nav entry
-.env.example (or .env)                                          # SENDGRID_THRESHOLD_ALERT_TEMPLATE_ID, DRY_RUN_NOTIFICATIONS
+.env.example (or .env)                                          # RESEND_API_KEY, RESEND_SENDER_EMAIL, DRY_RUN_NOTIFICATIONS
 ```
 
 ---
@@ -62,21 +64,15 @@ src/components/sidebar/sidebar.tsx                              # add nav entry
 
 These are not code tasks. Do them once before the canary in Task 16.
 
-**(P1) Create a SendGrid Dynamic Template** named "Threshold Alert" in the MoneyEye SendGrid account. Template variables it must reference:
+**(P1) Build a React Email component** for the threshold alert under `src/lib/notifications/` (e.g., `AlertEmail.tsx`). It consumes the props returned by `buildAlertEmailData` (subject, monthLabel, alertCount, alerts[], ctaUrl, reportsUrl). Brand color `#0F0F1A`, same layout style as the existing biweek-report email. The notifier renders this component to HTML via `@react-email/render` and hands the HTML to Resend's `emails.send`.
 
-- `{{ subject }}` — set in template subject line and as `<title>` if used
-- `{{ monthLabel }}` — e.g., "April 2026"
-- `{{ alertCount }}` — integer
-- `{{ #each alerts }}` block with: `category`, `levelLabel`, `spentFormatted`, `limitFormatted`, `percent`, `overFormatted` (string or empty)
-- `{{ ctaUrl }}` — the `/thresholds` URL
-- `{{ reportsUrl }}` — the `/reports` URL
+**(P2) Provision Resend** in the MoneyEye account: create an API key and verify the sending domain / sender email.
 
-Brand color `#0F0F1A`, same layout style as the existing biweek-report template. After saving, copy the template ID (starts with `d-`) into `.env` as `SENDGRID_THRESHOLD_ALERT_TEMPLATE_ID=d-...`.
-
-**(P2) Add env vars** to `.env`:
+**(P3) Add env vars** to `.env`:
 
 ```
-SENDGRID_THRESHOLD_ALERT_TEMPLATE_ID=d-<id-from-P1>
+RESEND_API_KEY=<from Resend dashboard>
+RESEND_SENDER_EMAIL=<verified sender, e.g. alerts@moneyeye.app>
 DRY_RUN_NOTIFICATIONS=false
 ```
 
@@ -1528,16 +1524,17 @@ Then open `.env.example` and replace any real secrets/keys/URLs with placeholder
 - [ ] **Step 2: Append the new env vars to `.env.example`**
 
 ```
-# Threshold-alert SendGrid template (Phase 1). Create a Dynamic Template named
-# "Threshold Alert" in SendGrid; copy the d-... template ID here.
-SENDGRID_THRESHOLD_ALERT_TEMPLATE_ID=
+# Resend (Phase 1 email delivery). API key from the Resend dashboard,
+# sender must be a verified domain/email in Resend.
+RESEND_API_KEY=
+RESEND_SENDER_EMAIL=
 
-# When "true", the threshold check logs intended sends but does not call SendGrid.
+# When "true", the threshold check logs intended sends but does not call Resend.
 # Useful during initial deploy to verify wiring without spamming.
 DRY_RUN_NOTIFICATIONS=false
 ```
 
-- [ ] **Step 3: Add the same two keys to your local `.env`** with real values (the actual SendGrid template ID once Prerequisite P1 is done; `DRY_RUN_NOTIFICATIONS=false`).
+- [ ] **Step 3: Add the same keys to your local `.env`** with real values (the actual `RESEND_API_KEY` + verified `RESEND_SENDER_EMAIL` once Prerequisites P1/P2 are done; `DRY_RUN_NOTIFICATIONS=false`).
 
 - [ ] **Step 4: Commit**
 
@@ -1550,15 +1547,16 @@ git commit -m "chore: document threshold-alert env vars"
 
 ### Task 16: Production canary
 
-This is a manual checklist — no code changes. Run after all prior tasks land and the SendGrid template (Prerequisite P1) is created.
+This is a manual checklist — no code changes. Run after all prior tasks land and the React Email component + Resend account (Prerequisites P1/P2) are ready.
 
 - [ ] **Step 1: Confirm production env**
 
 In Vercel (or wherever this deploys), set:
-- `SENDGRID_THRESHOLD_ALERT_TEMPLATE_ID=d-<id>`
+- `RESEND_API_KEY=<from Resend dashboard>`
+- `RESEND_SENDER_EMAIL=<verified sender>`
 - `DRY_RUN_NOTIFICATIONS=false`
 
-(Existing `SENDGRID_API_KEY`, `SENDGRID_SENDER_EMAIL`, `NEXTAUTH_URL` are already configured.)
+(Existing `NEXTAUTH_URL` is already configured.)
 
 - [ ] **Step 2: Apply migration to prod DB**
 
@@ -1576,9 +1574,9 @@ Either wait for the next Plaid webhook (if you've made a recent transaction) or 
 
 Run: `npx ts-node scripts/fire-sync-webhook.ts` — pointed at prod (set the URL in the script's env or args; check the script for how).
 
-- [ ] **Step 7: Verify in SendGrid Activity**
+- [ ] **Step 7: Verify in Resend dashboard**
 
-Open SendGrid → Activity → expect to see exactly one delivery to your email within ~30 seconds. Open the email and confirm:
+Open Resend → Logs/Emails → expect to see exactly one delivery to your email within ~30 seconds. Open the email and confirm:
 - Subject matches the level you forced.
 - Per-alert block renders with correct numbers and percentage.
 - "Adjust your thresholds" CTA links to the prod `/thresholds` URL.
@@ -1589,7 +1587,7 @@ Trigger a second sync immediately. Expected: no second email (the `NotificationL
 
 - [ ] **Step 9: Restore your thresholds** to sane values for the rest of the month.
 
-- [ ] **Step 10: Watch for one week.** No "Step 11" — just check SendGrid Activity daily for any unexpected fires. If anything looks off (multiple emails for the same level, no email when one was expected, malformed copy), file an issue and patch.
+- [ ] **Step 10: Watch for one week.** No "Step 11" — just check the Resend dashboard daily for any unexpected fires. If anything looks off (multiple emails for the same level, no email when one was expected, malformed copy), file an issue and patch.
 
 ---
 
@@ -1601,7 +1599,7 @@ Trigger a second sync immediately. Expected: no second email (the `NotificationL
 - Seed backfill → Task 2
 - `monthKey.ts` → Task 3
 - `expenseKeys.ts` (covers EXPENSE_KEYS + level math) → Task 4
-- `templates.ts` (SendGrid payload builder, replacing the spec's "render HTML" with the codebase's actual SendGrid Dynamic Template pattern) → Task 5
+- `templates.ts` (props builder for the React Email alert component; the notifier renders that component to HTML and ships via Resend) → Task 5
 - `notifier.ts` (Notifier interface + EmailNotifier + DryRunNotifier covering DRY_RUN safety knob) → Task 6
 - `thresholdCheck.ts` → Task 7
 - Dry-run script → Task 8
@@ -1614,7 +1612,7 @@ Trigger a second sync immediately. Expected: no second email (the `NotificationL
 - Env documentation → Task 15
 - Production canary → Task 16
 
-**Spec deviation noted:** The spec described inline HTML/text email rendering in `formatAlertEmail`. The codebase actually uses SendGrid Dynamic Templates everywhere (see `src/utils/emailTemplates.ts`), so this plan substitutes a `buildAlertEmailData` payload builder + a one-time SendGrid template setup (Prerequisite P1). This is a strictly better fit for the codebase and was confirmed by inspection. Update the spec doc to reflect this if you want it to stay in sync, but it's not strictly required since the plan supersedes the spec at implementation time.
+**Spec / plan deviation noted:** The spec described inline HTML/text email rendering in `formatAlertEmail`. An earlier draft of this plan instead used SendGrid Dynamic Templates (matching what was then the codebase's email pattern). The merged implementation pivoted again to **Resend + React Email**, which keeps the "rendering lives in code, not in a vendor dashboard" property of the spec while picking up better DX (typed props, local preview). `buildAlertEmailData` survives unchanged as the props builder feeding the React Email component. Treat any remaining SendGrid-specific text in this document as historical context rather than current instruction; defer to the merged code.
 
 **Phase 2 coverage:** `verifySupabaseJwt`, `/api/push-tokens`, `ExpoPushNotifier`, `formatAlertPush`, mobile cleanups — all explicitly out of scope, will be addressed by a separate plan when the mobile app is ready.
 

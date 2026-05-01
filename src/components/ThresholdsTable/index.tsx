@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input, Button, Spinner } from "@heroui/react";
 import { EXPENSE_KEYS, EXPENSE_KEY_TO_DISPLAY, type ExpenseKey } from "@lib/notifications/expenseKeys";
@@ -39,7 +39,11 @@ export const ThresholdsTable = () => {
   });
 
   if (isLoading) return <Spinner label="Loading thresholds..." />;
-  if (error) return <div className="text-danger">Failed to load: {String(error)}</div>;
+  if (error) {
+    console.error("[ThresholdsTable] failed to load thresholds", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return <div className="text-danger">Failed to load thresholds: {message}</div>;
+  }
   if (!data) return null;
 
   return (
@@ -79,6 +83,12 @@ function ThresholdRow({
 
   const dirty = parsed !== null && parsed !== initialValue;
   const placeholder = initialValue === 0 ? "No threshold" : "";
+
+  useEffect(() => {
+    if (!saving && !dirty) {
+      setValue(String(initialValue));
+    }
+  }, [initialValue, saving, dirty]);
 
   const handleSave = async () => {
     if (!dirty || parsed === null) return;

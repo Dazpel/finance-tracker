@@ -159,7 +159,7 @@ This application requires specific environment variables for:
 - **Database**: `DATABASE_URL` and `DIRECT_URL` for PostgreSQL connection
 - **Plaid Integration**: `PLAID_CLIENT_ID`, `PLAID_SECRET`, and `PLAID_ENV`
 - **NextAuth**: `NEXTAUTH_SECRET` and `NEXTAUTH_URL`
-- **Email**: SendGrid configuration for notifications
+- **Email**: Resend configuration (`RESEND_API_KEY`, sender email) for notifications, with templates rendered via React Email
 - **Vercel**: Analytics and Speed Insights configuration
 
 ### Database Management

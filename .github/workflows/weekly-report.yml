@@ -1,0 +1,19 @@
+name: Weekly Report
+
+on:
+  schedule:
+    # Thursdays at 14:00 UTC = 9:00 AM EST (10:00 AM EDT during summer).
+    - cron: '0 14 * * 4'
+  workflow_dispatch:
+
+jobs:
+  create-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send request to create weekly report
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -X POST https://www.moneyeye.dev/api/cronjob/weekly-report \
+          -H "Authorization: Bearer $CRON_SECRET"

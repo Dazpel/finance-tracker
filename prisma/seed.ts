@@ -1,22 +1,31 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const userData = [
-  {
-    email: "alice@prisma.io",
-  },
-] satisfies Prisma.UserCreateInput[];
-
 async function main() {
-  console.log(`Start seeding ...`);
-  for (const u of userData) {
-    const user = await prisma.user.create({
-      data: u,
+  console.log("Seeding: backfilling ExpenseThreshold rows for existing users...");
+
+  const users = await prisma.user.findMany({
+    select: { id: true, email: true },
+  });
+
+  let created = 0;
+  let skipped = 0;
+
+  for (const u of users) {
+    const existing = await prisma.expenseThreshold.findUnique({
+      where: { userId: u.id },
     });
-    console.log(`Created user with id: ${user.id}`);
+    if (existing) {
+      skipped++;
+      continue;
+    }
+    await prisma.expenseThreshold.create({ data: { userId: u.id } });
+    created++;
+    console.log(`  + ExpenseThreshold for ${u.email}`);
   }
-  console.log(`Seeding finished.`);
+
+  console.log(`Done. Created ${created}, skipped ${skipped} (already had rows).`);
 }
 
 main()

@@ -6,6 +6,8 @@ import {
   type CategorizeInput,
 } from "@lib/ai/categorize";
 import { isCanonicalCategory, type CanonicalCategory } from "@lib/categories";
+import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
+import { checkThresholdsAndNotify } from "@lib/notifications/thresholdCheck";
 
 export const maxDuration = 60;
 
@@ -74,6 +76,7 @@ export async function POST(request: Request) {
     let totalFailed = 0;
 
     for (const [userId, rows] of byUser) {
+      let userTotalUpdated = 0;
       // Pull user's labeled history from Transaction (legacy data with curated category[0]).
       const history = await prisma.transaction.findMany({
         where: {
@@ -143,6 +146,7 @@ export async function POST(request: Request) {
               data: { userCategoryOverride: category },
             });
             totalUpdated += count;
+            userTotalUpdated += count;
             if (count < ids.length) {
               totalFailed += ids.length - count;
             }
@@ -153,6 +157,22 @@ export async function POST(request: Request) {
             );
             totalFailed += ids.length;
           }
+        }
+      }
+
+      // Recompute the user's auto-maintained Report rows so the new
+      // categorizations land in the totals, then run the threshold check.
+      // Skip if nothing changed for this user.
+      if (userTotalUpdated > 0) {
+        try {
+          const now = new Date();
+          await upsertCurrentMonthDraftReport(userId, now);
+          await checkThresholdsAndNotify(userId, now);
+        } catch (err) {
+          console.error(
+            `[categorize-cron] post-categorize work failed for user=${userId}:`,
+            err
+          );
         }
       }
     }

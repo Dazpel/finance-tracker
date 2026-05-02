@@ -133,8 +133,13 @@ export const resolveCategory = (
 };
 
 // Returns the user-corrected amount when set (e.g., after a partial Venmo
-// reimbursement); otherwise the raw Plaid amount. Sign convention is preserved:
-// expenses stay negative, revenue stays positive.
+// reimbursement); otherwise the raw Plaid amount. Stored values follow
+// Plaid's row-level convention — expenses positive, revenue negative — and
+// `userAmountOverride` rides the same convention. Report-level aggregation
+// in `computeReportTotals` flips signs for the `expenses` field and uses
+// `Math.abs` for `revenue`; see the note on that function. The edit UI
+// sign-flips on display and re-flips on submit, so the round trip is
+// invariant.
 export const resolveAmount = (
   t: Pick<SyncedTransaction, "amount" | "userAmountOverride">
 ): number => t.userAmountOverride ?? t.amount;

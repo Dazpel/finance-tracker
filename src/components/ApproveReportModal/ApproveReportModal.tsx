@@ -43,7 +43,12 @@ export default function ApproveReportModal({
           >
             Cancel
           </Button>
-          <Button color="success" onPress={onConfirm} isLoading={isSubmitting}>
+          <Button
+            color="success"
+            onPress={onConfirm}
+            isLoading={isSubmitting}
+            isDisabled={isSubmitting}
+          >
             Approve
           </Button>
         </ModalFooter>

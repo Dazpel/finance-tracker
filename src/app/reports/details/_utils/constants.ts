@@ -17,7 +17,14 @@ export const formatMonthLabel = (
   month: number | null | undefined,
   year: number | null | undefined,
   fallback: string
-): string =>
-  typeof month === "number" && typeof year === "number"
-    ? `${MONTH_NAMES[month - 1]} ${year}`
-    : fallback;
+): string => {
+  if (
+    typeof month !== "number" ||
+    typeof year !== "number" ||
+    month < 1 ||
+    month > 12
+  ) {
+    return fallback;
+  }
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+};

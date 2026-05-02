@@ -74,10 +74,9 @@ function EditTransactionModal({
                   type="number"
                   variant="bordered"
                   defaultValue={`${-editableTransaction.amount}`}
-                  isReadOnly={isPendingReport}
                   description={
                     isPendingReport
-                      ? "Amount cannot be edited on a pending report"
+                      ? "Adjust if Plaid's amount doesn't match what you actually paid (e.g., partial reimbursement)."
                       : undefined
                   }
                 />

@@ -59,7 +59,10 @@ src/
 │   ├── insights/                # Financial insights and analytics
 │   ├── notes/                   # Notes management
 │   ├── recurring-transactions/  # Recurring transaction management
+│   │   └── _utils/              # Page-private helpers (private folder)
 │   ├── reports/                 # Financial reports
+│   │   └── details/
+│   │       └── _utils/          # Page-private helpers (constants, api wrappers)
 │   ├── settings/                # User settings
 │   ├── transactions/            # Transaction management
 │   └── providers.tsx            # Global providers
@@ -71,6 +74,8 @@ src/
 │   ├── TransactionsTable/       # Transaction management
 │   ├── ReportsTable/            # Reports management
 │   ├── RecurringTransactionsTable/ # Recurring transactions
+│   ├── EditTransactionModal/    # Reusable edit-transaction modal
+│   ├── ApproveReportModal/      # Reusable approve-report confirmation modal
 │   └── CategoryInsightsTable/   # Category analytics
 ├── hooks/                       # Custom React hooks
 ├── lib/                         # Utility libraries
@@ -78,6 +83,20 @@ src/
 │   └── plaid.ts                 # Plaid API configuration
 └── utils/                       # General utility functions
 ```
+
+### Component & Page Organization (separation of concerns)
+
+Page components in `src/app/<route>/page.tsx` should stay focused on **state, composition, and event wiring**. Heavy logic, helper constants, API wrappers, and UI subcomponents belong in dedicated files. Backed by Next.js docs on [colocation](https://nextjs.org/docs/app/getting-started/project-structure#colocation) and [private folders](https://nextjs.org/docs/app/getting-started/project-structure#private-folders).
+
+**Where things live:**
+
+- **Reusable UI components** (modals, tables, cards used by more than one page, or that have non-trivial markup): `src/components/<ComponentName>/<ComponentName>.tsx`. Examples: `EditTransactionModal/`, `ApproveReportModal/`, `ReportsTable/`. Each component is its own folder so siblings (subcomponents, tests, styles) can colocate later without churn.
+- **Page-private helpers** (constants, formatters, fetch wrappers used only by one page or one route segment): `src/app/<route>/_utils/<file>.ts`. The leading underscore makes it a [private folder](https://nextjs.org/docs/app/getting-started/project-structure#private-folders) — Next.js excludes it from routing, so files inside cannot accidentally become routes. Split by concern: `constants.ts`, `api.ts`, `helpers.ts`, etc. Existing examples: `src/app/recurring-transactions/_utils/`, `src/app/reports/details/_utils/`.
+- **Cross-route helpers** (functions used by ≥2 routes): `src/utils/` (general) or `src/lib/<domain>/` (domain-specific, e.g., `src/lib/reports/`).
+- **Inline `fetch` / `axios`** in a page is OK for one-shot reads. The moment a page does mutation calls or has more than one endpoint touch, extract to `_utils/api.ts` so the page handler reads as plain control flow.
+- **Modal pairs** that are tightly coupled to a single component (e.g., `BulkDeleteConfirmModal` next to `TransactionsTable`): colocate as siblings inside that component's folder. Standalone modals that any page can mount go in `src/components/`.
+
+**Rule of thumb:** if `page.tsx` grows past ~200 lines, or if a `useState` block sits next to a 30-line `async` handler that does its own `fetch` + JSON shaping + error mapping, that's a signal to extract.
 
 ### Database Schema
 

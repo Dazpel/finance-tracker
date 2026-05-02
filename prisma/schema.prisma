@@ -168,6 +168,7 @@ model SyncedTransaction {
   notes                  String?
   // User-intent fields. MUST be preserved across Plaid MODIFIED updates and pending→posted carryover.
   userCategoryOverride   String?
+  userAmountOverride     Float?
   userSoftDeleted        Boolean      @default(false)
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt

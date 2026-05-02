@@ -5,6 +5,7 @@ import {
   computeReportTotals,
   monthDateRange,
   normalizeCategory,
+  resolveAmount,
   resolveCategory,
 } from "@lib/reports/draftReport";
 import { LOCAL_ACCOUNT_ID } from "utils/constants";
@@ -213,7 +214,7 @@ export const getTransactions = async (
             account_id: t.account_id,
             transaction_id: t.transaction_id,
             name: t.name?.trim() ? t.name : (t.merchant_name ?? ""),
-            amount: t.amount,
+            amount: resolveAmount(t),
             date: t.date,
             category: [resolveCategory(t)],
             notes: t.notes,
@@ -500,6 +501,7 @@ export const updateReport = async (
       const rowUpdates: Array<{
         id: string;
         userCategoryOverride: string | null;
+        userAmountOverride: number | null;
         notes: string | null;
       }> = [];
 
@@ -521,15 +523,30 @@ export const updateReport = async (
           desiredCategory !== naturalCategory ? desiredCategory : null;
         const desiredNotes = edited.notes ?? null;
 
+        // Derive userAmountOverride by diffing the edited amount against
+        // Plaid's reported amount. Mirrors how userCategoryOverride is
+        // derived from category drift above: user edits a unified field,
+        // server records an override only when it differs from Plaid.
+        const editedAmount =
+          typeof edited.amount === "number" && Number.isFinite(edited.amount)
+            ? edited.amount
+            : null;
+        const desiredAmountOverride =
+          editedAmount === null || editedAmount === existing.amount
+            ? null
+            : editedAmount;
+
         const unchanged =
           existing.userSoftDeleted === false &&
           existing.userCategoryOverride === override &&
+          (existing.userAmountOverride ?? null) === desiredAmountOverride &&
           (existing.notes ?? null) === desiredNotes;
         if (unchanged) continue;
 
         rowUpdates.push({
           id: existing.id,
           userCategoryOverride: override,
+          userAmountOverride: desiredAmountOverride,
           notes: desiredNotes,
         });
       }
@@ -549,6 +566,7 @@ export const updateReport = async (
                 data: {
                   userSoftDeleted: false,
                   userCategoryOverride: u.userCategoryOverride,
+                  userAmountOverride: u.userAmountOverride,
                   notes: u.notes,
                 },
               });

@@ -213,7 +213,7 @@ export default function Page(
       notes: (formValues[2] as HTMLTextAreaElement)?.value || undefined,
       category: [formValues[3]?.ariaLabel || "others"],
     };
-    
+
     prevTransactions[transactionIndex] = updatedTransaction;
     updateHistory(prevTransactions, newKeys);
     setIsModalOpen(false);

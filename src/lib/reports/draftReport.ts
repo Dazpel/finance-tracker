@@ -132,6 +132,13 @@ export const resolveCategory = (
   return normalizeCategory(mapDefaultCategoryToCustomCategory(description, mapped));
 };
 
+// Returns the user-corrected amount when set (e.g., after a partial Venmo
+// reimbursement); otherwise the raw Plaid amount. Sign convention is preserved:
+// expenses stay negative, revenue stays positive.
+export const resolveAmount = (
+  t: Pick<SyncedTransaction, "amount" | "userAmountOverride">
+): number => t.userAmountOverride ?? t.amount;
+
 // Pure. Sums per-category totals. Skips userSoftDeleted rows. Respects userCategoryOverride.
 // Sign convention (matches TransactionsPage + mergeReports + createAnnualReport):
 // revenue positive, per-category fields positive, expenses negative, total = revenue + expenses.
@@ -142,11 +149,12 @@ export function computeReportTotals(transactions: SyncedTransaction[]): Totals {
     if (t.userSoftDeleted) continue;
     const cat = resolveCategory(t);
     const key = categoryToReportKey(cat);
+    const amount = resolveAmount(t);
 
     if (key === "revenue") {
-      totals.revenue += Math.abs(t.amount);
+      totals.revenue += Math.abs(amount);
     } else {
-      totals[key] += t.amount;
+      totals[key] += amount;
     }
   }
 

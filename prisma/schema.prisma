@@ -22,6 +22,9 @@ model User {
   syncedTransactions    SyncedTransaction[]
   notes                 Note[]
   authorized            Boolean                @default(false)
+  expenseThreshold      ExpenseThreshold?
+  notificationLogs      NotificationLog[]
+  pushTokens            PushToken[]
 }
 
 model PlaidAccount {
@@ -193,6 +196,63 @@ model PlaidSyncLock {
   plaidAccountId Int          @id
   plaidAccount   PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
   acquiredAt     DateTime     @default(now())
+}
+
+model ExpenseThreshold {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  foodAndDrink       Float    @default(400)
+  groceries          Float    @default(400)
+  entertainment      Float    @default(400)
+  shopping           Float    @default(300)
+  billsAndUtilities  Float    @default(0)
+  car                Float    @default(0)
+  healthAndWellness  Float    @default(0)
+  personal           Float    @default(0)
+  feesAndAdjustments Float    @default(0)
+  others             Float    @default(0)
+  foster             Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model NotificationLog {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  category  String
+  level     NotificationLevel
+  month     String
+  channel   NotificationChannel
+  sentAt    DateTime            @default(now())
+
+  @@unique([userId, category, level, month])
+  @@index([userId, month])
+}
+
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  deviceId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+}
+
+enum NotificationLevel {
+  WARNING_70
+  REACHED_100
+  EXCEEDED
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
 }
 
 enum ReportType {

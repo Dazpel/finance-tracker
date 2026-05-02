@@ -24,14 +24,67 @@ type FetchTransactionsResponse = {
   transactions: Transaction[];
 };
 
-export const getBiweekRange = () => {
-  let month = "" + (new Date().getMonth() + 1)
-  let currentMonth = month.length < 2 ? `0${month}` : month;
-  const startDate = `${new Date().getFullYear()}-${currentMonth}-01`;
-  const endDate = `${new Date().getFullYear()}-${currentMonth}-15`;
+// Returns the prior full week (Thursday → Wednesday) in America/New_York.
+// Intended to be called by the Thursday-morning weekly report cron so the
+// window covers the seven days ending the day before the cron fires.
+export const getWeeklyRange = (now: Date = new Date()) => {
+  // Pull Y/M/D in America/New_York. Whatever instant the cron fires, this
+  // anchors "today" to the calendar day in Eastern time.
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  }).formatToParts(now);
 
-  return { startDate, endDate };
-}
+  const get = (t: string) => parts.find((p) => p.type === t)!.value;
+  const year = Number(get("year"));
+  const month = Number(get("month"));
+  const day = Number(get("day"));
+  // weekday short: Sun, Mon, Tue, Wed, Thu, Fri, Sat
+  const dowMap: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  const dow = dowMap[get("weekday")];
+
+  // UTC math is fine because we only need calendar-day arithmetic.
+  const todayUTC = new Date(Date.UTC(year, month - 1, day));
+
+  // Days back to the most recent Wednesday (the end of the prior weekly
+  // window). On a Thursday cron run, that's yesterday (1 day back).
+  const daysBackToWed = (dow - 3 + 7) % 7 || 7;
+  const endUTC = new Date(todayUTC);
+  endUTC.setUTCDate(todayUTC.getUTCDate() - daysBackToWed);
+
+  const startUTC = new Date(endUTC);
+  startUTC.setUTCDate(endUTC.getUTCDate() - 6);
+
+  const iso = (d: Date) => {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day2 = String(d.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${day2}`;
+  };
+
+  return { startDate: iso(startUTC), endDate: iso(endUTC) };
+};
+
+export const formatWeeklyPeriodLabel = (
+  startDate: string,
+  endDate: string
+): string => {
+  const fmt = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleString("en-US", {
+      month: "short",
+      day: "2-digit",
+      timeZone: "UTC",
+    });
+  };
+  const year = endDate.split("-")[0];
+  return `${fmt(startDate)} – ${fmt(endDate)}, ${year}`;
+};
 
 export const formatDate = (date: Date) => {
   let month = "" + (date.getMonth() + 1), // Months are zero indexed

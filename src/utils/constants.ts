@@ -9,6 +9,7 @@ export const appRoutes = {
   LOGIN_PAGE: "/login",
   LOG_OUT_PAGE: "/logout",
   RECURRING_TRANSACTIONS_PAGE: "/recurring-transactions",
+  THRESHOLDS_PAGE: "/thresholds",
   NOTES_PAGE: "/notes",
 };
 

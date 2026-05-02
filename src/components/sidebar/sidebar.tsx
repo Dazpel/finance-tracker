@@ -18,6 +18,7 @@ import TransactionIcon from "@components/icons/sidebar/currency-dollar";
 import { RecurringPaymentsIcon } from "@components/icons/sidebar/recurring-payments-icon";
 import { InsightsIcon } from "@components/icons/sidebar/insights-icon";
 import { NotesIcon } from "@components/icons/sidebar/notes-icon";
+import { ThresholdsIcon } from "@components/icons/sidebar/thresholds-icon";
 
 export const SidebarWrapper = () => {
   const pathname = usePathname();
@@ -80,6 +81,12 @@ export const SidebarWrapper = () => {
                 title="Recurring"
                 icon={<RecurringPaymentsIcon />}
                 href={appRoutes.RECURRING_TRANSACTIONS_PAGE}
+              />
+              <SidebarItem
+                isActive={pathname.includes(appRoutes.THRESHOLDS_PAGE)}
+                title="Thresholds"
+                icon={<ThresholdsIcon />}
+                href={appRoutes.THRESHOLDS_PAGE}
               />
               <SidebarItem
                 isActive={pathname === appRoutes.NOTES_PAGE}

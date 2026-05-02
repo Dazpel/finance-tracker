@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import prisma from "@lib/prisma/prismaClient";
 import { verifyPlaidWebhook } from "@lib/plaid/verifyWebhook";
 import { syncTransactionsForAccount } from "@lib/plaid/syncTransactions";
+import { checkThresholdsAndNotify } from "@lib/notifications/thresholdCheck";
 
 type WebhookBody = {
   webhook_type?: string;
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
 
     const account = await prisma.plaidAccount.findUnique({
       where: { itemId: item_id },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
 
     if (!account) {
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const accountId = account.id;
+    const { id: accountId, userId } = account;
     after(async () => {
       try {
         const result = await syncTransactionsForAccount(accountId);
@@ -66,6 +67,21 @@ export async function POST(request: Request) {
         console.error(
           `Plaid sync failed for account=${accountId} code=${webhook_code}:`,
           error
+        );
+        return;
+      }
+      // Run AFTER the sync (which already called upsertCurrentMonthDraftReport).
+      // Lives here, not inside draftReport.ts, so the notifications module
+      // never enters draftReport's import graph — keeps the email SDK and
+      // React Email components out of the client bundle (utils/functions.ts →
+      // NextAuth options → prismaFunctions → draftReport is reachable from
+      // client components).
+      try {
+        await checkThresholdsAndNotify(userId, new Date());
+      } catch (err) {
+        console.error(
+          `[plaid-webhook] threshold check failed for user=${userId}:`,
+          err
         );
       }
     });

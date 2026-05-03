@@ -56,6 +56,34 @@ export type AlertEmailData = {
   reportsUrl: string;
 };
 
+export type AlertPushPayload = {
+  title: string;
+  body: string;
+  data: { category: string; level: NotificationLevel; monthKey: string };
+  channelId: string;
+  sound: "default";
+};
+
+export function formatAlertPush(alert: Alert): AlertPushPayload {
+  const spent = fmtMoney(alert.spent);
+  const limit = fmtMoney(alert.limit);
+  const body =
+    alert.level === "EXCEEDED"
+      ? `${alert.category} over budget: ${spent} of ${limit}`
+      : `${alert.category}: ${spent} of ${limit} (${Math.round((alert.spent / alert.limit) * 100)}%)`;
+  return {
+    title: "Budget alert",
+    body,
+    data: {
+      category: alert.category,
+      level: alert.level,
+      monthKey: alert.monthKey,
+    },
+    channelId: "budget-alerts",
+    sound: "default",
+  };
+}
+
 // Pure. Takes the alerts batch + base URL; returns the props consumed by the
 // React Email alert template, which is rendered and delivered via Resend.
 export function buildAlertEmailData(

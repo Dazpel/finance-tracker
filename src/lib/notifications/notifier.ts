@@ -2,7 +2,11 @@ import { Resend } from "resend";
 import * as React from "react";
 import type { NotificationChannel } from "@prisma/client";
 import prisma from "../prisma/prismaClient";
-import { buildAlertEmailData, type Alert } from "./templates";
+import {
+  buildAlertEmailData,
+  formatAlertPush,
+  type Alert,
+} from "./templates";
 import ThresholdAlertEmail from "../../emails/ThresholdAlertEmail";
 
 export type { Alert } from "./templates";
@@ -80,7 +84,80 @@ export class DryRunNotifier implements Notifier {
   }
 }
 
-export function getDefaultNotifier(): Notifier {
+type ExpoPushTicket = {
+  status: "ok" | "error";
+  details?: { error?: string };
+};
+
+type ExpoPushResponse = {
+  data?: ExpoPushTicket[];
+};
+
+export class ExpoPushNotifier implements Notifier {
+  readonly channel: NotificationChannel = "PUSH";
+
+  assertReady(): void {
+    // Expo push API requires no server-side credentials.
+  }
+
+  async dispatch(userId: string, alerts: Alert[]): Promise<void> {
+    if (alerts.length === 0) return;
+
+    const tokens = await prisma.pushToken.findMany({
+      where: { userId },
+      select: { id: true, token: true },
+    });
+    if (tokens.length === 0) {
+      console.log(`[notifier] no push tokens for userId=${userId}; skipping`);
+      return;
+    }
+
+    const messages = alerts.flatMap((alert) =>
+      tokens.map((t) => ({ to: t.token, ...formatAlertPush(alert) }))
+    );
+
+    console.log(
+      `[notifier] sending ${messages.length} push message(s) to userId=${userId} (${alerts.length} alert(s) × ${tokens.length} token(s))`
+    );
+
+    const res = await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(messages),
+    });
+    if (!res.ok) {
+      throw new Error(`Expo push HTTP ${res.status}`);
+    }
+
+    const json = (await res.json()) as ExpoPushResponse;
+    const tickets = json.data ?? [];
+    const stale = new Set<string>();
+    tickets.forEach((ticket, i) => {
+      if (
+        ticket.status === "error" &&
+        ticket.details?.error === "DeviceNotRegistered"
+      ) {
+        const tokenId = tokens[i % tokens.length].id;
+        stale.add(tokenId);
+      }
+    });
+
+    for (const id of stale) {
+      try {
+        await prisma.pushToken.delete({ where: { id } });
+      } catch (e) {
+        console.error(`[notifier] failed to delete stale PushToken id=${id}:`, e);
+      }
+    }
+  }
+}
+
+export async function getDefaultNotifier(userId: string): Promise<Notifier> {
   if (process.env.DRY_RUN_NOTIFICATIONS === "true") return new DryRunNotifier();
+  const tokenCount = await prisma.pushToken.count({ where: { userId } });
+  if (tokenCount > 0) return new ExpoPushNotifier();
   return new EmailNotifier();
 }

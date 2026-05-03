@@ -20,9 +20,10 @@ export type CheckOptions = {
 export async function checkThresholdsAndNotify(
   userId: string,
   now: Date = new Date(),
-  notifier: Notifier = getDefaultNotifier(),
+  notifier?: Notifier,
   options: CheckOptions = {}
 ): Promise<{ fired: Alert[] }> {
+  const resolvedNotifier = notifier ?? (await getDefaultNotifier(userId));
   const monthKey = toMonthKey(now);
   const month = now.getUTCMonth() + 1;
   const year = now.getUTCFullYear();
@@ -94,7 +95,7 @@ export async function checkThresholdsAndNotify(
   // rows. Otherwise a misconfigured deploy would commit phantom rows that the
   // dedupe key permanently suppresses, silently losing alerts.
   try {
-    notifier.assertReady();
+    resolvedNotifier.assertReady();
   } catch (e) {
     console.error(
       `[thresholdCheck] notifier not ready, skipping ${firings.length} category firing(s) for user=${userId}:`,
@@ -119,7 +120,7 @@ export async function checkThresholdsAndNotify(
             category: f.category,
             level,
             month: monthKey,
-            channel: notifier.channel,
+            channel: resolvedNotifier.channel,
           },
         });
         highestCommittedThisRun = level;
@@ -150,7 +151,7 @@ export async function checkThresholdsAndNotify(
 
   if (dispatched.length > 0) {
     try {
-      await notifier.dispatch(userId, dispatched);
+      await resolvedNotifier.dispatch(userId, dispatched);
     } catch (e) {
       console.error(
         `[thresholdCheck] notifier.dispatch failed for user=${userId} (${dispatched.length} alerts) — log rows committed, alerts will not retry:`,

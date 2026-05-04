@@ -2,6 +2,8 @@ export {
   EmailNotifier,
   DryRunNotifier,
   ExpoPushNotifier,
+  PushOrEmailNotifier,
+  NoPushTokensError,
   getDefaultNotifier,
   type Notifier,
   type Alert,

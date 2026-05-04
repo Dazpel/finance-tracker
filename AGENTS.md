@@ -243,6 +243,8 @@ REQUIRED reading before any change to `/api/mobile/*`, `/api/push-tokens`, or an
    ```
    Do not roll your own JWT verification.
 
+   **Sole exception: `/api/mobile/me`.** That route reports the whitelist verdict so the mobile app can render the "not authorized" screen, which means a non-`authorized` user must get a 200 with `{ authorized: false }` rather than the 403 `requireMobileUser` would return. It still verifies the JWT directly via `verifySupabaseJwt` and exposes no user-scoped data. Do not extend this carve-out to any other route.
+
 2. **Every Prisma query touching user-scoped data MUST filter by `userId: auth.user.id`** in `where`. This applies to `findFirst`, `findMany`, `findUnique` (when keyed on a non-`userId` column), `update`, `delete`, `updateMany`, `deleteMany`, `aggregate`, `groupBy`, `count`, `upsert`.
 
 3. **`updateMany` and `deleteMany` without a `userId` clause are forbidden.** Scoping by another field that "feels" identifying (a token, a transaction id, a name, a deviceId) is not authorization. If you genuinely need a cross-user mutation (rare — usually only cron / webhook code), it does not belong on a mobile route.

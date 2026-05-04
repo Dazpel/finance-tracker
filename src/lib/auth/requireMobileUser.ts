@@ -12,7 +12,10 @@ export async function requireMobileUser(
   if (!auth) {
     return {
       ok: false,
-      response: Response.json({ error: "Unauthorized" }, { status: 401 }),
+      response: Response.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      ),
     };
   }
 
@@ -23,13 +26,19 @@ export async function requireMobileUser(
   if (!user) {
     return {
       ok: false,
-      response: Response.json({ error: "User not found" }, { status: 404 }),
+      response: Response.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      ),
     };
   }
   if (!user.authorized) {
     return {
       ok: false,
-      response: Response.json({ error: "Not authorized" }, { status: 403 }),
+      response: Response.json(
+        { success: false, error: "Not authorized" },
+        { status: 403 }
+      ),
     };
   }
 

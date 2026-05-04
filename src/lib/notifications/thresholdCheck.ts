@@ -23,7 +23,6 @@ export async function checkThresholdsAndNotify(
   notifier?: Notifier,
   options: CheckOptions = {}
 ): Promise<{ fired: Alert[] }> {
-  const resolvedNotifier = notifier ?? (await getDefaultNotifier(userId));
   const monthKey = toMonthKey(now);
   const month = now.getUTCMonth() + 1;
   const year = now.getUTCFullYear();
@@ -90,6 +89,12 @@ export async function checkThresholdsAndNotify(
       })),
     };
   }
+
+  // Resolve the notifier only once we know we have something to send. The
+  // default resolver issues a pushToken.count() round-trip, so leaving it
+  // above the firings.length === 0 short-circuit would tax every webhook/cron
+  // sync in the hot path.
+  const resolvedNotifier = notifier ?? (await getDefaultNotifier(userId));
 
   // Confirm the notifier can actually send before we write any NotificationLog
   // rows. Otherwise a misconfigured deploy would commit phantom rows that the

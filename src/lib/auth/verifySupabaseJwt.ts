@@ -1,8 +1,15 @@
 import { jwtVerify, createRemoteJWKSet } from "jose";
 
-const JWKS = createRemoteJWKSet(
-  new URL(`${process.env.SUPABASE_URL!}/auth/v1/.well-known/jwks.json`)
-);
+let JWKS: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+function getJWKS() {
+  if (!JWKS) {
+    JWKS = createRemoteJWKSet(
+      new URL(`${process.env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`)
+    );
+  }
+  return JWKS;
+}
 
 export async function verifySupabaseJwt(
   req: Request
@@ -12,7 +19,7 @@ export async function verifySupabaseJwt(
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, JWKS, {
+    const { payload } = await jwtVerify(token, getJWKS(), {
       audience: "authenticated",
     });
     if (typeof payload.email !== "string") return null;

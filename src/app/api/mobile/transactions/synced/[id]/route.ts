@@ -1,4 +1,5 @@
 import prisma from "@lib/prisma/prismaClient";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { isCanonicalCategory } from "@lib/categories";
@@ -62,7 +63,7 @@ export async function PATCH(
     return Response.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
-  const data: Record<string, unknown> = {};
+  const data: Prisma.SyncedTransactionUpdateInput = {};
   const v = parsed.data;
   if (v.userCategoryOverride !== undefined) data.userCategoryOverride = v.userCategoryOverride;
   if (v.userAmountOverride !== undefined) data.userAmountOverride = v.userAmountOverride;

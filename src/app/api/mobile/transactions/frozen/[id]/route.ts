@@ -1,4 +1,5 @@
 import prisma from "@lib/prisma/prismaClient";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { isCanonicalCategory } from "@lib/categories";
@@ -62,19 +63,26 @@ export async function PATCH(
     return Response.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
-  const data: Record<string, unknown> = {};
+  const data: Prisma.TransactionUpdateInput = {};
   const v = parsed.data;
   if (v.name !== undefined) data.name = v.name;
   if (v.amount !== undefined) data.amount = v.amount;
   if (v.notes !== undefined) data.notes = v.notes;
   if (v.category !== undefined) data.category = [v.category];
 
-  await prisma.transaction.update({ where: { id }, data });
-
+  // Atomic update + recompute: APPROVED Reports must never disagree with
+  // their Transaction rows. If recompute fails, the row update is rolled back.
   try {
-    await recomputeFrozenReportTotals(row.reportId);
+    await prisma.$transaction(async (tx) => {
+      await tx.transaction.update({ where: { id }, data });
+      await recomputeFrozenReportTotals(row.reportId, tx);
+    });
   } catch (err) {
-    console.error("[mobile/transactions/frozen PATCH] recompute totals failed:", err);
+    console.error("[mobile/transactions/frozen PATCH] tx failed:", err);
+    return Response.json(
+      { success: false, error: "Update failed" },
+      { status: 500 }
+    );
   }
 
   return Response.json({ success: true, response: { id: idStr } });

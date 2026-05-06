@@ -32,20 +32,21 @@ export async function POST(request: Request) {
     console.log("------- AI categorize synced transactions -------");
     console.log("-----------------------------------");
 
-    // Find all users with at least one pending uncategorized row, then run
-    // the per-user helper. Total rows across all users still capped by
-    // MAX_ROWS_PER_RUN (split evenly is overkill — first-come basis is fine).
-    const userIds = (
-      await prisma.syncedTransaction.findMany({
-        where: {
-          userCategoryOverride: null,
-          userSoftDeleted: false,
-          date: { gte: MIN_TRANSACTION_DATE },
-        },
-        select: { userId: true },
-        distinct: ["userId"],
-      })
-    ).map((r) => r.userId);
+    // Bounded "first-come" head read: pull the oldest MAX_ROWS_PER_RUN
+    // pending rows, then derive distinct userIds. This caps cron query
+    // cost regardless of total pending-pool size, and matches the
+    // first-come MAX_ROWS_PER_RUN semantics enforced by the loop below.
+    const pendingHead = await prisma.syncedTransaction.findMany({
+      where: {
+        userCategoryOverride: null,
+        userSoftDeleted: false,
+        date: { gte: MIN_TRANSACTION_DATE },
+      },
+      orderBy: { createdAt: "asc" },
+      take: MAX_ROWS_PER_RUN,
+      select: { userId: true },
+    });
+    const userIds = [...new Set(pendingHead.map((r) => r.userId))];
 
     if (userIds.length === 0) {
       console.log("No transactions need categorization.");

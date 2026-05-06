@@ -55,8 +55,10 @@ export async function POST(request: Request) {
   }
 
   // 3. Recompute draft.
+  let recomputed = false;
   try {
     await upsertCurrentMonthDraftReport(userId);
+    recomputed = true;
   } catch (err) {
     console.error("[mobile/sync-current-month] draft recompute failed:", err);
   }
@@ -65,6 +67,6 @@ export async function POST(request: Request) {
 
   return Response.json({
     success: true,
-    response: { plaidSynced, plaidSkipped, categorized, recomputed: true },
+    response: { plaidSynced, plaidSkipped, categorized, recomputed },
   });
 }

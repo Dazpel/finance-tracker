@@ -1,5 +1,8 @@
-import prisma from "@lib/prisma/prismaClient";
+import type { Prisma } from "@prisma/client";
+import prismaClient from "@lib/prisma/prismaClient";
 import { normalizeCategory } from "@lib/reports/draftReport";
+
+type PrismaLike = Prisma.TransactionClient | typeof prismaClient;
 
 type Totals = {
   foodAndDrink: number;
@@ -62,8 +65,11 @@ const categoryToReportKey = (category: string): keyof Totals => {
 //
 // Frozen reports use Transaction.category[0] (no override field; the override
 // was collapsed in at approval time) and Transaction.amount directly.
-export async function recomputeFrozenReportTotals(reportId: number): Promise<void> {
-  const rows = await prisma.transaction.findMany({
+export async function recomputeFrozenReportTotals(
+  reportId: number,
+  client: PrismaLike = prismaClient
+): Promise<void> {
+  const rows = await client.transaction.findMany({
     where: { reportId },
     select: { amount: true, category: true },
   });
@@ -94,7 +100,7 @@ export async function recomputeFrozenReportTotals(reportId: number): Promise<voi
   totals.expenses = -Number(expenseSum.toFixed(2));
   totals.total = Number((totals.revenue + totals.expenses).toFixed(2));
 
-  await prisma.report.update({
+  await client.report.update({
     where: { id: reportId },
     data: {
       foodAndDrink: totals.foodAndDrink,

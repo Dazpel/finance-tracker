@@ -98,7 +98,8 @@ const tryAcquireLock = async (plaidAccountId: number): Promise<Date | null> => {
 };
 
 export const syncTransactionsForAccount = async (
-  plaidAccountId: number
+  plaidAccountId: number,
+  opts?: { skipDraftRecompute?: boolean }
 ): Promise<SyncResult> => {
   const account = await prisma.plaidAccount.findUnique({
     where: { id: plaidAccountId },
@@ -125,7 +126,13 @@ export const syncTransactionsForAccount = async (
     const result = await runSync(account);
     // Skip the per-user draft recompute when this sync touched nothing — duplicate
     // webhooks / retries would otherwise trigger back-to-back full-month scans.
-    if (result.added || result.modified || result.removed) {
+    // Callers running multiple syncs back-to-back (e.g. mobile sync-on-open across
+    // every PlaidAccount) can pass `skipDraftRecompute` and run a single recompute
+    // themselves after the final sync, avoiding N+1 full-month scans.
+    if (
+      !opts?.skipDraftRecompute &&
+      (result.added || result.modified || result.removed)
+    ) {
       try {
         await upsertCurrentMonthDraftReport(account.userId);
       } catch (err) {

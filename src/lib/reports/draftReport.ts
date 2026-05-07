@@ -43,7 +43,10 @@ export function isGraceExpired(target: DraftMonth, now: Date): boolean {
   return now.getTime() >= graceExpiresAt;
 }
 
-type Totals = {
+// Per-category + summary fields written to the Report row. Shared by both
+// the draft path (computeReportTotals) and the frozen path
+// (recomputeFrozenReportTotals) so a new category lands here once.
+export type Totals = {
   foodAndDrink: number;
   billsAndUtilities: number;
   car: number;
@@ -60,7 +63,7 @@ type Totals = {
   total: number;
 };
 
-const emptyTotals = (): Totals => ({
+export const emptyTotals = (): Totals => ({
   foodAndDrink: 0,
   billsAndUtilities: 0,
   car: 0,
@@ -102,7 +105,7 @@ export function normalizeCategory(raw: string | null | undefined): string {
   return CATEGORY_CANONICAL[key] ?? "Others";
 }
 
-const categoryToReportKey = (category: string): keyof Totals => {
+export const categoryToReportKey = (category: string): keyof Totals => {
   switch (normalizeCategory(category)) {
     case "Food & Drink":       return "foodAndDrink";
     case "Bills & Utilities":  return "billsAndUtilities";
@@ -144,6 +147,30 @@ export const resolveAmount = (
   t: Pick<SyncedTransaction, "amount" | "userAmountOverride">
 ): number => t.userAmountOverride ?? t.amount;
 
+// Computes `expenses` and `total` from already-accumulated per-category sums.
+// Sign convention: per-category fields positive (raw expense rows are positive
+// per Plaid), expenses = -sum(per-category), total = revenue + expenses.
+// Shared between the draft path and the frozen recompute so the math agrees.
+export function finalizeReportTotals(totals: Totals): Totals {
+  const expenseSum =
+    totals.foodAndDrink +
+    totals.billsAndUtilities +
+    totals.car +
+    totals.entertainment +
+    totals.groceries +
+    totals.healthAndWellness +
+    totals.personal +
+    totals.shopping +
+    totals.feesAndAdjustments +
+    totals.others +
+    totals.foster;
+
+  totals.expenses = -Number(expenseSum.toFixed(2));
+  totals.total = Number((totals.revenue + totals.expenses).toFixed(2));
+
+  return totals;
+}
+
 // Pure. Sums per-category totals. Skips userSoftDeleted rows. Respects userCategoryOverride.
 // Sign convention (matches TransactionsPage + mergeReports + createAnnualReport):
 // revenue positive, per-category fields positive, expenses negative, total = revenue + expenses.
@@ -163,23 +190,7 @@ export function computeReportTotals(transactions: SyncedTransaction[]): Totals {
     }
   }
 
-  const expenseSum =
-    totals.foodAndDrink +
-    totals.billsAndUtilities +
-    totals.car +
-    totals.entertainment +
-    totals.groceries +
-    totals.healthAndWellness +
-    totals.personal +
-    totals.shopping +
-    totals.feesAndAdjustments +
-    totals.others +
-    totals.foster;
-
-  totals.expenses = -Number(expenseSum.toFixed(2));
-  totals.total = Number((totals.revenue + totals.expenses).toFixed(2));
-
-  return totals;
+  return finalizeReportTotals(totals);
 }
 
 const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);

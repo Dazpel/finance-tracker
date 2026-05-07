@@ -31,7 +31,12 @@ export async function POST(request: Request) {
       continue;
     }
     try {
-      const result = await syncTransactionsForAccount(acc.id);
+      // Skip the per-account internal recompute; we do exactly one
+      // recompute below, after categorize, so we capture both the
+      // sync changes and any new override assignments in a single pass.
+      const result = await syncTransactionsForAccount(acc.id, {
+        skipDraftRecompute: true,
+      });
       if (result.skipped) {
         plaidSkipped++;
       } else {

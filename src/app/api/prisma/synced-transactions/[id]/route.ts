@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
 import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
+import { checkThresholdsAndNotify } from "@lib/notifications/thresholdCheck";
 
 type Body = {
   userCategoryOverride?: string | null;
@@ -59,9 +60,11 @@ export async function PATCH(
   await prisma.syncedTransaction.update({ where: { id }, data });
 
   try {
-    await upsertCurrentMonthDraftReport(row.userId);
+    const now = new Date();
+    await upsertCurrentMonthDraftReport(row.userId, now);
+    await checkThresholdsAndNotify(row.userId, now);
   } catch (err) {
-    console.error("Draft recompute after PATCH failed:", err);
+    console.error("Post-edit work after PATCH failed:", err);
   }
 
   return NextResponse.json({ success: true });

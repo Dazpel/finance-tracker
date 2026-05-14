@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { isCanonicalCategory } from "@lib/categories";
 import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
+import { checkThresholdsAndNotify } from "@lib/notifications/thresholdCheck";
 
 const BodySchema = z
   .object({
@@ -73,9 +74,11 @@ export async function PATCH(
   await prisma.syncedTransaction.update({ where: { id }, data });
 
   try {
-    await upsertCurrentMonthDraftReport(auth.user.id);
+    const now = new Date();
+    await upsertCurrentMonthDraftReport(auth.user.id, now);
+    await checkThresholdsAndNotify(auth.user.id, now);
   } catch (err) {
-    console.error("[mobile/transactions/synced PATCH] draft recompute failed:", err);
+    console.error("[mobile/transactions/synced PATCH] post-edit work failed:", err);
   }
 
   return Response.json({ success: true, response: { id } });

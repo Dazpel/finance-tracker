@@ -213,10 +213,15 @@ export class PushOrEmailNotifier implements Notifier {
   ) {}
 
   assertReady(): void {
+    // Push is the primary channel — assert it's ready. The email fallback
+    // only fires on the NoPushTokensError edge (the user's last token
+    // vanished mid-flight); we deliberately don't require email config
+    // here so a push-only deploy without Resend keys doesn't blackhole
+    // alerts for every push-equipped user. If the fallback ever runs
+    // with broken email config, dispatch will throw — the already-committed
+    // NotificationLog rows will dedupe-suppress retry, but that's an
+    // acceptable tradeoff for a rare-edge fallback.
     this.push.assertReady();
-    // Email is the fallback path, so its config must also be valid before we
-    // commit any NotificationLog rows.
-    this.email.assertReady();
   }
 
   async dispatch(userId: string, alerts: Alert[]): Promise<void> {

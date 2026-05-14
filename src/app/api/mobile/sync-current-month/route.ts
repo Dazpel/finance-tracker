@@ -3,6 +3,7 @@ import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { syncTransactionsForAccount } from "@lib/plaid/syncTransactions";
 import { categorizeForUser } from "@lib/ai/categorizeForUser";
 import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
+import { checkThresholdsAndNotify } from "@lib/notifications/thresholdCheck";
 
 export const maxDuration = 60;
 
@@ -68,7 +69,18 @@ export async function POST(request: Request) {
     console.error("[mobile/sync-current-month] draft recompute failed:", err);
   }
 
-  // Skip threshold notifications: user is in the app; webhook + cron paths still send.
+  // 4. Threshold check. The webhook + cron paths cover Plaid-driven changes,
+  // but a pull-to-refresh that flips a category override (or any other
+  // override applied since the last sync) can newly cross a level that
+  // those paths won't see — fire the check here too so the user gets a
+  // push regardless of which path drove the change. NotificationLog
+  // dedupes by (userId, category, level, month), so this is safe to
+  // call on every refresh.
+  try {
+    await checkThresholdsAndNotify(userId);
+  } catch (err) {
+    console.error("[mobile/sync-current-month] threshold check failed:", err);
+  }
 
   return Response.json({
     success: true,

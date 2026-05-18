@@ -4,12 +4,13 @@ import {
   mapPlaidCategoryToDefaultCategory,
   mapDefaultCategoryToCustomCategory,
 } from "utils/functions";
+import { flipExpiredDraftsForUser } from "./flipExpiredDrafts";
 
 export type DraftMonth = { month: number; year: number };
 
 // 7 days into the next month. A pending->posted transition straddling the
 // month boundary must have time to settle in the prior month's draft.
-const GRACE_WINDOW_DAYS = 7;
+export const GRACE_WINDOW_DAYS = 7;
 
 export function getEligibleDraftMonths(now: Date): DraftMonth[] {
   const currentMonth = now.getUTCMonth() + 1;
@@ -219,6 +220,8 @@ export async function upsertCurrentMonthDraftReport(
   userId: string,
   now: Date = new Date()
 ): Promise<void> {
+  await flipExpiredDraftsForUser(userId, now);
+
   const months = getEligibleDraftMonths(now);
 
   for (const target of months) {

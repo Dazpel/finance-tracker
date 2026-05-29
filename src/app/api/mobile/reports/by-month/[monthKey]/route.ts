@@ -37,6 +37,7 @@ export async function GET(
           reportType: ReportType.MONTHLY,
           month,
           year,
+          autoMaintainedAt: { not: null },
         },
       }),
       prisma.expenseThreshold.upsert({

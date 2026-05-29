@@ -1,6 +1,7 @@
 import prisma from "@lib/prisma/prismaClient";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { ReportStatus, ReportType } from "@prisma/client";
+import { monthDateRange } from "@lib/reports/draftReport";
 
 export async function GET(request: Request) {
   const auth = await requireMobileUser(request);
@@ -53,8 +54,33 @@ export async function GET(request: Request) {
       },
     });
 
+    // For DRAFT and PENDING_APPROVAL monthly reports the frozen Transaction[]
+    // snapshot is empty — count live SyncedTransaction rows instead so the
+    // number agrees with what category-transactions returns.
+    const liveCounts = await Promise.all(
+      reports.map((r) => {
+        const needsLiveCount =
+          r.reportType === ReportType.MONTHLY &&
+          (r.status === ReportStatus.DRAFT ||
+            r.status === ReportStatus.PENDING_APPROVAL) &&
+          r.month != null &&
+          r.year != null;
+
+        if (!needsLiveCount) return Promise.resolve(null);
+
+        const range = monthDateRange({ year: r.year!, month: r.month! });
+        return prisma.syncedTransaction.count({
+          where: {
+            userId: auth.user.id,
+            userSoftDeleted: false,
+            date: { gte: range.gte, lt: range.lt },
+          },
+        });
+      })
+    );
+
     const response = {
-      reports: reports.map((r) => ({
+      reports: reports.map((r, i) => ({
         id: r.id,
         reportName: r.reportName,
         reportType: r.reportType,
@@ -69,7 +95,7 @@ export async function GET(request: Request) {
         revenue: r.revenue,
         expenses: r.expenses,
         total: r.total,
-        transactionCount: r._count.transactions,
+        transactionCount: liveCounts[i] ?? r._count.transactions,
       })),
     };
 

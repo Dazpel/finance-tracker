@@ -10,7 +10,7 @@ export async function POST(
 ) {
   const { id: rawId } = await params;
   const id = Number(rawId);
-  if (!Number.isFinite(id)) {
+  if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
@@ -25,7 +25,7 @@ export async function POST(
     select: { id: true },
   });
   if (!user) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
   const result = await approveReport({ userId: user.id, reportId: id });

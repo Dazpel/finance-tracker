@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { id: rawId } = await params;
     const id = Number(rawId);
-    if (!Number.isFinite(id)) {
+    if (!Number.isInteger(id) || id <= 0) {
       return Response.json(
         { success: false, error: "Invalid id" },
         { status: 400 }

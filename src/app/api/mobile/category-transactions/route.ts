@@ -73,6 +73,16 @@ export async function GET(request: Request) {
       );
     }
 
+    // Always surface which month is being viewed. A reportId-only request omits
+    // monthKey; derive it from the resolved report's month/year so the response
+    // shape stays consistent (monthKey present, not undefined/omitted). Legacy
+    // reports with null month/year yield null rather than an absent field.
+    const resolvedMonthKey =
+      monthKey ??
+      (report?.month != null && report?.year != null
+        ? `${report.year}-${String(report.month).padStart(2, "0")}`
+        : null);
+
     if (report?.status === ReportStatus.APPROVED) {
       const rows = await prisma.transaction.findMany({
         where: {
@@ -90,7 +100,7 @@ export async function GET(request: Request) {
         success: true,
         response: {
           key,
-          monthKey,
+          monthKey: resolvedMonthKey,
           canonicalName,
           transactions,
         },
@@ -111,7 +121,7 @@ export async function GET(request: Request) {
       // no date range to derive; return empty list.
       return Response.json({
         success: true,
-        response: { key, monthKey, canonicalName, transactions: [] },
+        response: { key, monthKey: resolvedMonthKey, canonicalName, transactions: [] },
       });
     }
 
@@ -128,7 +138,7 @@ export async function GET(request: Request) {
 
     return Response.json({
       success: true,
-      response: { key, monthKey, canonicalName, transactions },
+      response: { key, monthKey: resolvedMonthKey, canonicalName, transactions },
     });
   } catch (error) {
     console.error("[/api/mobile/category-transactions]", error);

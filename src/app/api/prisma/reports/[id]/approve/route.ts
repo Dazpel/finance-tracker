@@ -2,14 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
-import { ReportStatus, ReportType } from "@prisma/client";
-import {
-  computeReportTotals,
-  isMonthFullyPast,
-  monthDateRange,
-  resolveAmount,
-  resolveCategory,
-} from "@lib/reports/draftReport";
+import { approveReport } from "@lib/reports/approveReport";
 
 export async function POST(
   _request: Request,
@@ -17,7 +10,7 @@ export async function POST(
 ) {
   const { id: rawId } = await params;
   const id = Number(rawId);
-  if (!Number.isFinite(id)) {
+  if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
@@ -27,107 +20,23 @@ export async function POST(
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  const report = await prisma.report.findUnique({
-    where: { id },
-    include: { user: { select: { email: true } } },
+  const user = await prisma.user.findUnique({
+    where: { email: userEmail },
+    select: { id: true },
   });
-
-  if (!report) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  if (report.user.email !== userEmail) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  if (report.reportType !== ReportType.MONTHLY) {
-    return NextResponse.json(
-      { error: "Only monthly reports can be approved" },
-      { status: 400 }
-    );
-  }
-  if (report.status !== ReportStatus.PENDING_APPROVAL) {
-    if (report.status === ReportStatus.DRAFT) {
-      return NextResponse.json(
-        {
-          error:
-            "Cannot approve a report still in the 7-day grace window. Wait for status to become PENDING_APPROVAL.",
-        },
-        { status: 409 }
-      );
-    }
-    return NextResponse.json(
-      { error: `Report is already ${report.status}` },
-      { status: 409 }
-    );
+  if (!user) {
+    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  if (report.month == null || report.year == null) {
+  const result = await approveReport({ userId: user.id, reportId: id });
+  if (!result.ok) {
     return NextResponse.json(
-      { error: "Report missing month/year" },
-      { status: 500 }
+      { error: result.message },
+      { status: result.httpStatus }
     );
   }
-
-  const target = { month: report.month, year: report.year };
-  if (!isMonthFullyPast(target, new Date())) {
-    return NextResponse.json(
-      { error: "Cannot approve a report for the current or future month" },
-      { status: 400 }
-    );
-  }
-
-  const synced = await prisma.syncedTransaction.findMany({
-    where: {
-      userId: report.userId,
-      userSoftDeleted: false,
-      date: monthDateRange(target),
-    },
+  return NextResponse.json({
+    success: true,
+    transactionsAdded: result.transactionsAdded,
   });
-
-  const totals = computeReportTotals(synced);
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      // Atomic conditional transition: if a concurrent caller already moved
-      // the report to APPROVED, updateMany returns count: 0 and we abort
-      // before inserting Transactions (which have no (reportId, transaction_id)
-      // unique constraint to deduplicate against).
-      const updated = await tx.report.updateMany({
-        where: {
-          id: report.id,
-          status: ReportStatus.PENDING_APPROVAL,
-        },
-        data: {
-          status: ReportStatus.APPROVED,
-          approvedAt: new Date(),
-          ...totals,
-        },
-      });
-      if (updated.count !== 1) {
-        throw new Error("ALREADY_APPROVED");
-      }
-      await tx.transaction.createMany({
-        data: synced.map((t) => ({
-          reportId: report.id,
-          userId: report.userId,
-          account_id: t.account_id,
-          transaction_id: t.transaction_id,
-          name: t.name?.trim() ? t.name : (t.merchant_name ?? ""),
-          amount: resolveAmount(t),
-          date: t.date,
-          category: [resolveCategory(t)],
-          notes: t.notes,
-        })),
-      });
-    });
-  } catch (e) {
-    if (e instanceof Error && e.message === "ALREADY_APPROVED") {
-      return NextResponse.json(
-        { error: "Report is already APPROVED" },
-        { status: 409 }
-      );
-    }
-    throw e;
-  }
-
-  return NextResponse.json({ success: true, transactionsAdded: synced.length });
 }

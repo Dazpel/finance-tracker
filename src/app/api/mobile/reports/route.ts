@@ -34,11 +34,12 @@ export async function GET(request: Request) {
             }
           : {}),
       },
-      orderBy: [
-        { year: "desc" },
-        { month: "desc" },
-        { createdAt: "desc" },
-      ],
+      // Order by createdAt desc to match the web UI (api/reports/getReports +
+      // ReportsPage.reverse()), which sorts purely by createdAt. Sorting by the
+      // nullable year/month here instead floats legacy rows (NULL month/year,
+      // predating the auto-draft system) to the top via Postgres' NULLS FIRST
+      // default, pushing the newer dated reports below them.
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         reportName: true,

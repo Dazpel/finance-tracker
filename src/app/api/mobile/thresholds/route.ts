@@ -1,14 +1,10 @@
-import { options } from "@api/auth/[...nextauth]/options";
-import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
+import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { thresholdUpdateSchema } from "@lib/notifications/thresholdUpdateSchema";
 
-export async function PUT(request: Request) {
-  const session = await getServerSession(options);
-  const email = session?.user?.email;
-  if (!email) {
-    return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+export async function PATCH(request: Request) {
+  const auth = await requireMobileUser(request);
+  if (!auth.ok) return auth.response;
 
   let body: unknown;
   try {
@@ -31,20 +27,15 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return Response.json({ success: false, error: "User not found" }, { status: 404 });
-    }
-
     const updated = await prisma.expenseThreshold.upsert({
-      where: { userId: user.id },
+      where: { userId: auth.user.id },
       update: parsed.data,
-      create: { userId: user.id, ...parsed.data },
+      create: { userId: auth.user.id, ...parsed.data },
     });
 
     return Response.json({ success: true, response: updated });
   } catch (error) {
-    console.error("[/api/prisma/thresholds/update]", error);
+    console.error("[/api/mobile/thresholds]", error);
     return Response.json({ success: false, error: String(error) }, { status: 500 });
   }
 }

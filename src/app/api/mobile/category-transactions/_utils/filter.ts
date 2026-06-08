@@ -1,5 +1,14 @@
-import type { SyncedTransaction } from "@prisma/client";
-import { resolveCategory } from "@lib/reports/draftReport";
+import type { SyncedTransaction, Transaction } from "@prisma/client";
+import { normalizeCategory, resolveCategory } from "@lib/reports/draftReport";
+
+export function filterFrozenByCategory(
+  rows: Transaction[],
+  canonicalCategoryName: string
+): Transaction[] {
+  return rows.filter(
+    (r) => normalizeCategory(r.category?.[0]) === canonicalCategoryName
+  );
+}
 
 // Mirrors the per-row filtering done by computeReportTotals so the per-category
 // transaction list matches what the home Report totals were computed from:

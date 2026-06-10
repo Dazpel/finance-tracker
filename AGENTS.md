@@ -228,7 +228,7 @@ REQUIRED reading before any change to `/api/mobile/*`, `/api/push-tokens`, or an
 
 ### RLS posture (do not weaken)
 
-- Every table in the `public` schema has Postgres RLS enabled with **no policies** — i.e. deny-all to every role except superusers.
+- Every table in the `public` schema has Postgres RLS enabled with **no policies** — i.e. deny-all to every role except superusers. This includes Prisma's own `_prisma_migrations` table; any new public table (including tooling tables) must get RLS too.
 - Prisma connects as the `postgres` superuser via the Supabase pooler and bypasses RLS, so backend code keeps working unchanged.
 - The Supabase anon key shipped in the mobile binary is therefore powerless against `public` data — direct REST/PostgREST attempts return empty.
 - **Do not add policies that grant access to the `anon` or `authenticated` Postgres roles.** That re-opens the direct-Supabase data path.

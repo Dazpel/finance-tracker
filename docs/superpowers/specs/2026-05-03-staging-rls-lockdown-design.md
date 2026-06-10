@@ -48,7 +48,7 @@ alter table "Report"               enable row level security;
 alter table "SyncedTransaction"    enable row level security;
 ```
 
-No `force row level security` — Prisma's `postgres` role must keep bypassing. No policies — that is the deny-all. `_prisma_migrations` left untouched (Prisma manages it).
+No `force row level security` — Prisma's `postgres` role must keep bypassing. No policies — that is the deny-all. `_prisma_migrations` was left untouched here (Prisma manages it), but the Supabase linter flags it as a public table without RLS; the follow-up migration `20260610000000_enable_rls_on_prisma_migrations` enables RLS on it the same way (Prisma's `postgres` role still bypasses).
 
 ### 2. Server-side authorization gate
 

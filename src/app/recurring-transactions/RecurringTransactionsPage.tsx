@@ -33,7 +33,7 @@ function RecurringTransactionsPage() {
   const handleOnView = (encodedURI: string): void =>
     navigate(`/recurring-transactions/details?data=${encodedURI}`);
 
-  const handleOnDelete = async (reportId: number): Promise<void> => {
+  const handleOnDelete = async (reportId: string): Promise<void> => {
     try {
       setIsLoading(true);
       const response = await fetch("/api/prisma/recurringReports/delete", {

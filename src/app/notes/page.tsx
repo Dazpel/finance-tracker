@@ -23,7 +23,7 @@ import {
 } from "@hooks/useNotes";
 
 interface Note {
-  id: number;
+  id: string;
   title: string;
   content: string;
   createdAt: string;
@@ -60,7 +60,7 @@ export default function NotesPage(): React.ReactElement {
 
   // Handle opening delete confirmation modal
   const handleDeleteNote = useCallback(
-    (noteId: number) => {
+    (noteId: string) => {
       const note = notes.find((n) => n.id === noteId);
       if (note) {
         setNoteToDelete(note);

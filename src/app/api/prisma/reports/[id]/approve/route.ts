@@ -3,16 +3,17 @@ import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
 import { approveReport } from "@lib/reports/approveReport";
+import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: rawId } = await params;
-  const id = Number(rawId);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!isUuid(rawId)) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
+  const id = rawId;
 
   const session = await getServerSession(options);
   const userEmail = session?.user?.email;

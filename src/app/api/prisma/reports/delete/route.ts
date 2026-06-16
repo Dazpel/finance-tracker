@@ -2,6 +2,7 @@ import { options } from "@api/auth/[...nextauth]/options";
 import { deleteReport } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
+import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function POST(request: Request) {
   const session = await getServerSession(options);
@@ -13,6 +14,13 @@ export async function POST(request: Request) {
       success: false,
       error: "Missing reportId",
     });
+  }
+
+  if (!isUuid(id)) {
+    return Response.json(
+      { success: false, error: "Invalid reportId" },
+      { status: 400 }
+    );
   }
 
   try {

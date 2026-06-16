@@ -24,7 +24,7 @@ type SyncResult = {
 const mapTransaction = (
   t: Transaction,
   userId: string,
-  plaidAccountId: number
+  plaidAccountId: string
 ) => ({
   userId,
   plaidAccountId,
@@ -53,7 +53,7 @@ const isUniqueViolation = (e: unknown): boolean =>
 // Returns the acquired row's `acquiredAt` as a release token, or null if the lock
 // is held by an active sync. Callers MUST pass the token back to release, so a
 // sync that overran the stale window and got reclaimed can't unlock its successor.
-const tryAcquireLock = async (plaidAccountId: number): Promise<Date | null> => {
+const tryAcquireLock = async (plaidAccountId: string): Promise<Date | null> => {
   try {
     const row = await prisma.plaidSyncLock.create({ data: { plaidAccountId } });
     return row.acquiredAt;
@@ -98,7 +98,7 @@ const tryAcquireLock = async (plaidAccountId: number): Promise<Date | null> => {
 };
 
 export const syncTransactionsForAccount = async (
-  plaidAccountId: number,
+  plaidAccountId: string,
   opts?: { skipDraftRecompute?: boolean }
 ): Promise<SyncResult> => {
   const account = await prisma.plaidAccount.findUnique({

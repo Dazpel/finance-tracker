@@ -28,7 +28,8 @@ model User {
 }
 
 model PlaidAccount {
-  id                 Int                 @id @default(autoincrement())
+  id                 String              @id @default(uuid())
+  legacyId           Int?
   userId             String // Foreign key to User
   user               User                @relation(fields: [userId], references: [id])
   institutionName    String
@@ -44,13 +45,14 @@ model PlaidAccount {
 }
 
 model Report {
-  id                 Int           @id @default(autoincrement())
+  id                 String        @id @default(uuid())
+  legacyId           Int?
   userId             String // Foreign key to User
   user               User          @relation(fields: [userId], references: [id])
   transactions       Transaction[]
   reportName         String
   reportType         ReportType    @default(MONTHLY)
-  parentReportId     Int? // For hierarchical reports
+  parentReportId     String? // For hierarchical reports
   parentReport       Report?       @relation("ParentChild", fields: [parentReportId], references: [id])
   childReports       Report[]      @relation("ParentChild")
   foodAndDrink       Float         @default(0)
@@ -81,7 +83,8 @@ model Report {
 }
 
 model RecurringReport {
-  id                  Int                    @id @default(autoincrement())
+  id                  String                 @id @default(uuid())
+  legacyId            Int?
   userId              String // Foreign key to User
   user                User                   @relation(fields: [userId], references: [id])
   inflowTransactions  RecurringTransaction[] @relation(name: "InflowReport")
@@ -96,10 +99,11 @@ model RecurringReport {
 }
 
 model RecurringTransaction {
-  id              Int              @id @default(autoincrement())
-  outflowReportId Int? // Foreign key to RecurringReport
+  id              String           @id @default(uuid())
+  legacyId        Int?
+  outflowReportId String? // Foreign key to RecurringReport
   outflowReport   RecurringReport? @relation(name: "OutflowReport", fields: [outflowReportId], references: [id])
-  inflowReportId  Int? // Foreign key to RecurringReport
+  inflowReportId  String? // Foreign key to RecurringReport
   inflowReport    RecurringReport? @relation(name: "InflowReport", fields: [inflowReportId], references: [id])
   userId          String // Foreign key to User
   user            User             @relation(fields: [userId], references: [id])
@@ -117,8 +121,9 @@ model RecurringTransaction {
 }
 
 model Transaction {
-  id             Int      @id @default(autoincrement())
-  reportId       Int // Foreign key to Report
+  id             String   @id @default(uuid())
+  legacyId       Int?
+  reportId       String // Foreign key to Report
   report         Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
   userId         String // Foreign key to User
   user           User     @relation(fields: [userId], references: [id])
@@ -136,7 +141,8 @@ model Transaction {
 }
 
 model Note {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
+  legacyId  Int?
   userId    String // Foreign key to User
   user      User     @relation(fields: [userId], references: [id])
   title     String
@@ -153,7 +159,7 @@ model SyncedTransaction {
   id                     String       @id @default(uuid())
   userId                 String
   user                   User         @relation(fields: [userId], references: [id])
-  plaidAccountId         Int
+  plaidAccountId         String
   plaidAccount           PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
   transaction_id         String
   account_id             String
@@ -184,7 +190,7 @@ model SyncedTransaction {
 // Plaid cursor for incremental transaction sync. One per PlaidAccount, cascades on account removal.
 model PlaidCursor {
   id             String       @id @default(uuid())
-  plaidAccountId Int          @unique
+  plaidAccountId String       @unique
   plaidAccount   PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
   cursor         String
   lastSyncAt     DateTime     @default(now())
@@ -194,7 +200,7 @@ model PlaidCursor {
 // Mutex for /transactions/sync. Row exists = sync in flight for that account.
 // Stale rows (older than SYNC_LOCK_STALE_MS in syncTransactions.ts) are reclaimable.
 model PlaidSyncLock {
-  plaidAccountId Int          @id
+  plaidAccountId String       @id
   plaidAccount   PlaidAccount @relation(fields: [plaidAccountId], references: [id], onDelete: Cascade)
   acquiredAt     DateTime     @default(now())
 }

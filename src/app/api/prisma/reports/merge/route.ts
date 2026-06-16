@@ -2,6 +2,7 @@ import { options } from "@api/auth/[...nextauth]/options";
 import { mergeReports, updateReport } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
+import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function POST(request: Request) {
   const session = await getServerSession(options);
@@ -14,6 +15,13 @@ export async function POST(request: Request) {
       success: false,
       error: "Missing transactions or reportData",
     });
+  }
+
+  if (!isUuid(reportId_1) || !isUuid(reportId_2)) {
+    return Response.json(
+      { success: false, error: "Invalid reportId" },
+      { status: 400 }
+    );
   }
 
   try {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { isCanonicalCategory } from "@lib/categories";
 import { recomputeFrozenReportTotals } from "@lib/reports/recomputeFrozenReportTotals";
+import { isUuid } from "@lib/validation/uuidSchemas";
 
 const BodySchema = z
   .object({
@@ -32,10 +33,10 @@ export async function PATCH(
   if (!auth.ok) return auth.response;
 
   const { id: idStr } = await params;
-  const id = Number(idStr);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!isUuid(idStr)) {
     return Response.json({ success: false, error: "Invalid id" }, { status: 400 });
   }
+  const id = idStr;
 
   let body: unknown;
   try {

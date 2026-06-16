@@ -16,7 +16,7 @@ type AnnualReportCreationModalProps = {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
   reportData: ReportDataDTO[];
-  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
+  handleAnnualReport: (reportIds: string[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
   isCreateAnnualPending?: boolean;
 };
 
@@ -52,7 +52,7 @@ export default function AnnualReportCreationModal({
   };
 
   const createAnnualReport = async () => {
-    const reportIds = reportsSelected.split(",").map((id) => parseInt(id));
+    const reportIds = reportsSelected.split(",").map((id) => id.trim());
     const filteredReports = reportIds.map((id) => reportData.find((r) => r.id === id));
 
     if (filteredReports === undefined)  {

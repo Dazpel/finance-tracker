@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Note {
-  id: number;
+  id: string;
   title: string;
   content: string;
   createdAt: string;
@@ -73,7 +73,7 @@ export const useUpdateNote = () => {
       id,
       noteData,
     }: {
-      id: number;
+      id: string;
       noteData: UpdateNoteData;
     }): Promise<Note> => {
       const response = await fetch(`/api/notes/${id}`, {
@@ -107,7 +107,7 @@ export const useDeleteNote = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number): Promise<void> => {
+    mutationFn: async (id: string): Promise<void> => {
       const response = await fetch(`/api/notes/${id}`, {
         method: "DELETE",
       });

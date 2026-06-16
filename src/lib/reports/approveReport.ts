@@ -11,7 +11,7 @@ import {
 export type ApproveReportResult =
   | {
       ok: true;
-      report: { id: number; status: "APPROVED"; approvedAt: Date };
+      report: { id: string; status: "APPROVED"; approvedAt: Date };
       transactionsAdded: number;
     }
   | {
@@ -22,7 +22,7 @@ export type ApproveReportResult =
 
 export async function approveReport(params: {
   userId: string;
-  reportId: number;
+  reportId: string;
 }): Promise<ApproveReportResult> {
   const { userId, reportId } = params;
 

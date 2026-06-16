@@ -185,7 +185,7 @@ export default function ReportsTable({
   const displayDeleteModal = useCallback((id: string) => {
     setReportIndexToDelete(id);
     setIsDeleteModalOpen(true);
-  }, [reportData]);
+  }, []);
 
   const handleActions = useCallback((id: string, action: RowActions) => {
     const report = reportData.find((report) => report.id === id);

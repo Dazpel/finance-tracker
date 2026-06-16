@@ -1,11 +1,19 @@
 import { options } from "@api/auth/[...nextauth]/options";
-import { mergeReports, updateReport } from "@lib/prisma/prismaFunctions";
+import { mergeReports } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
 import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function POST(request: Request) {
   const session = await getServerSession(options);
+
+  if (!session?.user?.email) {
+    return Response.json(
+      { success: false, error: "Unauthenticated" },
+      { status: 401 }
+    );
+  }
+
   const res = await request.json();
   const reportId_1 = res.reportId_1;
   const reportId_2 = res.reportId_2;
@@ -13,7 +21,7 @@ export async function POST(request: Request) {
   if (!reportId_1 || !reportId_2) {
     return Response.json({
       success: false,
-      error: "Missing transactions or reportData",
+      error: "Missing reportId_1 or reportId_2",
     });
   }
 

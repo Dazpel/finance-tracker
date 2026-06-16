@@ -6,6 +6,14 @@ import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function GET(request: Request) {
   const session = await getServerSession(options);
+
+  if (!session?.user?.email) {
+    return Response.json(
+      { success: false, error: "Unauthenticated" },
+      { status: 401 }
+    );
+  }
+
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('reportId')
 

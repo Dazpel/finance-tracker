@@ -19,7 +19,8 @@ export type PrismaResponse = {
 };
 
 export type plaidAccount = {
-  id: number;
+  id: string;
+  legacyId: number | null;
   userId: string;
   institutionName: string;
   accessToken: string;
@@ -110,7 +111,7 @@ export const getRecurringTransactions = async (
   try {
     const transactions = await prisma.recurringReport.findUnique({
       where: {
-        id: Number(reportId),
+        id: reportId,
         AND: {
           user: {
             email: userEmail,
@@ -153,7 +154,7 @@ export const getTransactions = async (
     if (reportType === ReportType.ANNUAL) {
       transactions = await prisma.report.findUnique({
         where: {
-          id: Number(reportId),
+          id: reportId,
           AND: {
             user: {
               email: userEmail,
@@ -171,7 +172,7 @@ export const getTransactions = async (
     } else {
       const report = await prisma.report.findUnique({
         where: {
-          id: Number(reportId),
+          id: reportId,
           AND: {
             user: {
               email: userEmail,
@@ -376,7 +377,7 @@ export const createRecurringReport = async (
 
 export const deleteReport = async (
   prisma: PrismaClient,
-  reportId: number,
+  reportId: string,
   userEmail: string
 ): Promise<PrismaResponse> => {
   let response: PrismaResponse = {
@@ -411,7 +412,7 @@ export const deleteReport = async (
 export const updateReport = async (
   prisma: PrismaClient,
   transactions: TransactionWithNotes[],
-  reportId: number,
+  reportId: string,
   report: ReportData,
   reportName: string,
   userEmail: string
@@ -639,8 +640,8 @@ export const updateReport = async (
 
 export const mergeReports = async (
   prisma: PrismaClient,
-  reportId_1: number,
-  reportId_2: number,
+  reportId_1: string,
+  reportId_2: string,
   userEmail: string
 ): Promise<PrismaResponse> => {
   let response: PrismaResponse = {
@@ -678,7 +679,7 @@ export const mergeReports = async (
           SELECT "id"
           FROM (
             SELECT "id",
-                  ROW_NUMBER() OVER (PARTITION BY "transaction_id" ORDER BY "id") AS row_number
+                  ROW_NUMBER() OVER (PARTITION BY "transaction_id" ORDER BY "createdAt", "id") AS row_number
             FROM "Transaction"
             WHERE "reportId" = ${reportId_1}
           ) duplicates
@@ -726,7 +727,7 @@ export const mergeReports = async (
 export const createAnnualReport = async (
   prisma: PrismaClient,
   reports: ReportDataDTO[],
-  monthlyReportIds: number[],
+  monthlyReportIds: string[],
   annualReportName: string,
   userEmail: string
 ): Promise<PrismaResponse> => {

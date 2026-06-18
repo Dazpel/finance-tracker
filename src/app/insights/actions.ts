@@ -11,7 +11,7 @@ interface DateRange {
 }
 
 interface ReportParams {
-  reportId: number;
+  reportId: string;
   reportType: ReportType;
 }
 

@@ -35,7 +35,7 @@ type RecurringReportsTableProps = {
   reportData: RecurringReportDataDTO[];
   handleOnView?: (encodedURI: string) => void;
   handleOnEdit?: (encodedURI: string) => void;
-  handleOnDelete: (index: number) => Promise<void>;
+  handleOnDelete: (index: string) => Promise<void>;
 };
 
 const columns = [
@@ -80,7 +80,7 @@ export default function RecurringReportsTable({
   handleOnView,
 }: RecurringReportsTableProps) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [reportIndexToDelete, setReportIndexToDelete] = useState<number | null>(
+  const [reportIndexToDelete, setReportIndexToDelete] = useState<string | null>(
     null
   );
     

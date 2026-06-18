@@ -22,7 +22,7 @@ export type CategoryValues = {
 };
 
 export type RecurringReportDataDTO = {
-  id: number
+  id: string
   inflow: number;
   outflow: number;
   total: number;
@@ -30,7 +30,7 @@ export type RecurringReportDataDTO = {
 };
 
 export type ReportDataDTO = {
-  id: number;
+  id: string;
   reportType: ReportType;
   reportName: string;
   createdAt: string;

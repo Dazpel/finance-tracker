@@ -18,7 +18,7 @@ import {
 import { VerticalDotsIcon } from "assets/icons/VerticalDotsIcon";
 
 interface Note {
-  id: number;
+  id: string;
   title: string;
   content: string;
   createdAt: string;
@@ -28,7 +28,7 @@ interface Note {
 interface NotesTableProps {
   notes: Note[];
   onEditNote: (note: Note) => void;
-  onDeleteNote: (noteId: number) => void;
+  onDeleteNote: (noteId: string) => void;
   isLoading?: boolean;
 }
 

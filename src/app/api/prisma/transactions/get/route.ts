@@ -3,6 +3,7 @@ import { getTransactions, PrismaResponse } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
 import { ReportType } from "@prisma/client";
+import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function GET(request: Request) {
   const session = await getServerSession(options);
@@ -10,12 +11,19 @@ export async function GET(request: Request) {
   const id = searchParams.get('reportId')
   const reportType = searchParams.get('reportType')
 
+  if (!isUuid(id)) {
+    return Response.json(
+      { success: false, error: "Invalid reportId" },
+      { status: 400 }
+    );
+  }
+
   try {
     const response = await getTransactions(
       prisma,
       session.user.email,
       reportType as ReportType,
-      id as string
+      id
     );
 
     return Response.json({ success: true, response });

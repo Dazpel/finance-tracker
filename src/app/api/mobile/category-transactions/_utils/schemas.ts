@@ -13,7 +13,7 @@ export const QuerySchema = z
       .string()
       .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "monthKey must match YYYY-MM")
       .optional(),
-    reportId: z.coerce.number().int().positive().optional(),
+    reportId: z.uuid().optional(),
   })
   .refine((data) => data.reportId != null || data.monthKey != null, {
     message: "Either reportId or monthKey must be provided",

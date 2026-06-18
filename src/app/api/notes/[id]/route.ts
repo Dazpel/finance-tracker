@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { options } from "@api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
 import DOMPurify from "isomorphic-dompurify";
+import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function PUT(
   request: NextRequest,
@@ -16,8 +17,11 @@ export async function PUT(
     }
 
     const { title, content } = await request.json();
-    const { id } = await params;
-    const noteId = parseInt(id);
+    const { id: rawId } = await params;
+    if (!isUuid(rawId)) {
+      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    }
+    const noteId = rawId;
 
     if (!title || !content) {
       return NextResponse.json(
@@ -78,8 +82,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params;
-    const noteId = parseInt(id);
+    const { id: rawId } = await params;
+    if (!isUuid(rawId)) {
+      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    }
+    const noteId = rawId;
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },

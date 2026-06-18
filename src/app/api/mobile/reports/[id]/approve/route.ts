@@ -1,5 +1,6 @@
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { approveReport } from "@lib/reports/approveReport";
+import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function POST(
   request: Request,
@@ -9,13 +10,13 @@ export async function POST(
   if (!auth.ok) return auth.response;
 
   const { id: rawId } = await params;
-  const id = Number(rawId);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!isUuid(rawId)) {
     return Response.json(
       { success: false, error: "Invalid id" },
       { status: 400 }
     );
   }
+  const id = rawId;
 
   try {
     const result = await approveReport({ userId: auth.user.id, reportId: id });

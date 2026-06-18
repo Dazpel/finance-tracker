@@ -22,7 +22,7 @@ async function InsightsLoader({ searchParams }: InsightsPageProps) {
   }
 
   // Parse URL params for report-based insights
-  const reportId = params.reportId ? parseInt(params.reportId, 10) : undefined;
+  const reportId = params.reportId ?? undefined;
   const reportType = params.reportType as ReportType | undefined;
 
   return (

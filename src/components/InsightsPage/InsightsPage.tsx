@@ -15,7 +15,7 @@ import BudgetAllocationTab from "./BudgetAllocationTab";
 
 interface InsightsPageProps {
   years: number;
-  initialReportId?: number;
+  initialReportId?: string;
   initialReportType?: ReportType;
 }
 
@@ -35,7 +35,7 @@ export default function InsightsPage({
   const { errorToast: errorToastFn } = useToast();
   
   // Track if we've already fetched for this reportId to prevent infinite loops
-  const fetchedReportIdRef = useRef<number | null>(null);
+  const fetchedReportIdRef = useRef<string | null>(null);
   
   // Stable errorToast callback to avoid dependency issues
   const errorToast = useCallback(

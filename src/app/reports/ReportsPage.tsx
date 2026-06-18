@@ -25,7 +25,7 @@ export default function ReportsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (reportId: number) => {
+    mutationFn: async (reportId: string) => {
       const response = await fetch("/api/prisma/reports/delete", {
         method: "POST",
         body: JSON.stringify({ reportId }),
@@ -49,8 +49,8 @@ export default function ReportsPage() {
       reportId_1,
       reportId_2,
     }: {
-      reportId_1: number;
-      reportId_2: number;
+      reportId_1: string;
+      reportId_2: string;
     }) => {
       const response = await fetch("/api/prisma/reports/merge", {
         method: "POST",
@@ -76,7 +76,7 @@ export default function ReportsPage() {
       reportName,
       reports,
     }: {
-      reportIds: number[];
+      reportIds: string[];
       reportName: string;
       reports: ReportDataDTO[];
     }) => {
@@ -107,10 +107,10 @@ export default function ReportsPage() {
   const handleOnCompare = (encodedURI: string): void =>
     navigate(`/reports/compare?data=${encodedURI}`);
 
-  const handleOnInsights = (reportId: number, reportType: string): void =>
+  const handleOnInsights = (reportId: string, reportType: string): void =>
     navigate(`/insights?reportId=${reportId}&reportType=${reportType}`);
 
-  const handleOnDelete = async (reportId: number): Promise<void> => {
+  const handleOnDelete = async (reportId: string): Promise<void> => {
     try {
       await deleteMutation.mutateAsync(reportId);
     } catch {
@@ -119,8 +119,8 @@ export default function ReportsPage() {
   };
 
   const handleMerge = async (
-    reportId_1: number,
-    reportId_2: number
+    reportId_1: string,
+    reportId_2: string
   ): Promise<void> => {
     try {
       await mergeMutation.mutateAsync({ reportId_1, reportId_2 });
@@ -151,7 +151,7 @@ export default function ReportsPage() {
   };
 
   const handleAnualReport = async (
-    reportIds: number[],
+    reportIds: string[],
     reportName: string,
     reports: ReportDataDTO[]
   ): Promise<void> => {

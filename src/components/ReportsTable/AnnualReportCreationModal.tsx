@@ -16,7 +16,7 @@ type AnnualReportCreationModalProps = {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
   reportData: ReportDataDTO[];
-  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
+  handleAnnualReport: (reportIds: string[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
   isCreateAnnualPending?: boolean;
 };
 
@@ -52,14 +52,21 @@ export default function AnnualReportCreationModal({
   };
 
   const createAnnualReport = async () => {
-    const reportIds = reportsSelected.split(",").map((id) => parseInt(id));
-    const filteredReports = reportIds.map((id) => reportData.find((r) => r.id === id));
+    const reportIds = reportsSelected
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const filteredReports = reportIds
+      .map((id) => reportData.find((r) => r.id === id))
+      .filter((report): report is ReportDataDTO => report !== undefined);
 
-    if (filteredReports === undefined)  {
+    // Bail out if any selected id didn't resolve to a known report, so we never
+    // pass undefined entries into annual aggregation downstream.
+    if (filteredReports.length !== reportIds.length) {
       return;
     }
 
-    await handleAnnualReport(reportIds, reportName, filteredReports as ReportDataDTO[]);
+    await handleAnnualReport(reportIds, reportName, filteredReports);
     setIsOpen(false);
   };
 

@@ -1,6 +1,7 @@
 import prisma from "@lib/prisma/prismaClient";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { buildMobileReportResponse } from "@lib/reports/buildMobileReportResponse";
+import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function GET(
   request: Request,
@@ -11,13 +12,13 @@ export async function GET(
 
   try {
     const { id: rawId } = await params;
-    const id = Number(rawId);
-    if (!Number.isInteger(id) || id <= 0) {
+    if (!isUuid(rawId)) {
       return Response.json(
         { success: false, error: "Invalid id" },
         { status: 400 }
       );
     }
+    const id = rawId;
 
     const [report, thresholds] = await Promise.all([
       prisma.report.findFirst({

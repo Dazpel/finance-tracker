@@ -15,7 +15,7 @@ type PrismaLike = Prisma.TransactionClient | typeof prismaClient;
 // + finalize math is shared with the draft path via @lib/reports/draftReport
 // so the two never drift.
 export async function recomputeFrozenReportTotals(
-  reportId: number,
+  reportId: string,
   client: PrismaLike = prismaClient
 ): Promise<void> {
   const rows = await client.transaction.findMany({

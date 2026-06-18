@@ -296,71 +296,71 @@ Run: `npx prisma migrate dev --create-only --name int_to_uuid_primary_keys`
 -- re-encoded by the new UUID FKs). Runs in one transaction (Prisma default).
 
 -- ── 1. New UUID PK columns, backfilled ──────────────────────────────
-ALTER TABLE "PlaidAccount"         ADD COLUMN "uuidId" TEXT;
-ALTER TABLE "Report"               ADD COLUMN "uuidId" TEXT;
-ALTER TABLE "RecurringReport"      ADD COLUMN "uuidId" TEXT;
-ALTER TABLE "RecurringTransaction" ADD COLUMN "uuidId" TEXT;
-ALTER TABLE "Transaction"          ADD COLUMN "uuidId" TEXT;
-ALTER TABLE "Note"                 ADD COLUMN "uuidId" TEXT;
+ALTER TABLE "PlaidAccount"         ADD COLUMN "uuid" TEXT;
+ALTER TABLE "Report"               ADD COLUMN "uuid" TEXT;
+ALTER TABLE "RecurringReport"      ADD COLUMN "uuid" TEXT;
+ALTER TABLE "RecurringTransaction" ADD COLUMN "uuid" TEXT;
+ALTER TABLE "Transaction"          ADD COLUMN "uuid" TEXT;
+ALTER TABLE "Note"                 ADD COLUMN "uuid" TEXT;
 
-UPDATE "PlaidAccount"         SET "uuidId" = gen_random_uuid()::text;
-UPDATE "Report"               SET "uuidId" = gen_random_uuid()::text;
-UPDATE "RecurringReport"      SET "uuidId" = gen_random_uuid()::text;
-UPDATE "RecurringTransaction" SET "uuidId" = gen_random_uuid()::text;
-UPDATE "Transaction"          SET "uuidId" = gen_random_uuid()::text;
-UPDATE "Note"                 SET "uuidId" = gen_random_uuid()::text;
+UPDATE "PlaidAccount"         SET "uuid" = gen_random_uuid()::text;
+UPDATE "Report"               SET "uuid" = gen_random_uuid()::text;
+UPDATE "RecurringReport"      SET "uuid" = gen_random_uuid()::text;
+UPDATE "RecurringTransaction" SET "uuid" = gen_random_uuid()::text;
+UPDATE "Transaction"          SET "uuid" = gen_random_uuid()::text;
+UPDATE "Note"                 SET "uuid" = gen_random_uuid()::text;
 
 -- ── 2. New FK columns, backfilled via join on the old integer ids ───
-ALTER TABLE "Report" ADD COLUMN "uuidParentReportId" TEXT;
-UPDATE "Report" c SET "uuidParentReportId" = p."uuidId"
+ALTER TABLE "Report" ADD COLUMN "parentReportUuid" TEXT;
+UPDATE "Report" c SET "parentReportUuid" = p."uuid"
   FROM "Report" p WHERE c."parentReportId" = p."id";
 
-ALTER TABLE "Transaction" ADD COLUMN "uuidReportId" TEXT;
-UPDATE "Transaction" t SET "uuidReportId" = r."uuidId"
+ALTER TABLE "Transaction" ADD COLUMN "reportUuid" TEXT;
+UPDATE "Transaction" t SET "reportUuid" = r."uuid"
   FROM "Report" r WHERE t."reportId" = r."id";
 
-ALTER TABLE "RecurringTransaction" ADD COLUMN "uuidOutflowReportId" TEXT;
-UPDATE "RecurringTransaction" rt SET "uuidOutflowReportId" = rr."uuidId"
+ALTER TABLE "RecurringTransaction" ADD COLUMN "outflowReportUuid" TEXT;
+UPDATE "RecurringTransaction" rt SET "outflowReportUuid" = rr."uuid"
   FROM "RecurringReport" rr WHERE rt."outflowReportId" = rr."id";
 
-ALTER TABLE "RecurringTransaction" ADD COLUMN "uuidInflowReportId" TEXT;
-UPDATE "RecurringTransaction" rt SET "uuidInflowReportId" = rr."uuidId"
+ALTER TABLE "RecurringTransaction" ADD COLUMN "inflowReportUuid" TEXT;
+UPDATE "RecurringTransaction" rt SET "inflowReportUuid" = rr."uuid"
   FROM "RecurringReport" rr WHERE rt."inflowReportId" = rr."id";
 
-ALTER TABLE "SyncedTransaction" ADD COLUMN "uuidPlaidAccountId" TEXT;
-UPDATE "SyncedTransaction" st SET "uuidPlaidAccountId" = pa."uuidId"
+ALTER TABLE "SyncedTransaction" ADD COLUMN "plaidAccountUuid" TEXT;
+UPDATE "SyncedTransaction" st SET "plaidAccountUuid" = pa."uuid"
   FROM "PlaidAccount" pa WHERE st."plaidAccountId" = pa."id";
 
-ALTER TABLE "PlaidCursor" ADD COLUMN "uuidPlaidAccountId" TEXT;
-UPDATE "PlaidCursor" pc SET "uuidPlaidAccountId" = pa."uuidId"
+ALTER TABLE "PlaidCursor" ADD COLUMN "plaidAccountUuid" TEXT;
+UPDATE "PlaidCursor" pc SET "plaidAccountUuid" = pa."uuid"
   FROM "PlaidAccount" pa WHERE pc."plaidAccountId" = pa."id";
 
-ALTER TABLE "PlaidSyncLock" ADD COLUMN "uuidPlaidAccountId" TEXT;
-UPDATE "PlaidSyncLock" pl SET "uuidPlaidAccountId" = pa."uuidId"
+ALTER TABLE "PlaidSyncLock" ADD COLUMN "plaidAccountUuid" TEXT;
+UPDATE "PlaidSyncLock" pl SET "plaidAccountUuid" = pa."uuid"
   FROM "PlaidAccount" pa WHERE pl."plaidAccountId" = pa."id";
 
 -- ── 3. Abort the transaction if any backfill is incomplete ──────────
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM "Transaction" WHERE "uuidReportId" IS NULL) THEN
+  IF EXISTS (SELECT 1 FROM "Transaction" WHERE "reportUuid" IS NULL) THEN
     RAISE EXCEPTION 'backfill incomplete: Transaction.reportId';
   END IF;
   IF EXISTS (SELECT 1 FROM "Report"
-             WHERE "parentReportId" IS NOT NULL AND "uuidParentReportId" IS NULL) THEN
+             WHERE "parentReportId" IS NOT NULL AND "parentReportUuid" IS NULL) THEN
     RAISE EXCEPTION 'backfill incomplete: Report.parentReportId';
   END IF;
   IF EXISTS (SELECT 1 FROM "RecurringTransaction"
-             WHERE ("outflowReportId" IS NOT NULL AND "uuidOutflowReportId" IS NULL)
-                OR ("inflowReportId"  IS NOT NULL AND "uuidInflowReportId"  IS NULL)) THEN
+             WHERE ("outflowReportId" IS NOT NULL AND "outflowReportUuid" IS NULL)
+                OR ("inflowReportId"  IS NOT NULL AND "inflowReportUuid"  IS NULL)) THEN
     RAISE EXCEPTION 'backfill incomplete: RecurringTransaction report FKs';
   END IF;
-  IF EXISTS (SELECT 1 FROM "SyncedTransaction" WHERE "uuidPlaidAccountId" IS NULL) THEN
+  IF EXISTS (SELECT 1 FROM "SyncedTransaction" WHERE "plaidAccountUuid" IS NULL) THEN
     RAISE EXCEPTION 'backfill incomplete: SyncedTransaction.plaidAccountId';
   END IF;
-  IF EXISTS (SELECT 1 FROM "PlaidCursor" WHERE "uuidPlaidAccountId" IS NULL) THEN
+  IF EXISTS (SELECT 1 FROM "PlaidCursor" WHERE "plaidAccountUuid" IS NULL) THEN
     RAISE EXCEPTION 'backfill incomplete: PlaidCursor.plaidAccountId';
   END IF;
-  IF EXISTS (SELECT 1 FROM "PlaidSyncLock" WHERE "uuidPlaidAccountId" IS NULL) THEN
+  IF EXISTS (SELECT 1 FROM "PlaidSyncLock" WHERE "plaidAccountUuid" IS NULL) THEN
     RAISE EXCEPTION 'backfill incomplete: PlaidSyncLock.plaidAccountId';
   END IF;
 END $$;
@@ -418,12 +418,12 @@ DROP SEQUENCE IF EXISTS "PlaidAccount_id_seq", "Report_id_seq",
   "Transaction_id_seq", "Note_id_seq";
 
 -- ── 6. Rename new columns into place, enforce NOT NULL ──────────────
-ALTER TABLE "PlaidAccount"         RENAME COLUMN "uuidId" TO "id";
-ALTER TABLE "Report"               RENAME COLUMN "uuidId" TO "id";
-ALTER TABLE "RecurringReport"      RENAME COLUMN "uuidId" TO "id";
-ALTER TABLE "RecurringTransaction" RENAME COLUMN "uuidId" TO "id";
-ALTER TABLE "Transaction"          RENAME COLUMN "uuidId" TO "id";
-ALTER TABLE "Note"                 RENAME COLUMN "uuidId" TO "id";
+ALTER TABLE "PlaidAccount"         RENAME COLUMN "uuid" TO "id";
+ALTER TABLE "Report"               RENAME COLUMN "uuid" TO "id";
+ALTER TABLE "RecurringReport"      RENAME COLUMN "uuid" TO "id";
+ALTER TABLE "RecurringTransaction" RENAME COLUMN "uuid" TO "id";
+ALTER TABLE "Transaction"          RENAME COLUMN "uuid" TO "id";
+ALTER TABLE "Note"                 RENAME COLUMN "uuid" TO "id";
 
 ALTER TABLE "PlaidAccount"         ALTER COLUMN "id" SET NOT NULL;
 ALTER TABLE "Report"               ALTER COLUMN "id" SET NOT NULL;
@@ -432,13 +432,13 @@ ALTER TABLE "RecurringTransaction" ALTER COLUMN "id" SET NOT NULL;
 ALTER TABLE "Transaction"          ALTER COLUMN "id" SET NOT NULL;
 ALTER TABLE "Note"                 ALTER COLUMN "id" SET NOT NULL;
 
-ALTER TABLE "Report"               RENAME COLUMN "uuidParentReportId" TO "parentReportId";
-ALTER TABLE "Transaction"          RENAME COLUMN "uuidReportId" TO "reportId";
-ALTER TABLE "RecurringTransaction" RENAME COLUMN "uuidOutflowReportId" TO "outflowReportId";
-ALTER TABLE "RecurringTransaction" RENAME COLUMN "uuidInflowReportId" TO "inflowReportId";
-ALTER TABLE "SyncedTransaction"    RENAME COLUMN "uuidPlaidAccountId" TO "plaidAccountId";
-ALTER TABLE "PlaidCursor"          RENAME COLUMN "uuidPlaidAccountId" TO "plaidAccountId";
-ALTER TABLE "PlaidSyncLock"        RENAME COLUMN "uuidPlaidAccountId" TO "plaidAccountId";
+ALTER TABLE "Report"               RENAME COLUMN "parentReportUuid" TO "parentReportId";
+ALTER TABLE "Transaction"          RENAME COLUMN "reportUuid" TO "reportId";
+ALTER TABLE "RecurringTransaction" RENAME COLUMN "outflowReportUuid" TO "outflowReportId";
+ALTER TABLE "RecurringTransaction" RENAME COLUMN "inflowReportUuid" TO "inflowReportId";
+ALTER TABLE "SyncedTransaction"    RENAME COLUMN "plaidAccountUuid" TO "plaidAccountId";
+ALTER TABLE "PlaidCursor"          RENAME COLUMN "plaidAccountUuid" TO "plaidAccountId";
+ALTER TABLE "PlaidSyncLock"        RENAME COLUMN "plaidAccountUuid" TO "plaidAccountId";
 
 ALTER TABLE "Transaction"       ALTER COLUMN "reportId" SET NOT NULL;
 ALTER TABLE "SyncedTransaction" ALTER COLUMN "plaidAccountId" SET NOT NULL;

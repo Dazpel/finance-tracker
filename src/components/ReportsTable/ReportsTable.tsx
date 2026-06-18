@@ -28,7 +28,7 @@ import AnnualReportCreationModal from "./AnnualReportCreationModal";
 type RowActions = "edit" | "delete" | "view" | "insights";
 
 type TableRow = {
-  id: number;
+  id: string;
   key: number;
   name: string;
   date: string;
@@ -45,10 +45,10 @@ type ReportsTableProps = {
   handleOnCompare: (encodedURI: string) => void;
   handleOnView?: (encodedURI: string) => void;
   handleOnEdit?: (encodedURI: string) => void;
-  handleOnDelete: (index: number) => Promise<void>;
-  handleMerge: (reportId_1: number, reportId_2: number) => Promise<void>;
-  handleAnnualReport: (reportIds: number[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
-  handleOnInsights?: (reportId: number, reportType: string) => void;
+  handleOnDelete: (index: string) => Promise<void>;
+  handleMerge: (reportId_1: string, reportId_2: string) => Promise<void>;
+  handleAnnualReport: (reportIds: string[], reportName: string, reports: ReportDataDTO[]) => Promise<void>;
+  handleOnInsights?: (reportId: string, reportType: string) => void;
   showCreateAnnualReportHeader?: boolean;
   disableHeader?: boolean;
   isDeletePending?: boolean;
@@ -122,7 +122,7 @@ export default function ReportsTable({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [isAnnualReportModalOpen, setIsAnnualReportModalOpen] = useState(false);
-  const [reportIndexToDelete, setReportIndexToDelete] = useState<number | null>(
+  const [reportIndexToDelete, setReportIndexToDelete] = useState<string | null>(
     null
   );
 
@@ -182,12 +182,12 @@ export default function ReportsTable({
     }
   };
 
-  const displayDeleteModal = useCallback((id: number) => {
+  const displayDeleteModal = useCallback((id: string) => {
     setReportIndexToDelete(id);
     setIsDeleteModalOpen(true);
-  }, [reportData]);
+  }, []);
 
-  const handleActions = useCallback((id: number, action: RowActions) => {
+  const handleActions = useCallback((id: string, action: RowActions) => {
     const report = reportData.find((report) => report.id === id);
     switch (action) {
       case "edit":

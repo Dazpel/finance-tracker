@@ -2,13 +2,27 @@ import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { CANONICAL_CATEGORIES, type CanonicalCategory } from "@lib/categories";
+import { makeCorrectionKey, type CorrectionMap } from "./correction-lookup";
+import { GENERIC_MERCHANT } from "./correction-lookup/constants";
+
+// Provenance of a resolved category, surfaced so callers can persist it.
+export type CategorizeSource = "lookup" | "signal" | "ai";
+export type CategorizeResult = {
+  category: CanonicalCategory;
+  source: CategorizeSource;
+};
+
+// Fixed seed reduces run-to-run drift on the genuine ambiguous tail. temperature
+// stays 0 and topP is left unset (a second stochastic axis would add variance).
+const CATEGORIZE_SEED = 7;
 
 export type CategorizeInput = {
   id: string;
   name: string;
   merchantName?: string | null;
   plaidCategory?: string[] | null;
-  // App convention: revenue positive, expenses negative. See prismaFunctions.ts:670.
+  // Stored Plaid convention: expenses POSITIVE, revenue/deposits NEGATIVE
+  // (money in ⇔ amount < 0). See draftReport.ts:140.
   amount?: number | null;
 };
 
@@ -18,7 +32,7 @@ export type CategorizeExample = {
   category: CanonicalCategory;
 };
 
-const FALLBACK_EXAMPLES: CategorizeExample[] = [
+export const FALLBACK_EXAMPLES: CategorizeExample[] = [
   {
     name: "Whole Foods Market",
     plaidCategory: ["Shops", "Supermarkets"],
@@ -96,10 +110,8 @@ const FALLBACK_EXAMPLES: CategorizeExample[] = [
   },
 ];
 
-const MIN_USER_EXAMPLES = 5;
-const MAX_USER_EXAMPLES = 30;
-
-const GENERIC_MERCHANT = /^(sq|pos|payment|transfer|refund)/i;
+export const MIN_USER_EXAMPLES = 5;
+export const MAX_USER_EXAMPLES = 30;
 
 // Schema places `reasoning` BEFORE `category` so structured-output ordering
 // forces the model to commit to a rule (e.g. "Plaid leaf Travel/Lodging →
@@ -120,9 +132,10 @@ const ResultSchema = z.object({
 // Eliminates failures where the model violates "ALWAYS" prompt rules under
 // merchant-name distractors (e.g. a Shell gas station tagged Revenue).
 //
-// Revenue uses amount > 0 as a STRICT GATE. Without it, name-only matches
-// would mis-classify B2B vendor expenses like "ADP Fees", "Gusto Subscription",
-// or "Payroll Services Inc" as inflow. Inside the gate we accept any of:
+// Revenue uses amount < 0 as a STRICT GATE (stored revenue/deposits are
+// negative). Without it, name-only matches would mis-classify B2B vendor
+// expenses like "ADP Fees", "Gusto Subscription", or "Payroll Services Inc"
+// (positive amounts) as inflow. Inside the gate we accept any of:
 //   - Plaid leaf: payroll, deposit, interest
 //   - Name regex: ADP/Gusto/Paychex/PAYROLL/SALARY/DIRECT DEP
 //   - Plaid root 'Transfer' (deposit-shaped, e.g. Venmo cash-in)
@@ -143,7 +156,7 @@ export function detectStrongSignal(
   const path = (t.plaidCategory ?? []).map((s) => s.toLowerCase());
   const leaf = path[path.length - 1] ?? "";
   const root = path[0] ?? "";
-  const isInflow = typeof t.amount === "number" && t.amount > 0;
+  const isInflow = typeof t.amount === "number" && t.amount < 0;
   const hasMerchant = !!t.merchantName?.trim();
 
   if (isInflow) {
@@ -210,28 +223,33 @@ function formatTarget(t: CategorizeInput): string {
 
 export async function categorizeBatch(
   transactions: CategorizeInput[],
-  userExamples: CategorizeExample[],
-): Promise<Map<string, CanonicalCategory>> {
+  examples: CategorizeExample[],
+  correctionMap?: CorrectionMap,
+): Promise<Map<string, CategorizeResult>> {
   if (transactions.length === 0) return new Map();
 
-  // Apply deterministic pre-filter first; only send residual to the model.
-  const out = new Map<string, CanonicalCategory>();
+  // Precedence: user-correction lookup (deterministic ground truth) → strong
+  // signal (deterministic rule) → LLM. Only residual reaches the model.
+  const out = new Map<string, CategorizeResult>();
   const residual: CategorizeInput[] = [];
   for (const t of transactions) {
+    if (correctionMap) {
+      const key = makeCorrectionKey(t);
+      const hit = key ? correctionMap.get(key) : undefined;
+      if (hit) {
+        out.set(t.id, { category: hit, source: "lookup" });
+        continue;
+      }
+    }
     const signal = detectStrongSignal(t);
     if (signal) {
-      out.set(t.id, signal);
-    } else {
-      residual.push(t);
+      out.set(t.id, { category: signal, source: "signal" });
+      continue;
     }
+    residual.push(t);
   }
 
   if (residual.length === 0) return out;
-
-  const examples =
-    userExamples.length >= MIN_USER_EXAMPLES
-      ? userExamples.slice(0, MAX_USER_EXAMPLES)
-      : [...userExamples, ...FALLBACK_EXAMPLES].slice(0, MAX_USER_EXAMPLES);
 
   const system = [
     "You categorize bank transactions into EXACTLY ONE bucket from this list:",
@@ -245,8 +263,8 @@ export async function categorizeBatch(
     "   If a similar merchant appears in the examples below, use that example's category.",
     "",
     "2) FLOW DETECTION (HIGHEST PRIORITY)",
-    "   `amount` is the GATE: Revenue requires amount > 0. amount <= 0 means outflow — skip to step 3 and NEVER return Revenue, no matter what the name says ('ADP Fees', 'Gusto Subscription', 'Payroll Services Inc' are all vendor expenses with negative amounts).",
-    "   When amount > 0, classify as Revenue and STOP if ANY of these hold:",
+    "   `amount` is the GATE: Revenue requires amount < 0 (money in / deposit). amount >= 0 means outflow — skip to step 3 and NEVER return Revenue, no matter what the name says ('ADP Fees', 'Gusto Subscription', 'Payroll Services Inc' are all vendor expenses with positive amounts).",
+    "   When amount < 0, classify as Revenue and STOP if ANY of these hold:",
     "   - Plaid leaf contains 'Payroll', 'Deposit', or 'Interest', OR",
     "   - Name contains PAYROLL, SALARY, DIRECT DEP, ADP, GUSTO, or PAYCHEX (case-insensitive), OR",
     "   - Plaid root is 'Transfer' (deposit-shaped inflow, e.g. Venmo/Zelle cash-in).",
@@ -298,7 +316,7 @@ export async function categorizeBatch(
     "   If two rules still match equally, choose the category that best reflects the user's spending intent — what they were trying to do with the money — not the merchant's industry classification.",
     "",
     "HARD NEGATIVE RULES — these override anything else (except user history):",
-    "- Revenue requires amount > 0. A negative-amount row is NEVER Revenue, even if its name contains 'PAYROLL'/'SALARY'/'ADP'/'GUSTO'/'PAYCHEX' — those are vendor expenses (e.g. 'ADP Fees', 'Gusto Subscription', 'Payroll Services Inc').",
+    "- Revenue requires amount < 0 (money in). A positive-amount (or zero) row is NEVER Revenue, even if its name contains 'PAYROLL'/'SALARY'/'ADP'/'GUSTO'/'PAYCHEX' — those are vendor expenses (e.g. 'ADP Fees', 'Gusto Subscription', 'Payroll Services Inc').",
     "- Refunds tied to a recognizable consumer merchant follow the merchant's category, NOT Revenue (Amazon refund => Shopping; restaurant refund => Food & Drink).",
     "- Hotels and short-term lodging are ALWAYS Entertainment, NEVER Bills & Utilities, even if recurring or with weird names.",
     "- Gyms / fitness centers are Health & Wellness, NEVER Entertainment, even though Plaid files them under Recreation.",
@@ -322,6 +340,7 @@ export async function categorizeBatch(
     model: openai("gpt-4.1-nano"),
     output: Output.object({ schema: ResultSchema }),
     temperature: 0,
+    seed: CATEGORIZE_SEED,
     system,
     prompt,
   });
@@ -336,7 +355,7 @@ export async function categorizeBatch(
       console.warn(`Duplicate id in model output: ${r.id}`);
       continue;
     }
-    out.set(r.id, r.category);
+    out.set(r.id, { category: r.category, source: "ai" });
   }
   return out;
 }

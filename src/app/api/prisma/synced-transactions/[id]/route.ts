@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { Prisma } from "@prisma/client";
 import { options } from "@api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
 import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
@@ -49,9 +50,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const data: Body = {};
+  const data: Prisma.SyncedTransactionUpdateInput = {};
   if (body.userCategoryOverride !== undefined) {
     data.userCategoryOverride = body.userCategoryOverride;
+    // Mark genuine human corrections so they become ground truth for learning.
+    data.categorySource = body.userCategoryOverride === null ? null : "user";
   }
   if (body.userSoftDeleted !== undefined) {
     data.userSoftDeleted = body.userSoftDeleted;

@@ -66,7 +66,11 @@ export async function PATCH(
 
   const data: Prisma.SyncedTransactionUpdateInput = {};
   const v = parsed.data;
-  if (v.userCategoryOverride !== undefined) data.userCategoryOverride = v.userCategoryOverride;
+  if (v.userCategoryOverride !== undefined) {
+    data.userCategoryOverride = v.userCategoryOverride;
+    // Mark genuine human corrections so they become ground truth for learning.
+    data.categorySource = v.userCategoryOverride === null ? null : "user";
+  }
   if (v.userAmountOverride !== undefined) data.userAmountOverride = v.userAmountOverride;
   if (v.notes !== undefined) data.notes = v.notes;
   if (v.userSoftDeleted !== undefined) data.userSoftDeleted = v.userSoftDeleted;

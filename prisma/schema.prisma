@@ -174,6 +174,9 @@ model SyncedTransaction {
   notes                  String?
   // User-intent fields. MUST be preserved across Plaid MODIFIED updates and pending→posted carryover.
   userCategoryOverride   String?
+  // Provenance of userCategoryOverride. NULL for legacy rows (cannot be split
+  // retroactively); accrues going forward. 'user' rows are ground truth.
+  categorySource         CategorySource?
   userAmountOverride     Float?
   userSoftDeleted        Boolean      @default(false)
   createdAt              DateTime     @default(now())
@@ -271,4 +274,13 @@ enum ReportStatus {
   DRAFT
   PENDING_APPROVAL
   APPROVED
+}
+
+// Provenance of a SyncedTransaction's resolved category. Distinguishes genuine
+// human truth from machine guesses so corrections can be learned from safely.
+enum CategorySource {
+  user // manual human correction (ground truth)
+  lookup // applied deterministically from the learned correction map
+  signal // detectStrongSignal deterministic rule
+  ai // LLM
 }

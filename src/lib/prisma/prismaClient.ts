@@ -2,10 +2,17 @@ import { PrismaClient } from "@generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const prismaClientSingleton = () => {
+  // Fail fast with a clear message instead of letting pg fall back to libpq
+  // defaults (localhost:5432) and surface a confusing ECONNREFUSED.
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set");
+  }
+
   // Prisma v7 requires a driver adapter. We connect through node-postgres using
   // the pooled DATABASE_URL (Supabase/Vercel pgbouncer endpoint).
   const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     // v7 hands pooling to pg, whose connect timeout defaults to 0 (wait forever).
     // Restore Prisma v6's 5s behavior so a dead pooler fails fast.
     connectionTimeoutMillis: 5_000,

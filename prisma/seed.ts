@@ -4,7 +4,12 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 // The seed runs outside Next (via `tsx prisma/seed.ts`), so it builds its own
 // adapter-backed client rather than reusing the app singleton.
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {

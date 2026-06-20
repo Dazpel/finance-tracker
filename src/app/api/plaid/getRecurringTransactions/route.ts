@@ -19,7 +19,7 @@ export async function GET() {
   }
 
   try {
-    await refreshUserTransactions(accounts, session.user.email);
+    await refreshUserTransactions(accounts);
     await Promise.all(
       accounts.map(async (account) => {
         const response = await plaidClient.transactionsRecurringGet({

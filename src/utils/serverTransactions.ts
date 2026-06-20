@@ -16,10 +16,12 @@ type FetchTransactionsResponse = {
   transactions: Transaction[];
 };
 
+// Plaid's per-request page cap for /transactions/get.
+const TRANSACTIONS_PAGE_SIZE = 500;
+
 export const refreshUserTransactions = async (
   accounts: PlaidAccount[],
-  userEmail: string,
-): Promise<Boolean> => {
+): Promise<boolean> => {
   console.log("--------Refreshing transactions--------");
   let success = true;
   if (accounts && accounts.length > 0) {
@@ -45,7 +47,6 @@ export const refreshUserTransactions = async (
             if (errorCode === "ITEM_LOGIN_REQUIRED") {
               console.error("Item login required");
               success = false;
-              // await sendUpdateAccountEmail(userEmail);
               return;
             }
           }
@@ -73,7 +74,12 @@ export const fetchUserTransactions = async (
   try {
     await Promise.all(
       accounts.map(async (account) => {
-        let offset = 0;
+        // Paginate into a per-account buffer: Plaid's `offset` and
+        // `total_transactions` are scoped to a single access token, and the
+        // accounts here fetch concurrently into the shared array. Tracking
+        // progress per account keeps offsets correct and avoids one account's
+        // pushes terminating another's loop early (or duplicating pages).
+        const accountTransactions: Transaction[] = [];
         let totalTransactions = 0;
 
         do {
@@ -81,13 +87,24 @@ export const fetchUserTransactions = async (
             access_token: account.accessToken || "",
             start_date: startDate,
             end_date: endDate,
-            options: { offset, include_original_description: true, count: 500 },
+            options: {
+              offset: accountTransactions.length,
+              include_original_description: true,
+              count: TRANSACTIONS_PAGE_SIZE,
+            },
           });
 
-          transactions.push(...response.data.transactions);
+          const page = response.data.transactions;
+          accountTransactions.push(...page);
           totalTransactions = response.data.total_transactions;
-          offset = transactions.length;
-        } while (transactions.length < totalTransactions);
+
+          // Defensive stop: if Plaid returns an empty page while we're still
+          // below the reported total (item mid-sync, or offset past the rows
+          // currently available), bail instead of re-requesting forever.
+          if (page.length === 0) break;
+        } while (accountTransactions.length < totalTransactions);
+
+        transactions.push(...accountTransactions);
       }),
     );
 

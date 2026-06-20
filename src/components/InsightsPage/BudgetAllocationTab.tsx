@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Transaction } from "@prisma/client";
+import { Transaction } from "@generated/prisma/browser";
 import { DateRange } from "../DateRangePicker/DateRangePicker";
 import FiftyThirtyTwentyCard from "./FiftyThirtyTwentyCard";
 import OverBudgetDetails from "./OverBudgetDetails";

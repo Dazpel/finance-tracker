@@ -17,7 +17,7 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { Transaction } from "@prisma/client";
+import { Transaction } from "@generated/prisma/browser";
 
 interface CategoryBreakdown {
   category: string;

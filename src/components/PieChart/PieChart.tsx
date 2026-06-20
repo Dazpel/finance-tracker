@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Transaction } from "@prisma/client";
+import { Transaction } from "@generated/prisma/browser";
 import { defaultCategories } from "../../utils/constants";
 
 interface PieChartProps {

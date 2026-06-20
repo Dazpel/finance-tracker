@@ -3,7 +3,8 @@ import { plaidClient } from "@lib/plaid";
 import { plaidAccount } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import { Transaction } from "plaid";
-import { formatPlaidTransactions, refreshUserTransactions, sortTransactionsByDateDesc } from "utils/functions";
+import { formatPlaidTransactions, sortTransactionsByDateDesc } from "utils/functions";
+import { refreshUserTransactions } from "utils/serverTransactions";
 
 export async function GET(req: Request) {
   const session = await getServerSession(options);

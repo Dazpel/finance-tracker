@@ -1,6 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+import "dotenv/config";
+import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+// The seed runs outside Next (via `tsx prisma/seed.ts`), so it builds its own
+// adapter-backed client rather than reusing the app singleton.
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("Seeding: backfilling ExpenseThreshold rows for existing users...");

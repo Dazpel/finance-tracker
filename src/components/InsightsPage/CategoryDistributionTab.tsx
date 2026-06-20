@@ -1,6 +1,6 @@
 "use client";
 
-import { Transaction } from "@prisma/client";
+import { Transaction } from "@generated/prisma/browser";
 import PieChart from "../PieChart/PieChart";
 import CategoryInsightsTable from "../CategoryInsightsTable/CategoryInsightsTable";
 import { DateRange } from "../DateRangePicker/DateRangePicker";

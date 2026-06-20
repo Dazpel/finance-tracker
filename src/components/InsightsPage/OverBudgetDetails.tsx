@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Transaction } from "@prisma/client";
+import { Transaction } from "@generated/prisma/browser";
 import {
   FiftyThirtyTwentySummary,
   fiftyThirtyTwentyTargets,

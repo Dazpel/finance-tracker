@@ -1,4 +1,4 @@
-import type { NotificationLevel } from "@prisma/client";
+import type { NotificationLevel } from "@generated/prisma/browser";
 
 export type Alert = {
   category: string;            // display name, e.g. "Food & Drink"

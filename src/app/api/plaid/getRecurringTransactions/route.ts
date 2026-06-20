@@ -3,7 +3,8 @@ import { plaidClient } from "@lib/plaid";
 import { plaidAccount } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import { TransactionStream } from "plaid";
-import { formatPlaidTransactions, refreshUserTransactions } from "utils/functions";
+import { formatPlaidTransactions } from "utils/functions";
+import { refreshUserTransactions } from "utils/serverTransactions";
 
 export const maxDuration = 20;
 

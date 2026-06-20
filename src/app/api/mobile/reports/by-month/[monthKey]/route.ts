@@ -1,7 +1,7 @@
 import prisma from "@lib/prisma/prismaClient";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { buildMobileReportResponse } from "@lib/reports/buildMobileReportResponse";
-import { ReportType } from "@prisma/client";
+import { ReportType } from "@generated/prisma/browser";
 
 const MONTH_KEY_RE = /^(\d{4})-(\d{2})$/;
 

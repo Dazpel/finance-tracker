@@ -11,7 +11,7 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { Transaction } from "@prisma/client";
+import { Transaction } from "@generated/prisma/browser";
 import { defaultCategories } from "../../utils/constants";
 import CategoryMonthlyChart from "./CategoryMonthlyChart";
 import { DateRange } from "./types";

@@ -2,7 +2,7 @@ import { options } from "@api/auth/[...nextauth]/options";
 import { getTransactions, PrismaResponse } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import prisma from "@lib/prisma/prismaClient";
-import { ReportType } from "@prisma/client";
+import { ReportType } from "@generated/prisma/browser";
 import { isUuid } from "@lib/validation/uuidSchemas";
 
 export async function GET(request: Request) {

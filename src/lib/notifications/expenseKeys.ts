@@ -1,4 +1,4 @@
-import { NotificationLevel } from "@prisma/client";
+import { NotificationLevel } from "@generated/prisma/browser";
 
 // Column keys on ExpenseThreshold AND on Report that hold per-category dollar
 // totals. Order matches CANONICAL_CATEGORIES (excluding Revenue) for stable

@@ -1,5 +1,5 @@
 import prisma from "@lib/prisma/prismaClient";
-import { ReportStatus, ReportType } from "@prisma/client";
+import { ReportStatus, ReportType } from "@generated/prisma/browser";
 import { GRACE_WINDOW_DAYS } from "./draftReport";
 
 // Sweeps any auto-maintained DRAFT MONTHLY reports whose grace window has

@@ -1,6 +1,6 @@
 import prisma from "@lib/prisma/prismaClient";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
-import { ReportStatus, ReportType } from "@prisma/client";
+import { ReportStatus, ReportType } from "@generated/prisma/browser";
 import { monthDateRange } from "@lib/reports/draftReport";
 
 export async function GET(request: Request) {

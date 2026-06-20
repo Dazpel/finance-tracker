@@ -1,4 +1,4 @@
-import type { SyncedTransaction, Transaction } from "@prisma/client";
+import type { SyncedTransaction, Transaction } from "@generated/prisma/browser";
 import { normalizeCategory, resolveCategory } from "@lib/reports/draftReport";
 
 export function filterFrozenByCategory(

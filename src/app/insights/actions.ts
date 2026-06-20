@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth";
 import { options } from "../api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
-import { Transaction, ReportType } from "@prisma/client";
+import { Transaction, ReportType } from "@generated/prisma/browser";
 
 interface DateRange {
   start: string;

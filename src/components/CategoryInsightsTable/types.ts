@@ -1,4 +1,4 @@
-import { Transaction } from "@prisma/client";
+import { Transaction } from "@generated/prisma/browser";
 
 export interface MonthlyData {
   month: string;

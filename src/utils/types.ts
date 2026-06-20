@@ -1,4 +1,4 @@
-import { ReportType, ReportStatus } from "@prisma/client";
+import { ReportType, ReportStatus } from "@generated/prisma/browser";
 import { TransactionBase } from "plaid";
 
 // Extended transaction type that includes notes field

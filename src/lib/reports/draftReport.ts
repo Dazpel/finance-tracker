@@ -1,5 +1,5 @@
 import prisma from "@lib/prisma/prismaClient";
-import { Prisma, ReportStatus, ReportType, type SyncedTransaction } from "@prisma/client";
+import { Prisma, ReportStatus, ReportType, type SyncedTransaction } from "@generated/prisma/client";
 import {
   mapPlaidCategoryToDefaultCategory,
   mapDefaultCategoryToCustomCategory,

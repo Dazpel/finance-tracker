@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@generated/prisma/browser";
 import prismaClient from "@lib/prisma/prismaClient";
 import {
   emptyTotals,

@@ -1,5 +1,5 @@
 import prisma from "@lib/prisma/prismaClient";
-import { ReportStatus, ReportType } from "@prisma/client";
+import { ReportStatus, ReportType } from "@generated/prisma/browser";
 import {
   computeReportTotals,
   isMonthFullyPast,

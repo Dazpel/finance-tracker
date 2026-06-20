@@ -1,4 +1,4 @@
-import type { SyncedTransaction } from "@prisma/client";
+import type { SyncedTransaction } from "@generated/prisma/browser";
 import { resolveAmount, resolveCategory } from "@lib/reports/draftReport";
 
 export type SerializedCategoryTransactionSynced = {

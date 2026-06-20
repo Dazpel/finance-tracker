@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import * as React from "react";
-import type { NotificationChannel } from "@prisma/client";
+import type { NotificationChannel } from "@generated/prisma/browser";
 import prisma from "../prisma/prismaClient";
 import {
   buildAlertEmailData,

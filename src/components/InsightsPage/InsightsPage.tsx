@@ -5,7 +5,7 @@ import {
   getTransactionsByDateRange,
   getTransactionsByReportId,
 } from "../../app/insights/actions";
-import { ReportType, Transaction } from "@prisma/client";
+import { ReportType, Transaction } from "@generated/prisma/browser";
 import DateRangePicker, { DateRange } from "../DateRangePicker/DateRangePicker";
 import { useToast } from "../../hooks/useToast";
 import { today, getLocalTimeZone, parseDate } from "@internationalized/date";

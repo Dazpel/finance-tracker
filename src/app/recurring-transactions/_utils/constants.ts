@@ -1,4 +1,4 @@
-import { RecurringTransaction } from "@prisma/client";
+import { RecurringTransaction } from "@generated/prisma/browser";
 
 export type RecurringReportData = {
     inflow: number;

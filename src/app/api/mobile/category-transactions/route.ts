@@ -1,5 +1,5 @@
 import prisma from "@lib/prisma/prismaClient";
-import { ReportStatus, ReportType } from "@prisma/client";
+import { ReportStatus, ReportType } from "@generated/prisma/browser";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { monthDateRange } from "@lib/reports/draftReport";
 import { CATEGORY_KEY_TO_CANONICAL_NAME } from "./_utils/constants";

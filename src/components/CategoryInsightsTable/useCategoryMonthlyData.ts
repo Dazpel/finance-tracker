@@ -3,7 +3,7 @@ import {
   UseCategoryMonthlyDataProps, 
   CategoryMonthlyDataResult 
 } from "./types";
-import { Transaction } from "@prisma/client";
+import { Transaction } from "@generated/prisma/browser";
 
 export const useCategoryMonthlyData = ({
   transactions,

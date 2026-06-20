@@ -1,4 +1,4 @@
-import { Prisma, type NotificationLevel } from "@prisma/client";
+import { Prisma, type NotificationLevel } from "@generated/prisma/client";
 import prisma from "../prisma/prismaClient";
 import {
   EXPENSE_KEYS,

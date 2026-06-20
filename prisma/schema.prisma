@@ -2,13 +2,17 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  runtime  = "nodejs"
 }
 
+// In Prisma v7 the connection URL moves to prisma.config.ts. The CLI/migration
+// (Schema Engine) reads `datasource.url` from there (set to DIRECT_URL — the
+// non-pooled connection). The runtime client connects via the pg driver adapter
+// in src/lib/prisma/prismaClient.ts using the pooled DATABASE_URL.
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model User {

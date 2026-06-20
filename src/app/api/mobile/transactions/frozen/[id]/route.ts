@@ -1,5 +1,5 @@
 import prisma from "@lib/prisma/prismaClient";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@generated/prisma/browser";
 import { z } from "zod";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
 import { isCanonicalCategory } from "@lib/categories";

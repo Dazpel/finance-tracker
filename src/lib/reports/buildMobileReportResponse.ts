@@ -1,4 +1,4 @@
-import type { ExpenseThreshold, Report } from "@prisma/client";
+import type { ExpenseThreshold, Report } from "@generated/prisma/browser";
 
 // Wire-safe variant of Report: Date fields serialized to ISO strings as
 // they appear after JSON.stringify (Response.json). Only fields the mobile

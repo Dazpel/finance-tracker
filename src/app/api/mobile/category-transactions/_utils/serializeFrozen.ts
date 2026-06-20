@@ -1,4 +1,4 @@
-import type { Transaction } from "@prisma/client";
+import type { Transaction } from "@generated/prisma/browser";
 import { normalizeCategory } from "@lib/reports/draftReport";
 import type { SerializedCategoryTransactionFrozen } from "./serialize";
 

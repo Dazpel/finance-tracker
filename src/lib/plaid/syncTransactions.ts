@@ -1,6 +1,6 @@
 import { plaidClient } from "./client";
 import prisma from "@lib/prisma/prismaClient";
-import { Prisma, type PlaidAccount, type PlaidCursor } from "@prisma/client";
+import { Prisma, type PlaidAccount, type PlaidCursor } from "@generated/prisma/client";
 import type { RemovedTransaction, Transaction } from "plaid";
 import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
 

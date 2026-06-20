@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getAvailableYears } from "./actions";
 import InsightsPageComponent from "../../components/InsightsPage/InsightsPage";
-import { ReportType } from "@prisma/client";
+import { ReportType } from "@generated/prisma/browser";
 import PageLoader from "@components/PageLoader/PageLoader";
 
 interface InsightsPageProps {

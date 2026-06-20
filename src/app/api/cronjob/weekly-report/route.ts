@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@lib/prisma/prismaClient";
-import { ReportType } from "@prisma/client";
+import { ReportType } from "@generated/prisma/browser";
 import { formatToDefaultCategories } from "utils/functions";
 import { sendWeeklyReportEmail } from "utils/emailTemplates";
 

@@ -3,7 +3,8 @@ import { plaidClient } from "@lib/plaid";
 import { plaidAccount } from "@lib/prisma/prismaFunctions";
 import { getServerSession } from "next-auth";
 import { TransactionStream } from "plaid";
-import { formatPlaidTransactions, refreshUserTransactions } from "utils/functions";
+import { formatPlaidTransactions } from "utils/functions";
+import { refreshUserTransactions } from "utils/serverTransactions";
 
 export const maxDuration = 20;
 
@@ -18,7 +19,7 @@ export async function GET() {
   }
 
   try {
-    await refreshUserTransactions(accounts, session.user.email);
+    await refreshUserTransactions(accounts);
     await Promise.all(
       accounts.map(async (account) => {
         const response = await plaidClient.transactionsRecurringGet({

@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageLoader from "@components/PageLoader/PageLoader";
 import { useNavigateWithPending } from "@hooks/useNavigateWithPending";
 import { ReportDataDTO } from "utils/types";
-import { ReportType, ReportStatus } from "@prisma/client";
+import { ReportType, ReportStatus } from "@generated/prisma/browser";
 
 export default function ReportsPage() {
   const { navigate, isPending: isNavigating } = useNavigateWithPending();

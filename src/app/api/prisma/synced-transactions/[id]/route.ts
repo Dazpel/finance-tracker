@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@generated/prisma/browser";
 import { options } from "@api/auth/[...nextauth]/options";
 import prisma from "@lib/prisma/prismaClient";
 import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";

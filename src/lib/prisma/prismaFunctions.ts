@@ -1,5 +1,5 @@
 import { ReportData } from "@components/ReportCard/ReportCard";
-import { PrismaClient, ReportStatus, ReportType } from "@prisma/client";
+import { PrismaClient, ReportStatus, ReportType } from "@generated/prisma/client";
 import { RecurringReportData } from "app/recurring-transactions/_utils/constants";
 import {
   computeReportTotals,

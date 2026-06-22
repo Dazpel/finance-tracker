@@ -8,7 +8,7 @@
 
 Make the repo an effective agent interface. An agent should quickly answer: where do I change this, what conventions apply, how do I verify, and what must I not touch — without loading a 300-line root file for every task.
 
-Guiding principle (from `claude-code-agent-optimized-repo-research.md`): **maximize signal, not context.** Short root instructions; domain detail colocated with code; fast verification; a few high-value workflows.
+Guiding principle: **maximize signal, not context.** Short root instructions; domain detail colocated with code; fast verification; a few high-value workflows.
 
 ## Scope
 

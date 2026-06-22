@@ -7,7 +7,7 @@ AI-assisted categorization of transactions into `CANONICAL_CATEGORIES` (`@lib/ca
 A category is resolved by provenance, surfaced as `CategorizeSource`:
 1. **`lookup`** — user-correction map (`correction-lookup/`), keyed via `makeCorrectionKey`. Highest priority: respects what the user already fixed.
 2. **`signal`** — deterministic signals (e.g. Plaid category, merchant). No model call.
-3. **`ai`** — model fallback for the ambiguous tail (`@ai-sdk/openai` + `generateText`/`Output`, Zod-validated).
+3. **`ai`** — model fallback for the ambiguous tail (`@ai-sdk/openai` for the model + `ai`'s `generateText`/`Output`, Zod-validated).
 
 Prefer resolving without a model call; only fall through to `ai` for genuine ambiguity.
 

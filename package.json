@@ -10,8 +10,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -59,7 +59,7 @@ export type Totals = {
   feesAndAdjustments: number;
   others: number;
   revenue: number;
-  foster: number;
+  charity: number;
   expenses: number;
   total: number;
 };
@@ -76,7 +76,7 @@ export const emptyTotals = (): Totals => ({
   feesAndAdjustments: 0,
   others: 0,
   revenue: 0,
-  foster: 0,
+  charity: 0,
   expenses: 0,
   total: 0,
 });
@@ -93,7 +93,7 @@ const CATEGORY_CANONICAL: Record<string, string> = {
   "groceries": "Groceries",
   "health & wellness": "Health & Wellness",
   "personal": "Personal",
-  "foster": "Foster",
+  "charity": "Charity",
   "shopping": "Shopping",
   "fees & adjustments": "Fees & Adjustments",
   "others": "Others",
@@ -115,7 +115,7 @@ export const categoryToReportKey = (category: string): keyof Totals => {
     case "Groceries":          return "groceries";
     case "Health & Wellness":  return "healthAndWellness";
     case "Personal":           return "personal";
-    case "Foster":             return "foster";
+    case "Charity":            return "charity";
     case "Shopping":           return "shopping";
     case "Fees & Adjustments": return "feesAndAdjustments";
     case "Revenue":            return "revenue";
@@ -164,7 +164,7 @@ export function finalizeReportTotals(totals: Totals): Totals {
     totals.shopping +
     totals.feesAndAdjustments +
     totals.others +
-    totals.foster;
+    totals.charity;
 
   totals.expenses = -Number(expenseSum.toFixed(2));
   totals.total = Number((totals.revenue + totals.expenses).toFixed(2));

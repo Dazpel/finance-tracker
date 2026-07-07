@@ -18,7 +18,7 @@ export type CategoryValues = {
   "fees & adjustments": number;
   others: number;
   revenue: number;
-  foster: number;
+  charity: number;
 };
 
 export type RecurringReportDataDTO = {
@@ -50,7 +50,7 @@ export type ReportDataDTO = {
   feesAndAdjustments: number;
   others: number;
   revenue: number;
-  foster: number;
+  charity: number;
   expenses: number;
   total: number;
 }

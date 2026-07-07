@@ -47,13 +47,13 @@ export const defaultCategories = [
   "car",
   "entertainment",
   "groceries",
+  "charity",
   "health & wellness",
   "personal",
   "shopping",
   "fees & adjustments",
   "others",
   "revenue",
-  "foster",
 ];
 
 export const defaultCategorieToValueObject = {
@@ -62,7 +62,7 @@ export const defaultCategorieToValueObject = {
   car: 0,
   entertainment: 0,
   groceries: 0,
-  foster: 0,
+  charity: 0,
   "health & wellness": 0,
   personal: 0,
   shopping: 0,
@@ -87,7 +87,7 @@ export const fiftyThirtyTwentyCategories = {
     "personal",
     "others",
     "fees & adjustments",
-    "foster",
+    "charity",
   ],
 };
 

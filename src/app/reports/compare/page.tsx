@@ -52,9 +52,9 @@ export default function Page(props: {
 
   const formattedReport = (report: ReportData) => {
     const { foodAndDrink, billsAndUtilities, car, entertainment, groceries,
-      foster, healthAndWellness, personal, shopping, feesAndAdjustments, others,
+      charity, healthAndWellness, personal, shopping, feesAndAdjustments, others,
       revenue, expenses, total } = report;
-    return { foodAndDrink, billsAndUtilities, car, entertainment, groceries, foster, healthAndWellness, personal, shopping, feesAndAdjustments, others, revenue, expenses, total };
+    return { foodAndDrink, billsAndUtilities, car, entertainment, groceries, charity, healthAndWellness, personal, shopping, feesAndAdjustments, others, revenue, expenses, total };
   };
 
   const handleOrderSwap = () => {

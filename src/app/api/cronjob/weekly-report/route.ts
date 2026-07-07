@@ -17,7 +17,7 @@ const CATEGORY_KEYS = [
   "shopping",
   "feesAndAdjustments",
   "others",
-  "foster",
+  "charity",
   "revenue",
 ] as const;
 

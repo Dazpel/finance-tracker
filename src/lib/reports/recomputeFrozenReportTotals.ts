@@ -48,7 +48,7 @@ export async function recomputeFrozenReportTotals(
       shopping: totals.shopping,
       feesAndAdjustments: totals.feesAndAdjustments,
       others: totals.others,
-      foster: totals.foster,
+      charity: totals.charity,
       revenue: totals.revenue,
       expenses: totals.expenses,
       total: totals.total,

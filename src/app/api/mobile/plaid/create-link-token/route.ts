@@ -1,24 +1,46 @@
 import { plaidClient } from "@lib/plaid";
 import { CountryCode, Products } from "plaid";
+import { z } from "zod";
 import prisma from "@lib/prisma/prismaClient";
 import { requireMobileUser } from "@lib/auth/requireMobileUser";
+
+// connectionId is a PlaidAccount id (uuid). Optional: absent body = "new connection".
+const BodySchema = z.object({
+  connectionId: z.uuid().optional(),
+});
 
 export async function POST(request: Request) {
   const auth = await requireMobileUser(request);
   if (!auth.ok) return auth.response;
   const { id: userId } = auth.user;
 
+  // An empty body is a valid "new connection" request; a present-but-malformed
+  // body is a client bug we reject rather than silently treat as new-connection.
+  const raw = await request.text();
   let connectionId: string | undefined;
-  try {
-    const body = await request.json();
-    connectionId = body?.connectionId;
-  } catch {
-    // No body (or invalid JSON) means "new connection" — connectionId stays undefined.
+  if (raw.trim().length > 0) {
+    let json: unknown;
+    try {
+      json = JSON.parse(raw);
+    } catch {
+      return Response.json(
+        { success: false, error: "Invalid JSON" },
+        { status: 400 }
+      );
+    }
+    const parsed = BodySchema.safeParse(json);
+    if (!parsed.success) {
+      return Response.json(
+        { success: false, error: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+    connectionId = parsed.data.connectionId;
   }
 
   try {
     const baseRequest = {
-      user: { client_user_id: process.env.PLAID_CLIENT_ID as string },
+      user: { client_user_id: userId },
       client_name: "MoneyEye",
       language: "en",
       products: [Products.Transactions],

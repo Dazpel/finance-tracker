@@ -7,13 +7,13 @@ export const CANONICAL_CATEGORIES = [
   "Car",
   "Entertainment",
   "Groceries",
+  "Charity",
   "Health & Wellness",
   "Personal",
   "Shopping",
   "Fees & Adjustments",
   "Others",
   "Revenue",
-  "Foster",
 ] as const;
 
 export type CanonicalCategory = (typeof CANONICAL_CATEGORIES)[number];

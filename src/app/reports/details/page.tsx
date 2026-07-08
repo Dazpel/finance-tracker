@@ -39,9 +39,9 @@ export default function Page(props: {
   const reportData = decodeQueryString(searchParams.data);
   const { reportName, createdAt, id, reportType, status, month, year,
     foodAndDrink, billsAndUtilities, car, entertainment, groceries,
-    foster, healthAndWellness, personal, shopping, feesAndAdjustments, others,
+    charity, healthAndWellness, personal, shopping, feesAndAdjustments, others,
     revenue, expenses, total } = reportData;
-  const rest = { foodAndDrink, billsAndUtilities, car, entertainment, groceries, foster, healthAndWellness, personal, shopping, feesAndAdjustments, others, revenue, expenses, total };
+  const rest = { foodAndDrink, billsAndUtilities, car, entertainment, groceries, charity, healthAndWellness, personal, shopping, feesAndAdjustments, others, revenue, expenses, total };
   const monthLabel = formatMonthLabel(month, year, reportName);
   const canApprove = status === "PENDING_APPROVAL" && reportType === "MONTHLY";
 

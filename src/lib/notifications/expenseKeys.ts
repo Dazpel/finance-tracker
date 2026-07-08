@@ -14,7 +14,7 @@ export const EXPENSE_KEYS = [
   "shopping",
   "feesAndAdjustments",
   "others",
-  "foster",
+  "charity",
 ] as const;
 
 export type ExpenseKey = (typeof EXPENSE_KEYS)[number];
@@ -31,7 +31,7 @@ export const EXPENSE_KEY_TO_DISPLAY: Record<ExpenseKey, string> = {
   shopping: "Shopping",
   feesAndAdjustments: "Fees & Adjustments",
   others: "Others",
-  foster: "Foster",
+  charity: "Charity",
 };
 
 // Returns levels in fire order (warning → reached → exceeded). Empty array

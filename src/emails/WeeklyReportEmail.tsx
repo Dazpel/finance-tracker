@@ -163,7 +163,7 @@ WeeklyReportEmail.PreviewProps = {
     { name: "car", amountFormatted: "$50.00" },
     { name: "entertainment", amountFormatted: "$100.00" },
     { name: "groceries", amountFormatted: "$300.00" },
-    { name: "foster", amountFormatted: "$80.00" },
+    { name: "charity", amountFormatted: "$80.00" },
     { name: "health & wellness", amountFormatted: "$60.00" },
     { name: "personal", amountFormatted: "$40.00" },
     { name: "shopping", amountFormatted: "$120.00" },

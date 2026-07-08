@@ -70,7 +70,7 @@ model Report {
   feesAndAdjustments Float         @default(0)
   others             Float         @default(0)
   revenue            Float         @default(0)
-  foster             Float         @default(0)
+  charity            Float         @default(0)
   expenses           Float         @default(0)
   total              Float         @default(0)
   status             ReportStatus  @default(APPROVED)
@@ -226,7 +226,7 @@ model ExpenseThreshold {
   personal           Float    @default(0)
   feesAndAdjustments Float    @default(0)
   others             Float    @default(0)
-  foster             Float    @default(0)
+  charity            Float    @default(0)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }

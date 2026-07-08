@@ -13,7 +13,7 @@ export const CATEGORY_KEY_TO_CANONICAL_NAME = {
   shopping: "Shopping",
   feesAndAdjustments: "Fees & Adjustments",
   others: "Others",
-  foster: "Foster",
+  charity: "Charity",
   revenue: "Revenue",
 } as const;
 

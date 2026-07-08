@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     if (!accessToken || !itemId) {
       return Response.json(
-        { success: false, error: "Access token or Item Id not found" },
+        { success: false, error: "Access token or Item ID not found" },
         { status: 502 }
       );
     }

@@ -60,13 +60,20 @@ export async function POST(request: Request) {
     console.error("[mobile/sync-current-month] categorize failed:", err);
   }
 
-  // 3. Recompute draft.
+  // 3. Recompute draft — only when the user actually has Plaid accounts.
+  // Auto-maintained reports are derived entirely from SyncedTransaction (Plaid
+  // data), so a user with no connected accounts would otherwise get a phantom
+  // all-zero DRAFT report synthesized on every app open. Skipping keeps
+  // current-month-report null for never-connected users (which drives the
+  // mobile "connect a bank" empty state) and stops empty reports accumulating.
   let recomputed = false;
-  try {
-    await upsertCurrentMonthDraftReport(userId);
-    recomputed = true;
-  } catch (err) {
-    console.error("[mobile/sync-current-month] draft recompute failed:", err);
+  if (accounts.length > 0) {
+    try {
+      await upsertCurrentMonthDraftReport(userId);
+      recomputed = true;
+    } catch (err) {
+      console.error("[mobile/sync-current-month] draft recompute failed:", err);
+    }
   }
 
   // 4. Threshold check. The webhook + cron paths cover Plaid-driven changes,

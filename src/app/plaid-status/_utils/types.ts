@@ -1,7 +1,7 @@
 export type ItemStatus = {
   institutionName: string;
   itemId: string;
-  accessToken: string;
+  plaidAccountId: string;
   linkedAt: string;
   lastLocalSyncAt: string | null;
   error: { code: string; message: string } | null;

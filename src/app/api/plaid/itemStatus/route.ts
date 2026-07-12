@@ -7,7 +7,7 @@ import { options } from "@api/auth/[...nextauth]/options";
 type ItemStatus = {
   institutionName: string;
   itemId: string;
-  accessToken: string;
+  plaidAccountId: string;
   linkedAt: string;
   lastLocalSyncAt: string | null;
   error: { code: string; message: string } | null;
@@ -24,7 +24,7 @@ export async function GET() {
     const session = await getServerSession(options);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -33,7 +33,7 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const accounts = await prisma.plaidAccount.findMany({
@@ -47,7 +47,7 @@ export async function GET() {
         const base = {
           institutionName: account.institutionName,
           itemId: account.itemId,
-          accessToken: account.accessToken,
+          plaidAccountId: account.id,
           linkedAt: account.createdAt.toISOString(),
           lastLocalSyncAt: account.cursor?.lastSyncAt?.toISOString() ?? null,
         };

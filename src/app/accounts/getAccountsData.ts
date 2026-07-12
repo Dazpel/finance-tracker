@@ -41,7 +41,7 @@ export async function getAccountsData(userId: string): Promise<AccountsPageProps
           },
           error: {
             institutionName: account.institutionName,
-            accessToken: account.accessToken,
+            plaidAccountId: account.id,
             error: error?.response?.data?.error_code ?? 'UNKNOWN_ERROR',
           },
         }
@@ -55,7 +55,7 @@ export async function getAccountsData(userId: string): Promise<AccountsPageProps
     .map((r) => r.error)
 
   const connections: ConnectionType[] = plaidAccounts.map((a) => ({
-    accessToken: a.accessToken,
+    plaidAccountId: a.id,
     institutionName: a.institutionName,
   }))
 

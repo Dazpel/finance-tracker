@@ -46,9 +46,9 @@ const rows = (entries: ConnectionType[], removingItems: Set<string>) => {
   let rows = [];
   for (const entry of entries) {
     rows.push({
-      key: entry.accessToken,
+      key: entry.plaidAccountId,
       institutionName: entry.institutionName,
-      isRemoving: removingItems.has(entry.accessToken),
+      isRemoving: removingItems.has(entry.plaidAccountId),
     });
   }
   return rows;
@@ -59,11 +59,11 @@ export default function ItemRemoveTable({ connections }: ItemRemoveTableProps) {
   const { successToast, errorToast } = useToast();
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
 
-  const removeConnection = useCallback(async (accessToken: string) => {
-    setRemovingItems(prev => new Set(prev).add(accessToken));
+  const removeConnection = useCallback(async (plaidAccountId: string) => {
+    setRemovingItems(prev => new Set(prev).add(plaidAccountId));
 
     try {
-      const result = await removeAccountAction(accessToken);
+      const result = await removeAccountAction(plaidAccountId);
 
       if (result.success) {
         successToast("Bank connection removed successfully!");
@@ -77,7 +77,7 @@ export default function ItemRemoveTable({ connections }: ItemRemoveTableProps) {
     } finally {
       setRemovingItems(prev => {
         const newSet = new Set(prev);
-        newSet.delete(accessToken);
+        newSet.delete(plaidAccountId);
         return newSet;
       });
     }

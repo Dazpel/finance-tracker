@@ -47,7 +47,7 @@ export async function addAccountAction(publicToken: string, institutionName: str
   }
 }
 
-export async function removeAccountAction(accessToken: string) {
+export async function removeAccountAction(plaidAccountId: string) {
   const session = await getServerSession(options)
   if (!session?.user?.email) {
     return { success: false, error: 'Not authenticated' }
@@ -64,8 +64,8 @@ export async function removeAccountAction(accessToken: string) {
     }
 
     const ownedAccount = await prisma.plaidAccount.findFirst({
-      where: { accessToken, userId: user.id },
-      select: { id: true },
+      where: { id: plaidAccountId, userId: user.id },
+      select: { id: true, accessToken: true },
     })
 
     if (!ownedAccount) {
@@ -73,7 +73,7 @@ export async function removeAccountAction(accessToken: string) {
     }
 
     const response = await plaidClient.itemRemove({
-      access_token: accessToken,
+      access_token: ownedAccount.accessToken,
     })
 
     if (!response.data.request_id) {
@@ -83,7 +83,7 @@ export async function removeAccountAction(accessToken: string) {
     // Deleting a PlaidAccount cascades automatically to SyncedTransaction and PlaidCursor
     // via DB constraints — no manual cleanup of those tables needed.
     await prisma.plaidAccount.deleteMany({
-      where: { accessToken, userId: user.id },
+      where: { id: plaidAccountId, userId: user.id },
     })
 
     revalidateTag(`user-accounts-${user.id}`, { expire: 0 })

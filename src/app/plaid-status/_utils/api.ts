@@ -16,10 +16,11 @@ export async function fetchItemStatus(): Promise<ItemStatus[]> {
   return data.items;
 }
 
-export async function syncNow(accessToken: string): Promise<SyncNowResult> {
+export async function syncNow(plaidAccountId: string): Promise<SyncNowResult> {
   const response = await fetch("/api/plaid/syncNow", {
     method: "POST",
-    body: JSON.stringify({ accessToken }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plaidAccountId }),
   });
 
   const data = (await response.json().catch(() => null)) as SyncNowResponse | null;

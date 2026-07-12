@@ -43,7 +43,7 @@ const rows = (entries: AccountWithErrors[]) => {
   let rows = [];
   for (const entry of entries) {
     rows.push({
-      key: entry.accessToken,
+      key: entry.plaidAccountId,
       institutionName: entry.institutionName,
     });
   }
@@ -76,7 +76,7 @@ export default function ItemUpdateTable({ connections }: ItemRemoveTableProps) {
           return (
             <PlaidButton
               updateMode
-              accessToken={connection.key}
+              plaidAccountId={connection.key}
               buttonText="Update"
               variant="update"
               size="sm"

@@ -27,7 +27,7 @@ export default function PlaidStatusPage() {
   const { successToast, errorToast, warningToast } = useToast();
   const [items, setItems] = useState<ItemStatus[] | null>(null);
   const [isChecking, setIsChecking] = useState(false);
-  const [syncingTokens, setSyncingTokens] = useState<Record<string, boolean>>({});
+  const [syncingAccounts, setSyncingAccounts] = useState<Record<string, boolean>>({});
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -42,10 +42,10 @@ export default function PlaidStatusPage() {
   }, [errorToast]);
 
   const handleSyncNow = useCallback(
-    async (accessToken: string) => {
-      setSyncingTokens((prev) => ({ ...prev, [accessToken]: true }));
+    async (plaidAccountId: string) => {
+      setSyncingAccounts((prev) => ({ ...prev, [plaidAccountId]: true }));
       try {
-        const result = await syncNow(accessToken);
+        const result = await syncNow(plaidAccountId);
         if (result.skipped) {
           warningToast("Sync already running");
         } else {
@@ -54,7 +54,7 @@ export default function PlaidStatusPage() {
       } catch (error) {
         errorToast(error instanceof Error ? error.message : "Sync failed");
       } finally {
-        setSyncingTokens((prev) => ({ ...prev, [accessToken]: false }));
+        setSyncingAccounts((prev) => ({ ...prev, [plaidAccountId]: false }));
         await checkStatus();
       }
     },
@@ -111,17 +111,17 @@ export default function PlaidStatusPage() {
             <div className="flex items-center gap-2">
               <PlaidButton
                 updateMode
-                accessToken={item.accessToken}
+                plaidAccountId={item.plaidAccountId}
                 buttonText="Update"
                 variant="update"
                 size="sm"
-                onSuccessCallback={() => handleSyncNow(item.accessToken)}
+                onSuccessCallback={() => handleSyncNow(item.plaidAccountId)}
               />
               <Button
                 size="sm"
                 variant="flat"
-                isLoading={!!syncingTokens[item.accessToken]}
-                onPress={() => handleSyncNow(item.accessToken)}
+                isLoading={!!syncingAccounts[item.plaidAccountId]}
+                onPress={() => handleSyncNow(item.plaidAccountId)}
               >
                 Sync now
               </Button>
@@ -131,7 +131,7 @@ export default function PlaidStatusPage() {
           return <span>{item.institutionName}</span>;
       }
     },
-    [handleSyncNow, syncingTokens]
+    [handleSyncNow, syncingAccounts]
   );
 
   return (

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const session = await getServerSession(options);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -18,21 +18,21 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const { accessToken } = await request.json();
+    const { plaidAccountId } = await request.json();
 
-    if (!accessToken) {
+    if (!plaidAccountId) {
       return NextResponse.json(
-        { success: false, error: "accessToken is required" },
+        { success: false, error: "plaidAccountId is required" },
         { status: 400 }
       );
     }
 
     // The userId filter is mandatory — one user must never sync another user's item.
     const account = await prisma.plaidAccount.findFirst({
-      where: { accessToken, userId: user.id },
+      where: { id: plaidAccountId, userId: user.id },
     });
 
     if (!account) {

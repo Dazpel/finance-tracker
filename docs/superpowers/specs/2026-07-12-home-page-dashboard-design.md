@@ -53,7 +53,7 @@ All reads are per-user (`userId`) via the existing server-action pattern (`sessi
 
 - `src/components/home/actions.ts` — `"use server"` server actions:
   - `getHomeSummary()` → `{ accountCount, month: {in,out,net,label}, pendingReports, exceededBudgets }` (single DB round-trip group).
-  - `getConnectionHealth()` → **redacted** summary `{ items: { institutionName, status, reason }[] }`. **Never returns `accessToken`** (the existing `/api/plaid/itemStatus` leaks it to the client; Home must not). Reuses the item-status classification logic, not its response shape.
+  - `getConnectionHealth()` → **redacted** summary `{ items: { institutionName, status, reason }[] }`. Never returns Plaid secrets — mirrors `/api/plaid/itemStatus`, which already identifies connections by `plaidAccountId` rather than `accessToken`. Reuses the item-status classification logic, not its response shape.
 - `src/components/home/types.ts` — `HomeSummary`, `ConnectionHealthItem`, `ActionItem`, status enums.
 - `src/components/home/constants.ts` — quick-launch tile config (label, icon, route from `appRoutes`), status→pill styling map.
 - `src/components/home/helpers.ts` — pure functions: `classifyConnection(itemStatus)`, `buildActionItems(summary, health)`, `formatMoney`.

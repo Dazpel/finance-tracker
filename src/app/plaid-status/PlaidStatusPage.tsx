@@ -106,17 +106,23 @@ export default function PlaidStatusPage() {
           );
         case "lastLocalSyncAt":
           return <span>{formatDateTime(item.lastLocalSyncAt)}</span>;
-        case "actions":
+        case "actions": {
+          // Only mount PlaidButton (which eagerly requests an update-mode link token)
+          // for items that actually need reconnecting — otherwise every row would
+          // fire a Plaid linkTokenCreate call on every status check.
+          const needsUpdate = Boolean(item.error) || Boolean(item.requestFailed);
           return (
             <div className="flex items-center gap-2">
-              <PlaidButton
-                updateMode
-                plaidAccountId={item.plaidAccountId}
-                buttonText="Update"
-                variant="update"
-                size="sm"
-                onSuccessCallback={() => handleSyncNow(item.plaidAccountId)}
-              />
+              {needsUpdate && (
+                <PlaidButton
+                  updateMode
+                  plaidAccountId={item.plaidAccountId}
+                  buttonText="Update"
+                  variant="update"
+                  size="sm"
+                  onSuccessCallback={() => handleSyncNow(item.plaidAccountId)}
+                />
+              )}
               <Button
                 size="sm"
                 variant="flat"
@@ -127,6 +133,7 @@ export default function PlaidStatusPage() {
               </Button>
             </div>
           );
+        }
         default:
           return <span>{item.institutionName}</span>;
       }

@@ -15,10 +15,10 @@ import { useTheme as useNextTheme } from "next-themes";
 import { MoonIcon } from "@components/icons/sidebar/MoonIcon";
 import { appRoutes } from "utils/constants";
 import TransactionIcon from "@components/icons/sidebar/currency-dollar";
-import { RecurringPaymentsIcon } from "@components/icons/sidebar/recurring-payments-icon";
 import { InsightsIcon } from "@components/icons/sidebar/insights-icon";
 import { NotesIcon } from "@components/icons/sidebar/notes-icon";
 import { ThresholdsIcon } from "@components/icons/sidebar/thresholds-icon";
+import { ConnectionHealthIcon } from "@components/icons/sidebar/connection-health-icon";
 
 export const SidebarWrapper = () => {
   const pathname = usePathname();
@@ -77,12 +77,6 @@ export const SidebarWrapper = () => {
                 href={appRoutes.INSIGHTS_PAGE}
               />
               <SidebarItem
-                isActive={pathname.includes(appRoutes.RECURRING_TRANSACTIONS_PAGE)}
-                title="Recurring"
-                icon={<RecurringPaymentsIcon />}
-                href={appRoutes.RECURRING_TRANSACTIONS_PAGE}
-              />
-              <SidebarItem
                 isActive={pathname.includes(appRoutes.THRESHOLDS_PAGE)}
                 title="Thresholds"
                 icon={<ThresholdsIcon />}
@@ -93,6 +87,13 @@ export const SidebarWrapper = () => {
                 title="Notes"
                 icon={<NotesIcon />}
                 href={appRoutes.NOTES_PAGE}
+              />
+              <SidebarItem
+                isActive={pathname === appRoutes.PLAID_STATUS_PAGE}
+                title="Connection Health"
+                icon={<ConnectionHealthIcon />}
+                href={appRoutes.PLAID_STATUS_PAGE}
+                colorStroke
               />
             </SidebarMenu>
           </div>

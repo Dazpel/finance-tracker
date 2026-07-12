@@ -20,13 +20,13 @@ type ItemStatus = {
 };
 
 export async function GET() {
+  const session = await getServerSession(options);
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const session = await getServerSession(options);
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },

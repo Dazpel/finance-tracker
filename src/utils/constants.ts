@@ -11,6 +11,7 @@ export const appRoutes = {
   RECURRING_TRANSACTIONS_PAGE: "/recurring-transactions",
   THRESHOLDS_PAGE: "/thresholds",
   NOTES_PAGE: "/notes",
+  PLAID_STATUS_PAGE: "/plaid-status",
 };
 
 export const defaultCategoryFilterOptions = [

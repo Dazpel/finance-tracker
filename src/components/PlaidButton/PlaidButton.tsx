@@ -14,7 +14,7 @@ import { addAccountAction } from "app/accounts/actions";
 
 type PlaidButtonProps = {
   updateMode?: boolean;
-  accessToken?: string;
+  plaidAccountId?: string;
   buttonText?: string;
   variant?: "default" | "update" | "reconnect";
   size?: "sm" | "md" | "lg";
@@ -22,9 +22,9 @@ type PlaidButtonProps = {
   onSuccessCallback?: () => void;
 };
 
-function PlaidButton({ 
-  updateMode = false, 
-  accessToken, 
+function PlaidButton({
+  updateMode = false,
+  plaidAccountId,
   buttonText,
   variant = "default",
   size = "md",
@@ -43,11 +43,12 @@ function PlaidButton({
     error: tokenError,
     refetch: refetchToken 
   } = useQuery({
-    queryKey: ['plaidToken', updateMode, accessToken],
+    queryKey: ['plaidToken', updateMode, plaidAccountId],
     queryFn: async () => {
       const response = await fetch("/api/plaid/createLink", {
         method: "POST",
-        body: JSON.stringify({ updateMode, accessToken }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updateMode, plaidAccountId }),
       });
       
       if (!response.ok) {

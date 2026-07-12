@@ -22,7 +22,7 @@ export type AccountType = {
 
 export interface ConnectionType {
   institutionName: string;
-  accessToken: string;
+  plaidAccountId: string;
 };
 
 export type AccountWithErrors = {

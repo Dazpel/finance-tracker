@@ -7,7 +7,7 @@ import { plaidClient } from "@lib/plaid";
 const formatConnections = (connections: plaidAccount[]): ConnectionType[] => {
   return connections.map((connection) => {
     return {
-      accessToken: connection.accessToken,
+      plaidAccountId: connection.id,
       institutionName: connection.institutionName,
     };
   });
@@ -36,7 +36,7 @@ export async function GET() {
         .catch((error) => {
           response.accountsWithErrors?.push({
             institutionName: account.institutionName,
-            accessToken: account.accessToken,
+            plaidAccountId: account.id,
             error: error.response.data.error_code,
           });
 

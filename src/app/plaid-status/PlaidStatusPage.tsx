@@ -20,8 +20,8 @@ import {
   formatSyncResultMessage,
   getStatusChipInfo,
   isConsentExpiringSoon,
-} from "./_utils/helpers";
-import { ItemStatus } from "./_utils/types";
+} from "@lib/plaid/status/helpers";
+import { ItemStatus } from "@lib/plaid/status/types";
 
 export default function PlaidStatusPage() {
   const { successToast, errorToast, warningToast } = useToast();
@@ -109,8 +109,13 @@ export default function PlaidStatusPage() {
         case "actions": {
           // Only mount PlaidButton (which eagerly requests an update-mode link token)
           // for items that actually need reconnecting — otherwise every row would
-          // fire a Plaid linkTokenCreate call on every status check.
-          const needsUpdate = Boolean(item.error) || Boolean(item.requestFailed);
+          // fire a Plaid linkTokenCreate call on every status check. Expiring
+          // consent is included because renewing it also requires update-mode
+          // Link (a plain "Sync now" cannot extend consent).
+          const needsUpdate =
+            Boolean(item.error) ||
+            Boolean(item.requestFailed) ||
+            isConsentExpiringSoon(item.consentExpirationTime);
           return (
             <div className="flex items-center gap-2">
               {needsUpdate && (

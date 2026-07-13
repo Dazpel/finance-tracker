@@ -8,8 +8,8 @@ import {
   formatDateTime,
   getStatusChipInfo,
   isConsentExpiringSoon,
-} from "app/plaid-status/_utils/helpers";
-import type { ItemStatusResponse } from "app/plaid-status/_utils/types";
+} from "@lib/plaid/status/helpers";
+import type { ItemStatusResponse } from "@lib/plaid/status/types";
 import { appRoutes } from "utils/constants";
 import type { ExceededBudget } from "./types";
 
@@ -71,26 +71,43 @@ export const ActionItems = ({ pendingReports, exceededBudgets }: ActionItemsProp
 
   // Connection-health rows (only once the live Plaid check resolves). A
   // connection needs attention when its status chip is non-success OR its
-  // consent is expiring soon — the same two signals the Plaid status page
-  // surfaces, so Home never says "all caught up" while that page shows a warning.
+  // consent is expiring soon — the same signals the Plaid status page surfaces,
+  // so Home never says "all caught up" while that page shows a warning. The
+  // title names the actual remedy available at the destination: reconnect / renew
+  // go through update-mode Link, while a failed refresh is fixed by "Sync now".
   const healthRows: ActionRow[] = (health?.items ?? [])
     .map((item): ActionRow | null => {
       const chip = getStatusChipInfo(item);
       const consentExpiring = isConsentExpiringSoon(item.consentExpirationTime);
       if (chip.color === "success" && !consentExpiring) return null;
 
-      const subtitle =
-        chip.color !== "success"
-          ? chip.message ?? "This connection needs attention"
-          : `Consent expires ${formatDateTime(item.consentExpirationTime)}`;
+      let title: string;
+      let subtitle: string;
+      let tone: Tone;
+
+      if (chip.color === "danger") {
+        title = `Reconnect ${item.institutionName}`;
+        subtitle = chip.message ?? "This connection needs to be reconnected";
+        tone = "danger";
+      } else if (chip.color === "warning") {
+        // Refresh-failed — resolved by "Sync now", not by reconnecting.
+        title = `Re-sync ${item.institutionName}`;
+        subtitle = chip.message ?? "The last transaction refresh failed";
+        tone = "warning";
+      } else {
+        // Healthy but consent expiring — renew via update-mode reconnect.
+        title = `Renew connection to ${item.institutionName}`;
+        subtitle = `Consent expires ${formatDateTime(item.consentExpirationTime)}`;
+        tone = "warning";
+      }
 
       return {
         id: `conn-${item.plaidAccountId}`,
         icon: "🔌",
-        title: `Reconnect ${item.institutionName}`,
+        title,
         subtitle,
         href: appRoutes.PLAID_STATUS_PAGE,
-        tone: chip.color === "danger" ? "danger" : "warning",
+        tone,
       };
     })
     .filter((row): row is ActionRow => row !== null);
@@ -142,7 +159,7 @@ export const ActionItems = ({ pendingReports, exceededBudgets }: ActionItemsProp
 
         {healthError && (
           <div className="flex items-center gap-3 rounded-medium border border-default-200 p-3 text-sm text-default-500">
-            Couldn't check your connections right now. Other items are up to date.
+            Couldn't check your bank connections right now — try refreshing the page.
           </div>
         )}
 

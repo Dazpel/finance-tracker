@@ -1,3 +1,7 @@
+// Shared contract for the Plaid item-status + sync-now endpoints. Consumed by
+// the /plaid-status route and the Home dashboard, so it lives in the plaid
+// domain module rather than either route's private _utils folder.
+
 export type ItemStatus = {
   institutionName: string;
   itemId: string;

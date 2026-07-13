@@ -1,4 +1,4 @@
-import { ItemStatus, ItemStatusResponse, SyncNowResponse, SyncNowResult } from "./types";
+import { ItemStatus, ItemStatusResponse, SyncNowResponse, SyncNowResult } from "@lib/plaid/status/types";
 
 export async function fetchItemStatus(): Promise<ItemStatus[]> {
   const response = await fetch("/api/plaid/itemStatus");

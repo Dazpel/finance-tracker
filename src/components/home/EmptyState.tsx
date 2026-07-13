@@ -19,8 +19,8 @@ export const EmptyState = ({ firstName }: EmptyStateProps) => (
           {firstName ? `Welcome, ${firstName}!` : "Welcome to MoneyEye!"} Connect your first account
         </h1>
         <p className="max-w-sm text-sm text-default-500">
-          Link a bank and MoneyEye instantly shows your cash flow, spotted subscriptions, and
-          where your money goes — no manual entry.
+          Link a bank and MoneyEye instantly shows your cash flow, spots your subscriptions, and
+          reveals where your money goes — no manual entry.
         </p>
         <div className="mt-2 flex justify-center">
           <PlaidButton />

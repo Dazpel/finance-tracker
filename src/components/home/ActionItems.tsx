@@ -4,13 +4,9 @@ import React from "react";
 import Link from "next/link";
 import { Card, CardBody, CardHeader, Chip, Skeleton } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  formatDateTime,
-  getStatusChipInfo,
-  isConsentExpiringSoon,
-} from "@lib/plaid/status/helpers";
 import type { ItemStatusResponse } from "@lib/plaid/status/types";
 import { appRoutes } from "utils/constants";
+import { classifyConnectionAttention } from "./helpers";
 import type { ExceededBudget } from "./types";
 
 type ActionItemsProps = {
@@ -69,45 +65,19 @@ export const ActionItems = ({ pendingReports, exceededBudgets }: ActionItemsProp
     });
   }
 
-  // Connection-health rows (only once the live Plaid check resolves). A
-  // connection needs attention when its status chip is non-success OR its
-  // consent is expiring soon — the same signals the Plaid status page surfaces,
-  // so Home never says "all caught up" while that page shows a warning. The
-  // title names the actual remedy available at the destination: reconnect / renew
-  // go through update-mode Link, while a failed refresh is fixed by "Sync now".
+  // Connection-health rows (only once the live Plaid check resolves). Each item
+  // maps to the single most relevant remedy — see classifyConnectionAttention —
+  // so Home never contradicts the Plaid status page or points at an action that
+  // can't fix the reported condition.
   const healthRows: ActionRow[] = (health?.items ?? [])
     .map((item): ActionRow | null => {
-      const chip = getStatusChipInfo(item);
-      const consentExpiring = isConsentExpiringSoon(item.consentExpirationTime);
-      if (chip.color === "success" && !consentExpiring) return null;
-
-      let title: string;
-      let subtitle: string;
-      let tone: Tone;
-
-      if (chip.color === "danger") {
-        title = `Reconnect ${item.institutionName}`;
-        subtitle = chip.message ?? "This connection needs to be reconnected";
-        tone = "danger";
-      } else if (chip.color === "warning") {
-        // Refresh-failed — resolved by "Sync now", not by reconnecting.
-        title = `Re-sync ${item.institutionName}`;
-        subtitle = chip.message ?? "The last transaction refresh failed";
-        tone = "warning";
-      } else {
-        // Healthy but consent expiring — renew via update-mode reconnect.
-        title = `Renew connection to ${item.institutionName}`;
-        subtitle = `Consent expires ${formatDateTime(item.consentExpirationTime)}`;
-        tone = "warning";
-      }
-
+      const attention = classifyConnectionAttention(item);
+      if (!attention) return null;
       return {
         id: `conn-${item.plaidAccountId}`,
         icon: "🔌",
-        title,
-        subtitle,
         href: appRoutes.PLAID_STATUS_PAGE,
-        tone,
+        ...attention,
       };
     })
     .filter((row): row is ActionRow => row !== null);

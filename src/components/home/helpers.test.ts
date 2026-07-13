@@ -4,7 +4,27 @@ import {
   formatMoney,
   computeExceededBudgets,
   buildMonthSummary,
+  classifyConnectionAttention,
 } from "./helpers";
+import type { ItemStatus } from "@lib/plaid/status/types";
+
+const makeItem = (overrides: Partial<ItemStatus> = {}): ItemStatus => ({
+  institutionName: "Chase",
+  itemId: "item-1",
+  plaidAccountId: "acct-1",
+  linkedAt: "2026-01-01T00:00:00.000Z",
+  lastLocalSyncAt: null,
+  error: null,
+  requestFailed: null,
+  updateType: null,
+  consentExpirationTime: null,
+  lastSuccessfulUpdate: null,
+  lastFailedUpdate: null,
+  lastWebhook: null,
+  ...overrides,
+});
+
+const soon = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
 
 describe("getFirstName", () => {
   it("returns the first token of a full name, trimmed", () => {
@@ -94,5 +114,60 @@ describe("buildMonthSummary", () => {
       net: 0,
       label: "July 2026",
     });
+  });
+});
+
+describe("classifyConnectionAttention", () => {
+  it("returns null for a healthy connection with no expiring consent", () => {
+    expect(classifyConnectionAttention(makeItem())).toBeNull();
+  });
+
+  it("flags an item error as a danger-tone reconnect", () => {
+    const result = classifyConnectionAttention(
+      makeItem({ error: { code: "ITEM_LOGIN_REQUIRED", message: "Sign in again" } })
+    );
+    expect(result).toEqual({
+      title: "Reconnect Chase",
+      subtitle: "Sign in again",
+      tone: "danger",
+    });
+  });
+
+  it("flags a failed refresh as a re-sync (not a reconnect)", () => {
+    const result = classifyConnectionAttention(
+      makeItem({ lastFailedUpdate: "2026-07-10T00:00:00.000Z", lastSuccessfulUpdate: null })
+    );
+    expect(result?.title).toBe("Re-sync Chase");
+    expect(result?.tone).toBe("warning");
+  });
+
+  it("flags expiring consent as a renewal", () => {
+    const result = classifyConnectionAttention(makeItem({ consentExpirationTime: soon }));
+    expect(result?.title).toBe("Renew connection to Chase");
+    expect(result?.tone).toBe("warning");
+    expect(result?.subtitle).toContain("Consent expires");
+  });
+
+  it("prioritizes consent renewal over a failed refresh when both apply", () => {
+    const result = classifyConnectionAttention(
+      makeItem({
+        lastFailedUpdate: "2026-07-10T00:00:00.000Z",
+        lastSuccessfulUpdate: null,
+        consentExpirationTime: soon,
+      })
+    );
+    // Re-syncing cannot extend consent, so renewal must win.
+    expect(result?.title).toBe("Renew connection to Chase");
+  });
+
+  it("keeps a hard error above expiring consent", () => {
+    const result = classifyConnectionAttention(
+      makeItem({
+        error: { code: "ITEM_LOGIN_REQUIRED", message: "Sign in again" },
+        consentExpirationTime: soon,
+      })
+    );
+    expect(result?.title).toBe("Reconnect Chase");
+    expect(result?.tone).toBe("danger");
   });
 });

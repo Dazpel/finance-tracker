@@ -33,7 +33,15 @@ export const getHomeSummary = async (userId: string): Promise<HomeSummary> => {
         autoMaintainedAt: { not: null },
       },
     }),
-    prisma.expenseThreshold.findUnique({ where: { userId } }),
+    // Lazily materialize the default caps (schema @default values) the same way
+    // /api/prisma/thresholds/get does, so an unseeded user's dashboard and the
+    // threshold alert system agree on the intended budgets instead of showing
+    // "no exceeded budgets" just because the row was never created.
+    prisma.expenseThreshold.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+    }),
     // Only PENDING_APPROVAL is actionable: approveReport rejects DRAFT reports
     // still in the 7-day grace window, so surfacing them would offer a fix the
     // user cannot complete.
@@ -42,13 +50,14 @@ export const getHomeSummary = async (userId: string): Promise<HomeSummary> => {
     }),
   ]);
 
-  const exceededBudgets =
-    report && thresholds
-      ? computeExceededBudgets(
-          report as unknown as Record<ExpenseKey, number>,
-          thresholds as unknown as Record<ExpenseKey, number>
-        )
-      : [];
+  // thresholds is always present (upserted above); exceeded budgets only exist
+  // once there's a current-month report to compare against.
+  const exceededBudgets = report
+    ? computeExceededBudgets(
+        report as unknown as Record<ExpenseKey, number>,
+        thresholds as unknown as Record<ExpenseKey, number>
+      )
+    : [];
 
   return {
     accountCount,

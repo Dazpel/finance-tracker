@@ -4,7 +4,13 @@ import {
   levelsCrossed,
   type ExpenseKey,
 } from "@lib/notifications/expenseKeys";
-import type { ExceededBudget, MonthSummary } from "./types";
+import {
+  formatDateTime,
+  getStatusChipInfo,
+  isConsentExpiringSoon,
+} from "@lib/plaid/status/helpers";
+import type { ItemStatus } from "@lib/plaid/status/types";
+import type { ConnectionAttention, ExceededBudget, MonthSummary } from "./types";
 
 const moneyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -48,6 +54,47 @@ export const buildMonthSummary = (
  * (`levelsCrossed`) so Home and alerts never disagree. Missing columns count as
  * zero spend / no cap.
  */
+/**
+ * Classifies a Plaid connection into the single most relevant Home action, or
+ * null when it needs no attention. The title names the remedy actually
+ * available at the /plaid-status destination, in priority order:
+ *
+ *  1. hard error / failed request → reconnect (update-mode Link)
+ *  2. consent expiring soon        → renew (also update-mode Link)
+ *  3. failed refresh               → re-sync ("Sync now")
+ *
+ * Renewal outranks a failed refresh because "Sync now" cannot extend consent —
+ * an item that is both must be sent to renew first, or it stays broken.
+ */
+export const classifyConnectionAttention = (
+  item: ItemStatus
+): ConnectionAttention | null => {
+  const chip = getStatusChipInfo(item);
+
+  if (chip.color === "danger") {
+    return {
+      title: `Reconnect ${item.institutionName}`,
+      subtitle: chip.message ?? "This connection needs to be reconnected",
+      tone: "danger",
+    };
+  }
+  if (isConsentExpiringSoon(item.consentExpirationTime)) {
+    return {
+      title: `Renew connection to ${item.institutionName}`,
+      subtitle: `Consent expires ${formatDateTime(item.consentExpirationTime)}`,
+      tone: "warning",
+    };
+  }
+  if (chip.color === "warning") {
+    return {
+      title: `Re-sync ${item.institutionName}`,
+      subtitle: chip.message ?? "The last transaction refresh failed",
+      tone: "warning",
+    };
+  }
+  return null;
+};
+
 export const computeExceededBudgets = (
   report: Partial<Record<ExpenseKey, number>>,
   thresholds: Partial<Record<ExpenseKey, number>>

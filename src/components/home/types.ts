@@ -28,6 +28,13 @@ export type HomeSummary = {
   exceededBudgets: ExceededBudget[];
 };
 
+/** The single most relevant remedy for a connection needing attention. */
+export type ConnectionAttention = {
+  title: string;
+  subtitle: string;
+  tone: "danger" | "warning";
+};
+
 /** A quick-launch tile linking to one of the deep pages. */
 export type QuickLink = {
   label: string;

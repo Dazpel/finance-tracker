@@ -314,7 +314,11 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
       .filter((id): id is string => Boolean(id));
 
     for (const group of chunk(upsertOps, UPSERT_CHUNK_SIZE)) {
-      await prisma.$transaction(group);
+      // Backlog batches of up to UPSERT_CHUNK_SIZE upserts can exceed Prisma's
+      // 5s default interactive-transaction timeout under pooled-connection
+      // latency (the sync cron processes exactly these large dormant backlogs).
+      // Raise the ceiling so a big first sync commits instead of rolling back.
+      await prisma.$transaction(group, { timeout: 20_000, maxWait: 5_000 });
     }
 
     if (removeIds.length) {

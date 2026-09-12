@@ -3,12 +3,13 @@ import prisma from "@lib/prisma/prismaClient";
 import { Prisma, type PlaidAccount, type PlaidCursor } from "@generated/prisma/client";
 import type { RemovedTransaction, Transaction } from "plaid";
 import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
+import { CARRIED_SELECT } from "./carryover/constants";
 import {
-  CARRIED_SELECT,
-  buildCarryoverMap,
   carryoverPatches,
   mergeCarriedIntoCreate,
-} from "./carryover";
+  rememberPendingRows,
+} from "./carryover/helpers";
+import type { CarriedFields } from "./carryover/types";
 
 const MUTATION_ERROR = "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION";
 const UPSERT_CHUNK_SIZE = 100;
@@ -169,6 +170,12 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
   let mutationRetries = 0;
   let pages = 0;
   const totals = { added: 0, modified: 0, removed: 0 };
+  // Run-scoped, not per-page: Plaid may deliver a posted transaction's `added`
+  // on a different page than its pending row's `removed`, so intent recorded
+  // while processing one page has to still be here for later pages. Survives a
+  // mutation retry on purpose — rows deleted on the abandoned attempt cannot be
+  // re-read from the DB, so this memory is all that is left of them.
+  const carriedByPendingId = new Map<string, CarriedFields>();
 
   while (hasMore) {
     let added: Transaction[];
@@ -206,9 +213,9 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
     }
 
     // When a pending txn posts, Plaid sends `added` (new posted row, with pending_transaction_id)
-    // and `removed` (old pending row). Carry user intent over before the removed step deletes
-    // the pending row. The carried field set lives in ./carryover — add new user-intent
-    // columns there, not here.
+    // and `removed` (old pending row), not necessarily on the same page. Carry user intent
+    // over before the removed step deletes the pending row. The carried field set lives in
+    // ./carryover — add new user-intent columns there, not here.
     const pendingIds = added
       .map((t) => t.pending_transaction_id)
       .filter((id): id is string => Boolean(id));
@@ -223,7 +230,7 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
         })
       : [];
 
-    const carriedByPendingId = buildCarryoverMap(priorPending);
+    rememberPendingRows(carriedByPendingId, priorPending);
 
     // If the posted row already exists from a prior partial sync, the upsert hits `update`
     // (which omits user-intent fields). Migrate carried values onto the existing posted row
@@ -246,7 +253,7 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
     }
 
     // update payload deliberately excludes every user-intent field (see
-    // ./carryover) so Plaid MODIFIED cannot overwrite user edits.
+    // ./carryover/types) so Plaid MODIFIED cannot overwrite user edits.
     const upsertOps = [...added, ...modified].map((t) => {
       const data = mapTransaction(t, account.userId, account.id);
       const carried = t.pending_transaction_id
@@ -278,6 +285,18 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
     }
 
     if (removeIds.length) {
+      // Read intent off these rows before they go. If one of them is a pending
+      // row whose posted counterpart arrives on a later page, this is the only
+      // surviving copy of the user's edits.
+      const beingRemoved = await prisma.syncedTransaction.findMany({
+        where: {
+          plaidAccountId: account.id,
+          transaction_id: { in: removeIds },
+        },
+        select: CARRIED_SELECT,
+      });
+      rememberPendingRows(carriedByPendingId, beingRemoved);
+
       await prisma.syncedTransaction.deleteMany({
         where: {
           plaidAccountId: account.id,

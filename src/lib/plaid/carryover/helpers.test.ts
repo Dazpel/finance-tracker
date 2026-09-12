@@ -2,10 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   buildCarryoverMap,
   carryoverPatches,
+  hasUserIntent,
   mergeCarriedIntoCreate,
-  type CarriedFields,
-  type PendingRow,
-} from "./carryover";
+  rememberPendingRows,
+} from "./helpers";
+import type { CarriedFields, PendingRow } from "./types";
 
 const pending = (overrides: Partial<PendingRow> = {}): PendingRow => ({
   transaction_id: "pending-1",
@@ -198,5 +199,83 @@ describe("mergeCarriedIntoCreate", () => {
     expect(merged.notes).toBe("n");
     expect(merged.userAmountOverride).toBeUndefined();
     expect(merged.userCategoryOverride).toBeUndefined();
+  });
+});
+
+describe("hasUserIntent", () => {
+  it("is false for a row the user never touched", () => {
+    expect(hasUserIntent(carried())).toBe(false);
+  });
+
+  it("is true for a row with an amount override", () => {
+    expect(hasUserIntent(carried({ userAmountOverride: 12 }))).toBe(true);
+  });
+
+  it("is true for a row with an amount override of zero", () => {
+    expect(hasUserIntent(carried({ userAmountOverride: 0 }))).toBe(true);
+  });
+
+  it("is true for a row with notes", () => {
+    expect(hasUserIntent(carried({ notes: "n" }))).toBe(true);
+  });
+
+  it("is true for a row with a category override", () => {
+    expect(hasUserIntent(carried({ userCategoryOverride: "Groceries" }))).toBe(true);
+  });
+
+  it("is true for a soft-deleted row", () => {
+    expect(hasUserIntent(carried({ userSoftDeleted: true }))).toBe(true);
+  });
+});
+
+describe("rememberPendingRows", () => {
+  it("remembers a row that carries intent", () => {
+    const map = new Map<string, CarriedFields>();
+
+    rememberPendingRows(map, [
+      pending({ transaction_id: "p-1", userAmountOverride: 9.5 }),
+    ]);
+
+    expect(map.get("p-1")?.userAmountOverride).toBe(9.5);
+  });
+
+  it("skips rows with nothing to carry, keeping the map small", () => {
+    const map = new Map<string, CarriedFields>();
+
+    rememberPendingRows(map, [pending({ transaction_id: "p-1" })]);
+
+    expect(map.size).toBe(0);
+  });
+
+  it("keeps the earlier observation when the same pending row is seen twice", () => {
+    const map = new Map<string, CarriedFields>();
+
+    rememberPendingRows(map, [
+      pending({ transaction_id: "p-1", userAmountOverride: 1 }),
+    ]);
+    rememberPendingRows(map, [
+      pending({ transaction_id: "p-1", userAmountOverride: 2 }),
+    ]);
+
+    expect(map.get("p-1")?.userAmountOverride).toBe(1);
+  });
+
+  it("lets a posted row on a later page still find a deleted pending row's intent", () => {
+    // The cross-page case: page 1 deleted the pending row, page 3 brings the
+    // posted row. The run-scoped map is the only place the intent still lives.
+    const map = new Map<string, CarriedFields>();
+    rememberPendingRows(map, [
+      pending({ transaction_id: "p-1", userAmountOverride: 31.75 }),
+    ]);
+
+    const patches = carryoverPatches([posted("p-1")], map);
+
+    expect(patches).toEqual([
+      {
+        transaction_id: "posted-1",
+        guard: { userAmountOverride: null },
+        data: { userAmountOverride: 31.75 },
+      },
+    ]);
   });
 });

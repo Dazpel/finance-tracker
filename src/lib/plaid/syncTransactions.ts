@@ -3,6 +3,12 @@ import prisma from "@lib/prisma/prismaClient";
 import { Prisma, type PlaidAccount, type PlaidCursor } from "@generated/prisma/client";
 import type { RemovedTransaction, Transaction } from "plaid";
 import { upsertCurrentMonthDraftReport } from "@lib/reports/draftReport";
+import {
+  CARRIED_SELECT,
+  buildCarryoverMap,
+  carryoverPatches,
+  mergeCarriedIntoCreate,
+} from "./carryover";
 
 const MUTATION_ERROR = "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION";
 const UPSERT_CHUNK_SIZE = 100;
@@ -200,17 +206,12 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
     }
 
     // When a pending txn posts, Plaid sends `added` (new posted row, with pending_transaction_id)
-    // and `removed` (old pending row). Carry user intent (notes, category override, soft-delete)
-    // over before the removed step deletes the pending row.
+    // and `removed` (old pending row). Carry user intent over before the removed step deletes
+    // the pending row. The carried field set lives in ./carryover — add new user-intent
+    // columns there, not here.
     const pendingIds = added
       .map((t) => t.pending_transaction_id)
       .filter((id): id is string => Boolean(id));
-
-    type CarriedFields = {
-      notes: string | null;
-      userCategoryOverride: string | null;
-      userSoftDeleted: boolean;
-    };
 
     const priorPending = pendingIds.length
       ? await prisma.syncedTransaction.findMany({
@@ -218,85 +219,40 @@ const runSync = async (account: AccountWithCursor): Promise<SyncResult> => {
             plaidAccountId: account.id,
             transaction_id: { in: pendingIds },
           },
-          select: {
-            transaction_id: true,
-            notes: true,
-            userCategoryOverride: true,
-            userSoftDeleted: true,
-          },
+          select: CARRIED_SELECT,
         })
       : [];
 
-    const carriedByPendingId = new Map<string, CarriedFields>(
-      priorPending.map((p) => [
-        p.transaction_id,
-        {
-          notes: p.notes,
-          userCategoryOverride: p.userCategoryOverride,
-          userSoftDeleted: p.userSoftDeleted,
-        },
-      ])
-    );
+    const carriedByPendingId = buildCarryoverMap(priorPending);
 
     // If the posted row already exists from a prior partial sync, the upsert hits `update`
     // (which omits user-intent fields). Migrate carried values onto the existing posted row
-    // so they survive the subsequent `removed` delete of the pending row. Each field is
-    // guarded by a null/default WHERE clause so we only fill in missing values — never
-    // clobber edits the user already made directly on the posted row.
-    if (carriedByPendingId.size) {
-      const ops: Prisma.PrismaPromise<unknown>[] = [];
-      for (const t of added) {
-        if (!t.pending_transaction_id) continue;
-        const carried = carriedByPendingId.get(t.pending_transaction_id);
-        if (!carried) continue;
-        const base = {
-          transaction_id: t.transaction_id,
-          plaidAccountId: account.id,
-        } as const;
-
-        if (carried.notes != null) {
-          ops.push(
-            prisma.syncedTransaction.updateMany({
-              where: { ...base, notes: null },
-              data: { notes: carried.notes },
-            })
-          );
-        }
-        if (carried.userCategoryOverride != null) {
-          ops.push(
-            prisma.syncedTransaction.updateMany({
-              where: { ...base, userCategoryOverride: null },
-              data: { userCategoryOverride: carried.userCategoryOverride },
-            })
-          );
-        }
-        if (carried.userSoftDeleted) {
-          ops.push(
-            prisma.syncedTransaction.updateMany({
-              where: { ...base, userSoftDeleted: false },
-              data: { userSoftDeleted: true },
-            })
-          );
-        }
-      }
-      if (ops.length) await Promise.all(ops);
+    // so they survive the subsequent `removed` delete of the pending row. Each patch carries
+    // a null/default guard so we only fill in missing values — never clobber edits the user
+    // already made directly on the posted row.
+    const patches = carryoverPatches(added, carriedByPendingId);
+    if (patches.length) {
+      const ops: Prisma.PrismaPromise<unknown>[] = patches.map((p) =>
+        prisma.syncedTransaction.updateMany({
+          where: {
+            transaction_id: p.transaction_id,
+            plaidAccountId: account.id,
+            ...p.guard,
+          },
+          data: p.data,
+        })
+      );
+      await Promise.all(ops);
     }
 
-    // update payload deliberately excludes user-intent fields (notes,
-    // userCategoryOverride, userSoftDeleted) so Plaid MODIFIED cannot overwrite user edits.
+    // update payload deliberately excludes every user-intent field (see
+    // ./carryover) so Plaid MODIFIED cannot overwrite user edits.
     const upsertOps = [...added, ...modified].map((t) => {
       const data = mapTransaction(t, account.userId, account.id);
       const carried = t.pending_transaction_id
         ? carriedByPendingId.get(t.pending_transaction_id)
         : undefined;
-      const createData = carried
-        ? {
-            ...data,
-            notes: carried.notes ?? undefined,
-            userCategoryOverride: carried.userCategoryOverride ?? undefined,
-            userSoftDeleted: carried.userSoftDeleted,
-          }
-        : data;
+      const createData = mergeCarriedIntoCreate(data, carried);
       return prisma.syncedTransaction.upsert({
         where: {
           transaction_id_plaidAccountId: {
